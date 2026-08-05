@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Gabinete Digital — Vereador Murillo Godoy</title>
+<link rel="apple-touch-icon" sizes="180x180" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gabinete Digital">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Gabinete Digital">
+<meta name="theme-color" content="#0A1728">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fundo:#070E19; --superficie:#0A1728; --superficie-sutil:#0D1D33;
+    --borda:#1C2C41; --texto:#F5F8FC; --texto-suave:#B8C4D4; --texto-fraco:#7C8BA0;
+    --acento:#E5272D; --verde:#22C55E; --azul:#2563EB; --amarelo:#F2B23A; --roxo:#A855F7;
+    --raio-s:8px; --raio-m:12px; --raio-l:18px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--fundo);color:var(--texto);-webkit-font-smoothing:antialiased;}
+  .hidden{display:none !important;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  /* ===== SPLASH (abertura) ===== */
+  #telaSplash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#101F35,#070E19 60%);gap:18px;text-align:center;padding:20px;}
+  .splash-caixa{width:170px;height:170px;border-radius:var(--raio-l);background:var(--superficie);border:1px solid var(--borda);display:flex;align-items:center;justify-content:center;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .splash-caixa img{width:100%;object-fit:contain;border-radius:8px;}
+  .splash-titulo{font-size:22px;font-weight:900;letter-spacing:.3px;}
+  .splash-titulo span{color:var(--acento);}
+  .splash-sub{font-size:11.5px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-top:-8px;}
+  .splash-spin{width:30px;height:30px;border-radius:50%;border:3px solid #1C2C41;border-top-color:var(--acento);animation:girar 0.8s linear infinite;margin-top:6px;}
+  @keyframes girar{to{transform:rotate(360deg);}}
+  #pularSplash{color:#5C86D8;font-size:12.5px;text-decoration:underline;background:none;border:none;margin-top:4px;}
+
+  /* ===== LOGIN ===== */
+  #telaLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#101F35,#070E19 60%);padding:20px;}
+  .card-login{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-l);padding:40px 32px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+  .card-login img{width:100%;max-width:220px;display:block;margin:0 auto 16px;border-radius:8px;}
+  .card-login h1{text-align:center;font-size:15px;letter-spacing:.5px;color:var(--texto-suave);margin:0 0 28px;text-transform:uppercase;font-weight:700;}
+  .card-login h1 span{color:var(--acento);}
+  .campo-login{margin-bottom:14px;}
+  .campo-login input{width:100%;padding:13px 14px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:14px;outline:none;}
+  .campo-login input:focus{border-color:var(--acento);}
+  #btnEntrar{width:100%;padding:14px;border:none;border-radius:var(--raio-s);background:var(--acento);color:#fff;font-weight:800;font-size:14.5px;margin-top:6px;transition:filter .15s;}
+  #btnEntrar:hover{filter:brightness(1.1);}
+  #btnEntrar:disabled{opacity:.6;cursor:default;}
+  #erroLogin{color:#FF7479;font-size:12.5px;margin-top:12px;text-align:center;min-height:16px;}
+
+  /* ===== APP ===== */
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+  header.topo-app{background:var(--superficie);border-bottom:1px solid var(--borda);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .logo-topo img{height:42px;width:auto;max-width:170px;object-fit:contain;border-radius:6px;}
+  .saudacao-bloco h2{margin:0;font-size:19px;font-weight:800;}
+  .saudacao-bloco .sub{font-size:11px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:.4px;font-weight:700;}
+  .topo-direita{display:flex;align-items:center;gap:14px;margin-left:auto;}
+  .perfil-topo{display:flex;align-items:center;gap:9px;padding-left:14px;border-left:1px solid var(--borda);}
+  .avatar-topo{width:36px;height:36px;border-radius:50%;background:var(--superficie-sutil);border:1px solid var(--borda);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;}
+  .perfil-texto b{display:block;font-size:12.5px;}
+  .perfil-texto span{font-size:10.5px;color:var(--texto-fraco);}
+  #btnSair{background:none;border:1px solid #4A2430;color:#F26D6D;border-radius:var(--raio-s);padding:8px 14px;font-weight:700;font-size:12.5px;}
+  #btnSair:hover{background:#2A1218;}
+
+  nav.menu-nav-topo{display:flex;gap:4px;padding:0 24px;background:var(--superficie);border-bottom:1px solid var(--borda);overflow-x:auto;}
+  nav.menu-nav-topo button{background:none;border:none;color:var(--texto-suave);padding:13px 16px;font-size:13.5px;font-weight:700;white-space:nowrap;border-bottom:3px solid transparent;}
+  nav.menu-nav-topo button.ativo{color:#fff;border-bottom-color:var(--acento);}
+  nav.menu-nav-topo button:hover{color:#fff;}
+
+  main{flex:1;padding:22px 24px 60px;max-width:1400px;width:100%;margin:0 auto;}
+
+  .topo-pagina{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .topo-pagina h2{margin:0;font-size:21px;font-weight:800;}
+  .topo-pagina h2 .destaque{color:var(--acento);}
+  .btn-primario{background:var(--acento);color:#fff;border:none;border-radius:var(--raio-s);padding:11px 18px;font-weight:800;font-size:13px;}
+  .btn-primario:hover{filter:brightness(1.1);}
+  .btn-secundario{background:var(--superficie-sutil);color:var(--texto);border:1px solid var(--borda);border-radius:var(--raio-s);padding:9px 14px;font-weight:700;font-size:12.5px;}
+  .btn-secundario:hover{background:#132238;}
+
+  .kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
+  .kpi-card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:18px;}
+  .kpi-card .num{font-size:28px;font-weight:900;}
+  .kpi-card .rot{font-size:10.5px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:4px;}
+
+  .grafico-box,.painel-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:20px;}
+  .grafico-box h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto-suave);}
+
+  .carregando-tela{text-align:center;padding:60px 20px;color:var(--texto-fraco);}
+
+  @media(max-width:640px){
+    header.topo-app{padding:12px 16px;}
+    .saudacao-bloco h2{font-size:16px;}
+    .saudacao-bloco .sub{display:none;}
+    main{padding:16px;}
+    nav.menu-nav-topo{padding:0 8px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="telaSplash">
+  <div class="splash-caixa"><img src="./icon-512.png" alt="Gabinete Digital" onerror="this.style.display='none'"></div>
+  <div class="splash-titulo">GABINETE <span>DIGITAL</span></div>
+  <div class="splash-sub">Vereador Murillo Godoy</div>
+  <div class="splash-spin"></div>
+  <button id="pularSplash">Não abriu? Toque aqui</button>
+</div>
+
+<div id="telaLogin" class="hidden">
+  <div class="card-login">
+    <img src="./icon-512.png" alt="Gabinete Digital" onerror="this.style.display='none'">
+    <h1>GABINETE <span>DIGITAL</span></h1>
+    <div class="campo-login"><input id="inputEmail" type="email" placeholder="E-mail" autocomplete="username"></div>
+    <div class="campo-login"><input id="inputSenha" type="password" placeholder="Senha" autocomplete="current-password"></div>
+    <button id="btnEntrar">Entrar</button>
+    <div id="erroLogin"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topo-app">
+    <div class="logo-topo"><img src="./icon-512.png" alt="Logo" onerror="this.style.display='none'"></div>
+    <div class="saudacao-bloco">
+      <h2 id="saudacaoTopo">Olá!</h2>
+      <div class="sub">Painel Geral de Gestão • Gabinete Digital</div>
+    </div>
+    <div class="topo-direita">
+      <div class="perfil-topo">
+        <div class="avatar-topo" id="avatarTopo">-</div>
+        <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
+      </div>
+      <button id="btnSair">Sair</button>
+    </div>
+  </header>
+  <nav class="menu-nav-topo" id="menuNav"></nav>
+  <main id="conteudo"><div class="carregando-tela">Carregando...</div></main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, onSnapshot, collection, query, orderBy, limit
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ---- Config real do projeto Gabinete-Murillo Godoy ----
+const firebaseConfig = {
+  apiKey: "AIzaSyD23LG4NhHDRfiHeXCSumKyTiXRV_yk5bc",
+  authDomain: "gabinete-murillo-godoy.firebaseapp.com",
+  projectId: "gabinete-murillo-godoy",
+  storageBucket: "gabinete-murillo-godoy.firebasestorage.app",
+  messagingSenderId: "1039162247732",
+  appId: "1:1039162247732:web:900c8f90cd7b210930d861"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Expõe pro resto do código (módulos futuros usam window.db, window.auth)
+window.__db = db;
+window.__auth = auth;
+
+let USUARIO = null;
+let UID = null;
+let paginaAtual = 'dashboard';
+let pararDeOuvirPerfil = null;
+
+const telaSplash = document.getElementById('telaSplash');
+const telaLogin = document.getElementById('telaLogin');
+const appEl = document.getElementById('app');
+
+function esconderSplash() {
+  if (telaSplash.classList.contains('hidden')) return;
+  telaSplash.classList.add('hidden');
+  telaLogin.classList.remove('hidden');
+}
+document.getElementById('pularSplash').onclick = esconderSplash;
+setTimeout(esconderSplash, 1200);
+const inputEmail = document.getElementById('inputEmail');
+const inputSenha = document.getElementById('inputSenha');
+const btnEntrar = document.getElementById('btnEntrar');
+const erroLogin = document.getElementById('erroLogin');
+const btnSair = document.getElementById('btnSair');
+
+function mapaErroFirebase(codigo) {
+  const mapa = {
+    'auth/invalid-email': 'E-mail inválido.',
+    'auth/invalid-credential': 'E-mail ou senha incorretos.',
+    'auth/wrong-password': 'E-mail ou senha incorretos.',
+    'auth/user-not-found': 'E-mail ou senha incorretos.',
+    'auth/too-many-requests': 'Muitas tentativas. Espera um pouco e tenta de novo.',
+    'auth/network-request-failed': 'Falha de conexão. Verifica sua internet.'
+  };
+  return mapa[codigo] || 'Não foi possível entrar. Tente novamente.';
+}
+
+async function fazerLogin() {
+  const email = inputEmail.value.trim();
+  const senha = inputSenha.value;
+  if (!email || !senha) { erroLogin.innerText = 'Preenche e-mail e senha.'; return; }
+  btnEntrar.disabled = true; btnEntrar.innerText = 'Entrando...'; erroLogin.innerText = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, senha);
+    // onAuthStateChanged cuida do resto (carregar perfil e abrir o app)
+  } catch (e) {
+    erroLogin.innerText = mapaErroFirebase(e.code);
+    btnEntrar.disabled = false; btnEntrar.innerText = 'Entrar';
+  }
+}
+
+btnEntrar.onclick = fazerLogin;
+inputSenha.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+inputEmail.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+
+btnSair.onclick = async () => {
+  if (pararDeOuvirPerfil) pararDeOuvirPerfil();
+  await signOut(auth);
+};
+
+function iniciaisNome(nome) {
+  if (!nome) return '?';
+  const p = nome.trim().split(' ');
+  return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+}
+
+function rotuloCargo(cargo) {
+  const mapa = { ADMIN: 'Administrador', ASSESSOR: 'Assessor', ASSESSORA: 'Assessora', VEREADOR: 'Vereador' };
+  return mapa[cargo] || cargo || '-';
+}
+
+function somenteLeitura() {
+  return USUARIO && USUARIO.cargo === 'VEREADOR';
+}
+window.somenteLeitura = somenteLeitura;
+window.getUsuario = () => USUARIO;
+window.getUid = () => UID;
+
+const MODULOS = [
+  { id: 'dashboard', label: '🏠 Dashboard', admin: false },
+  { id: 'atendimentos', label: '👥 Atendimentos', admin: false },
+  { id: 'transportes', label: '🚐 Transportes', admin: false },
+  { id: 'equipamentos', label: '🏆 Equipamentos', admin: false },
+  { id: 'pessoas', label: '📇 Pessoas', admin: false },
+  { id: 'agenda', label: '📅 Agenda', admin: false },
+  { id: 'relatorios', label: '📊 Relatórios', admin: false },
+  { id: 'usuarios', label: '🔑 Usuários', admin: true },
+  { id: 'configuracoes', label: '⚙️ Configurações', admin: true }
+];
+
+function montarMenu() {
+  const nav = document.getElementById('menuNav');
+  const ehAdmin = USUARIO && USUARIO.cargo === 'ADMIN';
+  nav.innerHTML = MODULOS
+    .filter(m => !m.admin || ehAdmin)
+    .map(m => `<button data-mod="${m.id}" class="${paginaAtual === m.id ? 'ativo' : ''}">${m.label}</button>`)
+    .join('');
+  nav.querySelectorAll('button').forEach(b => {
+    b.onclick = () => irPara(b.dataset.mod);
+  });
+}
+
+function irPara(pagina) {
+  paginaAtual = pagina;
+  montarMenu();
+  const conteudo = document.getElementById('conteudo');
+  conteudo.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const renderFn = window.RENDERIZADORES && window.RENDERIZADORES[pagina];
+  if (renderFn) {
+    renderFn();
+  } else {
+    conteudo.innerHTML = `<div class="topo-pagina"><h2>${pagina}</h2></div><div class="painel-box">Módulo em construção.</div>`;
+  }
+}
+window.irPara = irPara;
+
+function saudacaoHora() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Bom dia';
+  if (h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function abrirApp() {
+  telaSplash.classList.add('hidden');
+  telaLogin.classList.add('hidden');
+  appEl.classList.remove('hidden');
+  document.getElementById('saudacaoTopo').innerText = `${saudacaoHora()}, ${USUARIO.nome.split(' ')[0]}! 👋`;
+  document.getElementById('nomeTopo').innerText = USUARIO.nome;
+  document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
+  document.getElementById('avatarTopo').innerText = iniciaisNome(USUARIO.nome);
+  montarMenu();
+  irPara('dashboard');
+}
+
+function fecharApp() {
+  esconderSplash();
+  appEl.classList.add('hidden');
+  telaLogin.classList.remove('hidden');
+  inputEmail.value = ''; inputSenha.value = ''; erroLogin.innerText = '';
+  btnEntrar.disabled = false; btnEntrar.innerText = 'Entrar';
+  USUARIO = null; UID = null;
+}
+
+// Observa login/logout
+onAuthStateChanged(auth, async (user) => {
+  if (pararDeOuvirPerfil) { pararDeOuvirPerfil(); pararDeOuvirPerfil = null; }
+
+  if (!user) {
+    fecharApp();
+    return;
+  }
+
+  UID = user.uid;
+  const refPerfil = doc(db, 'usuarios', user.uid);
+
+  // Ouve o perfil em tempo real: se alguém desativar esse usuário
+  // (ativo:false), ele é deslogado na hora, sem precisar recarregar.
+  pararDeOuvirPerfil = onSnapshot(refPerfil, (snap) => {
+    if (!snap.exists()) {
+      erroLogin.innerText = 'Seu usuário não tem perfil cadastrado no sistema. Fala com o administrador.';
+      signOut(auth);
+      return;
+    }
+    const dados = snap.data();
+    if (dados.ativo !== true) {
+      if (!appEl.classList.contains('hidden')) {
+        alert('Seu acesso foi desativado. Fala com o administrador.');
+      }
+      signOut(auth);
+      return;
+    }
+    USUARIO = { ...dados, uid: user.uid };
+    if (appEl.classList.contains('hidden')) {
+      abrirApp();
+    } else {
+      // perfil mudou (ex: cargo) enquanto já estava logado — atualiza topo e menu
+      document.getElementById('nomeTopo').innerText = USUARIO.nome;
+      document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
+      montarMenu();
+    }
+  }, (erro) => {
+    console.error('Erro ao ouvir perfil:', erro);
+    erroLogin.innerText = 'Erro ao carregar seu perfil. Tente novamente.';
+  });
+});
+
+// ---------------- DASHBOARD (provisório — outros módulos entram depois) ----------------
+window.RENDERIZADORES = window.RENDERIZADORES || {};
+window.RENDERIZADORES.dashboard = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = `
+    <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
+    <div class="kpis-grid">
+      <div class="kpi-card"><div class="num">—</div><div class="rot">Atendimentos</div></div>
+      <div class="kpi-card"><div class="num">—</div><div class="rot">Transportes</div></div>
+      <div class="kpi-card"><div class="num">—</div><div class="rot">Equipamentos em uso</div></div>
+      <div class="kpi-card"><div class="num">—</div><div class="rot">Pessoas cadastradas</div></div>
+    </div>
+    <div class="painel-box">
+      <h3 style="margin-top:0;">🎂 Aniversariantes</h3>
+      <p style="color:var(--texto-fraco);font-size:13px;">Módulo Pessoas ainda não conectado — chega no próximo passo.</p>
+    </div>
+  `;
+};
+</script>
+</body>
+</html>
