@@ -99,6 +99,33 @@
 
   .carregando-tela{text-align:center;padding:60px 20px;color:var(--texto-fraco);}
 
+  /* ===== Tabela ===== */
+  .tabela-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{text-align:left;padding:12px 14px;color:var(--texto-fraco);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;font-weight:800;border-bottom:1px solid var(--borda);white-space:nowrap;}
+  tbody td{padding:11px 14px;border-bottom:1px solid rgba(132,158,190,.08);vertical-align:middle;}
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  .barra-acoes{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .barra-acoes input,.barra-acoes select{padding:10px 12px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:13px;}
+  .barra-acoes input{flex:1;min-width:180px;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;}
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .badge-verde{background:rgba(34,197,94,.15);color:#4ADE80;}
+  .badge-amarelo{background:rgba(242,178,58,.15);color:#F2B23A;}
+  .badge-vermelho{background:rgba(229,39,45,.15);color:#F26D6D;}
+  .badge-cinza{background:rgba(124,139,160,.15);color:#9CAAC0;}
+
+  /* ===== Modal ===== */
+  .modal-fundo{position:fixed;inset:0;background:rgba(3,7,14,.72);display:flex;align-items:center;justify-content:center;z-index:2000;padding:20px;}
+  .modal{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-l);padding:26px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;}
+  .modal h2{margin:0 0 18px;font-size:18px;}
+  .campo-modal{margin-bottom:14px;}
+  .campo-modal label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto-fraco);font-weight:700;margin-bottom:6px;}
+  .campo-modal input,.campo-modal select,.campo-modal textarea{width:100%;padding:10px 12px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:13.5px;box-sizing:border-box;}
+  .campo-modal textarea{resize:vertical;min-height:70px;font-family:inherit;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .modal-acoes{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;}
+
   @media(max-width:640px){
     header.topo-app{padding:12px 16px;}
     .saudacao-bloco h2{font-size:16px;}
@@ -154,7 +181,8 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, getDocs, onSnapshot, collection, query, orderBy, limit
+  getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, collection, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ---- Config real do projeto Gabinete-Murillo Godoy ----
@@ -396,6 +424,170 @@ window.RENDERIZADORES.dashboard = async function () {
     </div>
   `;
 };
+
+// ---------------- ATENDIMENTOS ----------------
+const norm = s => (s || '').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+function badgeStatus(status) {
+  const s = norm(status);
+  let classe = 'badge-cinza';
+  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE') classe = 'badge-verde';
+  else if (s === 'EM ANALISE') classe = 'badge-amarelo';
+  else if (s === 'CANCELADO' || s === 'NAO') classe = 'badge-vermelho';
+  return `<span class="badge ${classe}">${status || '-'}</span>`;
+}
+window.badgeStatus = badgeStatus;
+
+let atendimentosCache = [];
+
+window.RENDERIZADORES.atendimentos = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const snap = await getDocs(collection(db, 'atendimentos'));
+  atendimentosCache = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+  desenharAtendimentos();
+};
+
+let filtroAtendTexto = '';
+let filtroAtendTextoOriginal = '';
+
+function aplicarFiltroAtend() {
+  filtroAtendTextoOriginal = document.getElementById('fTextoAtend').value;
+  filtroAtendTexto = norm(filtroAtendTextoOriginal);
+  desenharAtendimentos();
+}
+window.aplicarFiltroAtend = aplicarFiltroAtend;
+
+function desenharAtendimentos() {
+  const c = document.getElementById('conteudo');
+  const lista = atendimentosCache.filter(a =>
+    !filtroAtendTexto ||
+    norm(a.nome).includes(filtroAtendTexto) ||
+    norm(a.bairro).includes(filtroAtendTexto) ||
+    norm(a.telefone).includes(filtroAtendTexto)
+  );
+  const podeEditar = !somenteLeitura();
+
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <h2>Controle de <span class="destaque">Atendimentos</span></h2>
+      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalAtendimento()">+ Novo Atendimento</button>' : ''}
+    </div>
+    <div class="barra-acoes">
+      <input id="fTextoAtend" placeholder="Buscar por nome, bairro ou telefone..." oninput="aplicarFiltroAtend()" value="${filtroAtendTextoOriginal.replace(/"/g,'&quot;')}">
+    </div>
+    <div class="tabela-box">
+      <table>
+        <thead><tr>
+          <th>Data</th><th>Nome</th><th>Telefone</th><th>Bairro</th><th>Tipo</th><th>Status</th><th>Responsável</th>${podeEditar ? '<th></th>' : ''}
+        </tr></thead>
+        <tbody>
+          ${lista.map(a => `
+            <tr>
+              <td>${a.data || '-'}</td>
+              <td>${a.nome || '-'}</td>
+              <td>${a.telefone || '-'}</td>
+              <td>${a.bairro || '-'}</td>
+              <td>${a.tipoAtendimento || '-'}</td>
+              <td>${badgeStatus(a.status)}</td>
+              <td>${a.responsavel || '-'}</td>
+              ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></td>` : ''}
+            </tr>
+          `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+const TIPOS_ATENDIMENTO = ['CESTA BASICA','CONSULTA MED','DOACOES','EMENDA IMPOSITIVA','EMPREGO','EQUIPAMENTOS','ESCOLA','EXAME MED','OUTROS','PATROCINIO','REMEDIO','TRANSPORTE','CIRURGIA','TROCA DE LAMPADAS'];
+const STATUS_ATENDIMENTO = ['EM ANALISE','CONCLUIDO','CANCELADO'];
+
+function abrirModalAtendimento(registro) {
+  registro = registro || {};
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${registro._docId ? 'Editar' : 'Novo'} Atendimento</h2>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Nome</label><input id="m_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Telefone</label><input id="m_telefone" value="${(registro.telefone||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="campo-modal"><label>Endereço</label><input id="m_endereco" value="${(registro.endereco||'').replace(/"/g,'&quot;')}"></div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Bairro</label><input id="m_bairro" value="${(registro.bairro||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Data</label><input id="m_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Tipo de Atendimento</label>
+          <select id="m_tipo">${TIPOS_ATENDIMENTO.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select>
+        </div>
+        <div class="campo-modal"><label>Status</label>
+          <select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Responsável</label><input id="m_responsavel" value="${(registro.responsavel||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Indicador</label><input id="m_indicador" value="${(registro.indicador||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="campo-modal"><label>Observações</label><textarea id="m_obs">${registro.observacoes||''}</textarea></div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarAtend" onclick="salvarAtendimento('${registro._docId||''}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+}
+window.abrirModalAtendimento = abrirModalAtendimento;
+
+async function salvarAtendimento(docId) {
+  const botao = document.getElementById('btnSalvarAtend');
+  if (botao.disabled) return;
+  botao.disabled = true; botao.innerText = 'Salvando...';
+
+  const dados = {
+    nome: document.getElementById('m_nome').value.trim(),
+    telefone: document.getElementById('m_telefone').value.trim(),
+    endereco: document.getElementById('m_endereco').value.trim(),
+    bairro: document.getElementById('m_bairro').value.trim(),
+    data: document.getElementById('m_data').value.trim(),
+    tipoAtendimento: document.getElementById('m_tipo').value,
+    status: document.getElementById('m_status').value,
+    responsavel: document.getElementById('m_responsavel').value.trim(),
+    indicador: document.getElementById('m_indicador').value.trim(),
+    observacoes: document.getElementById('m_obs').value.trim(),
+    ultimaEdicaoPor: USUARIO.nome,
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+
+  try {
+    if (docId) {
+      await updateDoc(doc(db, 'atendimentos', docId), dados);
+    } else {
+      dados.criadoPor = USUARIO.nome;
+      await addDoc(collection(db, 'atendimentos'), dados);
+    }
+    document.querySelector('.modal-fundo').remove();
+    window.RENDERIZADORES.atendimentos();
+  } catch (e) {
+    alert('Não foi possível salvar: ' + e.message);
+    botao.disabled = false; botao.innerText = 'Salvar';
+  }
+}
+window.salvarAtendimento = salvarAtendimento;
+
+async function excluirAtendimento(docId) {
+  if (!confirm('Excluir este atendimento? Não tem como desfazer.')) return;
+  try {
+    await deleteDoc(doc(db, 'atendimentos', docId));
+    window.RENDERIZADORES.atendimentos();
+  } catch (e) {
+    alert('Não foi possível excluir: ' + e.message);
+  }
+}
+window.excluirAtendimento = excluirAtendimento;
 </script>
 </body>
 </html>
