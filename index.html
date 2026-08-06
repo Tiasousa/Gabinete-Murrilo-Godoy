@@ -119,6 +119,18 @@
   .campo-modal textarea{resize:vertical;min-height:70px;font-family:inherit;}
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .modal-acoes{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;}
+  .resultados-busca-pessoa{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--fundo);border:1px solid var(--acento);border-radius:var(--raio-s);max-height:220px;overflow-y:auto;z-index:30;box-shadow:0 12px 30px rgba(0,0,0,.5);}
+  .item-resultado-pessoa{padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--borda);display:flex;flex-direction:column;gap:2px;}
+  .item-resultado-pessoa:last-child{border-bottom:none;}
+  .item-resultado-pessoa:hover{background:var(--superficie-sutil);}
+  .item-resultado-pessoa b{font-size:12.5px;color:#fff;}
+  .item-resultado-pessoa span{font-size:11px;color:var(--texto-fraco);}
+  .aviso-perfil{background:rgba(242,178,58,.12);border:1px solid rgba(242,178,58,.35);color:#F2B23A;padding:11px 15px;border-radius:var(--raio-s);font-size:12px;margin-bottom:16px;}
+  .kpis-mini-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .kpi-mini{display:flex;align-items:center;gap:10px;background:var(--superficie);border:1px solid var(--borda);border-radius:12px;padding:9px 14px;min-width:130px;}
+  .icone-kpi-mini{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .num-kpi-mini{font-size:16px;font-weight:800;color:#fff;line-height:1;}
+  .rot-kpi-mini{font-size:9px;color:var(--texto-fraco);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
 
   @media(max-width:640px){
     header.topo-app{padding:12px 16px;}
@@ -274,10 +286,11 @@ window.getUid = () => UID;
 
 const MODULOS = [
   { id: 'dashboard', label: '🏠 Dashboard', admin: false },
+  { id: 'eventos', label: '🎉 Eventos', admin: false },
+  { id: 'pessoas', label: '📇 Pessoas', admin: false },
   { id: 'atendimentos', label: '👥 Atendimentos', admin: false },
   { id: 'transportes', label: '🚐 Transportes', admin: false },
   { id: 'equipamentos', label: '🏆 Equipamentos', admin: false },
-  { id: 'pessoas', label: '📇 Pessoas', admin: false },
   { id: 'agenda', label: '📅 Agenda', admin: false },
   { id: 'relatorios', label: '📊 Relatórios', admin: false },
   { id: 'usuarios', label: '🔑 Usuários', admin: true },
@@ -326,7 +339,7 @@ function abrirApp() {
   document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
   document.getElementById('avatarTopo').innerText = iniciaisNome(USUARIO.nome);
   montarMenu();
-  irPara('dashboard');
+  carregarConfiguraveis().then(() => irPara('dashboard'));
 }
 
 function fecharApp() {
@@ -432,6 +445,106 @@ function badgeStatus(status) {
 }
 window.badgeStatus = badgeStatus;
 
+function linkWhatsapp(telefone) {
+  if (!telefone) return '-';
+  const numeros = String(telefone).replace(/\D/g, '');
+  if (!numeros) return telefone;
+  const comDDI = numeros.length <= 11 ? '55' + numeros : numeros;
+  return '<a href="https://wa.me/' + comDDI + '" target="_blank" style="color:#4ADE80;text-decoration:none;font-weight:700;">💬 ' + telefone + '</a>';
+}
+function linkWhatsappComMensagem(telefone, mensagem) {
+  const numeros = String(telefone || '').replace(/\D/g, '');
+  if (!numeros) return null;
+  const comDDI = numeros.length <= 11 ? '55' + numeros : numeros;
+  return 'https://wa.me/' + comDDI + '?text=' + encodeURIComponent(mensagem);
+}
+function diaEMesNascimento(dataNascimento) {
+  const partes = String(dataNascimento || '').split('/');
+  if (partes.length < 2) return null;
+  const dia = Number(partes[0]), mes = Number(partes[1]);
+  if (!dia || !mes) return null;
+  return { dia, mes };
+}
+function diasAteProximoAniversario(dataNascimento) {
+  const dm = diaEMesNascimento(dataNascimento);
+  if (!dm) return null;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  let proximo = new Date(hoje.getFullYear(), dm.mes - 1, dm.dia);
+  if (proximo < hoje) proximo = new Date(hoje.getFullYear() + 1, dm.mes - 1, dm.dia);
+  return Math.round((proximo - hoje) / (1000 * 60 * 60 * 24));
+}
+
+// ---- Tipos configuráveis (ADMIN cadastra em Configurações) e Pessoas ----
+let tiposAtendimentoCache = [];
+let tiposEquipamentoCache = [];
+let pessoasCache = [];
+async function carregarConfiguraveis() {
+  try {
+    const [ta, te, pe] = await Promise.all([
+      getDocs(collection(db, 'tiposAtendimento')),
+      getDocs(collection(db, 'tiposEquipamento')),
+      getDocs(collection(db, 'pessoas'))
+    ]);
+    tiposAtendimentoCache = ta.docs.map(d => ({ _docId: d.id, ...d.data() })).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+    tiposEquipamentoCache = te.docs.map(d => ({ _docId: d.id, ...d.data() })).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+    pessoasCache = pe.docs.map(d => ({ _docId: d.id, ...d.data() })).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+  } catch (e) {
+    tiposAtendimentoCache = []; tiposEquipamentoCache = []; pessoasCache = [];
+  }
+}
+
+function campoBuscaPessoa(prefixo) {
+  return `
+    <div class="campo-modal busca-pessoa-wrap" style="position:relative;grid-column:1/-1;">
+      <label>Buscar pessoa já cadastrada (nome, CPF, RG, título ou telefone)</label>
+      <input id="${prefixo}_buscaPessoa" placeholder="Comece a digitar..." autocomplete="off">
+      <div id="${prefixo}_resultadosPessoa" class="resultados-busca-pessoa hidden"></div>
+    </div>`;
+}
+function ligarBuscaPessoa(prefixo, mapaCampos) {
+  const input = document.getElementById(prefixo + '_buscaPessoa');
+  const resultados = document.getElementById(prefixo + '_resultadosPessoa');
+  if (!input || !resultados) return;
+  input.addEventListener('input', () => {
+    const termo = norm(input.value);
+    const termoNumeros = input.value.replace(/\D/g, '');
+    if (termo.length < 2) { resultados.classList.add('hidden'); resultados.innerHTML = ''; return; }
+    const encontrados = pessoasCache.filter(p =>
+      norm(p.nome).includes(termo) ||
+      (p.cpf && norm(p.cpf).includes(termo)) ||
+      (p.rg && norm(p.rg).includes(termo)) ||
+      (p.tituloEleitor && norm(p.tituloEleitor).includes(termo)) ||
+      (termoNumeros.length >= 3 && String(p.telefone || '').replace(/\D/g, '').includes(termoNumeros))
+    ).slice(0, 6);
+    if (!encontrados.length) {
+      resultados.innerHTML = '<div class="item-resultado-pessoa">Nenhuma pessoa encontrada. Preencha manualmente abaixo.</div>';
+      resultados.classList.remove('hidden');
+      return;
+    }
+    resultados.innerHTML = encontrados.map(p => `
+      <div class="item-resultado-pessoa" data-id="${p._docId}">
+        <b>${p.nome}</b>
+        <span>${p.cpf ? 'CPF ' + p.cpf + ' · ' : ''}${p.telefone || 'sem telefone'}</span>
+      </div>`).join('');
+    resultados.classList.remove('hidden');
+    resultados.querySelectorAll('.item-resultado-pessoa[data-id]').forEach(el => {
+      el.onclick = () => {
+        const pessoa = pessoasCache.find(p => p._docId === el.dataset.id);
+        if (!pessoa) return;
+        Object.keys(mapaCampos).forEach(campoPessoa => {
+          const alvo = document.getElementById(mapaCampos[campoPessoa]);
+          if (alvo && pessoa[campoPessoa]) alvo.value = pessoa[campoPessoa];
+        });
+        input.value = pessoa.nome;
+        resultados.classList.add('hidden');
+      };
+    });
+  });
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('.busca-pessoa-wrap')) resultados.classList.add('hidden');
+  });
+}
+
 let atendimentosCache = [];
 
 window.RENDERIZADORES.atendimentos = async function () {
@@ -499,12 +612,14 @@ const STATUS_ATENDIMENTO = ['EM ANALISE','CONCLUIDO','CANCELADO'];
 
 function abrirModalAtendimento(registro) {
   registro = registro || {};
+  const opcoesTipo = tiposAtendimentoCache.length ? tiposAtendimentoCache.map(t => t.nome) : TIPOS_ATENDIMENTO;
   const fundo = document.createElement('div');
   fundo.className = 'modal-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
   fundo.innerHTML = `
     <div class="modal" onclick="event.stopPropagation()">
       <h2>${registro._docId ? 'Editar' : 'Novo'} Atendimento</h2>
+      ${campoBuscaPessoa('m')}
       <div class="grid-2">
         <div class="campo-modal"><label>Nome</label><input id="m_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Telefone</label><input id="m_telefone" value="${(registro.telefone||'').replace(/"/g,'&quot;')}"></div>
@@ -516,7 +631,7 @@ function abrirModalAtendimento(registro) {
       </div>
       <div class="grid-2">
         <div class="campo-modal"><label>Tipo de Atendimento</label>
-          <select id="m_tipo">${TIPOS_ATENDIMENTO.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select>
+          <select id="m_tipo">${opcoesTipo.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select>
         </div>
         <div class="campo-modal"><label>Status</label>
           <select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select>
@@ -533,6 +648,7 @@ function abrirModalAtendimento(registro) {
       </div>
     </div>`;
   document.body.appendChild(fundo);
+  ligarBuscaPessoa('m', { nome: 'm_nome', telefone: 'm_telefone', endereco: 'm_endereco', bairro: 'm_bairro' });
 }
 window.abrirModalAtendimento = abrirModalAtendimento;
 
@@ -582,6 +698,194 @@ async function excluirAtendimento(docId) {
   }
 }
 window.excluirAtendimento = excluirAtendimento;
+
+// ---------------- TRANSPORTES ----------------
+let transportesCache = [];
+window.RENDERIZADORES.transportes = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const snap = await getDocs(collection(db, 'transportes'));
+  transportesCache = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+  desenharTransportes();
+};
+let filtroTranspTexto = '';
+function aplicarFiltroTransp() {
+  filtroTranspTexto = norm(document.getElementById('fTextoTransp').value);
+  desenharTransportes();
+}
+window.aplicarFiltroTransp = aplicarFiltroTransp;
+function desenharTransportes() {
+  const c = document.getElementById('conteudo');
+  const lista = transportesCache.filter(t => !filtroTranspTexto || norm(t.nome).includes(filtroTranspTexto) || norm(t.hospital).includes(filtroTranspTexto));
+  const podeEditar = !somenteLeitura();
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <h2>Solicitação de <span class="destaque">Transportes</span></h2>
+      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalTransporte()">+ Nova Solicitação</button>' : ''}
+    </div>
+    <div class="barra-acoes"><input id="fTextoTransp" placeholder="Buscar por nome ou hospital..." oninput="aplicarFiltroTransp()"></div>
+    <div class="tabela-box"><table>
+      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Contato</th><th>Confirmado</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <tbody>
+        ${lista.map(t => `<tr>
+          <td>${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td>
+          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.confirmado)}</td>
+          ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirTransporte('${t._docId}')">Excluir</button></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
+      </tbody>
+    </table></div>`;
+}
+function abrirModalTransporte(registro) {
+  registro = registro || {};
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${registro._docId ? 'Editar' : 'Nova'} Solicitação de Transporte</h2>
+      ${campoBuscaPessoa('t')}
+      <div class="grid-2">
+        <div class="campo-modal"><label>Nome</label><input id="t_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Contato</label><input id="t_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Data</label><input id="t_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Horário</label><input id="t_horario" placeholder="hh:mm" value="${(registro.horario||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarTransp" onclick="salvarTransporte('${registro._docId||''}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+  ligarBuscaPessoa('t', { nome: 't_nome', telefone: 't_contato' });
+}
+window.abrirModalTransporte = abrirModalTransporte;
+async function salvarTransporte(docId) {
+  const botao = document.getElementById('btnSalvarTransp');
+  if (botao.disabled) return;
+  botao.disabled = true; botao.innerText = 'Salvando...';
+  const dados = {
+    nome: document.getElementById('t_nome').value.trim(),
+    contato: document.getElementById('t_contato').value.trim(),
+    data: document.getElementById('t_data').value.trim(),
+    horario: document.getElementById('t_horario').value.trim(),
+    hospital: document.getElementById('t_hospital').value.trim(),
+    confirmado: document.getElementById('t_confirmado').value,
+    ultimaEdicaoPor: USUARIO.nome,
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+  try {
+    if (docId) { await updateDoc(doc(db, 'transportes', docId), dados); }
+    else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'transportes'), dados); }
+    document.querySelector('.modal-fundo').remove();
+    window.RENDERIZADORES.transportes();
+  } catch (e) {
+    alert('Não foi possível salvar: ' + e.message);
+    botao.disabled = false; botao.innerText = 'Salvar';
+  }
+}
+window.salvarTransporte = salvarTransporte;
+async function excluirTransporte(docId) {
+  if (!confirm('Excluir esta solicitação?')) return;
+  try { await deleteDoc(doc(db, 'transportes', docId)); window.RENDERIZADORES.transportes(); }
+  catch (e) { alert('Não foi possível excluir: ' + e.message); }
+}
+window.excluirTransporte = excluirTransporte;
+
+// ---------------- EQUIPAMENTOS ----------------
+const TIPOS_EQUIPAMENTO_SEMENTE = ['MULETAS','CADEIRA DE RODAS','CADEIRA DE BANHO','COLCHAO','ANDADOR'];
+let equipCacheLista = [];
+window.RENDERIZADORES.equipamentos = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const snap = await getDocs(collection(db, 'equipamentos'));
+  equipCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+  desenharEquip();
+};
+function desenharEquip() {
+  const c = document.getElementById('conteudo');
+  const podeEditar = !somenteLeitura();
+  const emUso = equipCacheLista.filter(e => norm(e.devolucao) === 'USANDO').length;
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <h2>Controle de <span class="destaque">Equipamentos</span></h2>
+      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalEquip()">+ Novo Empréstimo</button>' : ''}
+    </div>
+    <div class="kpis-mini-row" style="margin-bottom:16px;">
+      <div class="kpi-mini"><div class="icone-kpi-mini" style="background:rgba(229,39,45,.15);color:#F26D6D;">🏆</div><div><div class="num-kpi-mini">${equipCacheLista.length}</div><div class="rot-kpi-mini">Total</div></div></div>
+      <div class="kpi-mini"><div class="icone-kpi-mini" style="background:rgba(242,178,58,.15);color:#F2B23A;">📦</div><div><div class="num-kpi-mini">${emUso}</div><div class="rot-kpi-mini">Em uso</div></div></div>
+    </div>
+    <div class="tabela-box"><table>
+      <thead><tr><th>Nome</th><th>Equipamento</th><th>Contato</th><th>Status</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <tbody>
+        ${equipCacheLista.map(e => `<tr>
+          <td>${e.nome||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${badgeStatus(e.devolucao)}</td>
+          ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEquip('${e._docId}')">Excluir</button></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
+      </tbody>
+    </table></div>`;
+}
+function abrirModalEquip(registro) {
+  registro = registro || {};
+  const opcoes = tiposEquipamentoCache.length ? tiposEquipamentoCache.map(t => t.nome) : TIPOS_EQUIPAMENTO_SEMENTE;
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${registro._docId ? 'Editar' : 'Novo'} Empréstimo</h2>
+      ${campoBuscaPessoa('e')}
+      <div class="grid-2">
+        <div class="campo-modal"><label>Nome</label><input id="e_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Contato</label><input id="e_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarEquip" onclick="salvarEquip('${registro._docId||''}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+  ligarBuscaPessoa('e', { nome: 'e_nome', telefone: 'e_contato' });
+}
+window.abrirModalEquip = abrirModalEquip;
+async function salvarEquip(docId) {
+  const botao = document.getElementById('btnSalvarEquip');
+  if (botao.disabled) return;
+  botao.disabled = true; botao.innerText = 'Salvando...';
+  const dados = {
+    nome: document.getElementById('e_nome').value.trim(),
+    contato: document.getElementById('e_contato').value.trim(),
+    equipamento: document.getElementById('e_equipamento').value,
+    devolucao: document.getElementById('e_devolucao').value,
+    ultimaEdicaoPor: USUARIO.nome,
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+  try {
+    if (docId) { await updateDoc(doc(db, 'equipamentos', docId), dados); }
+    else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'equipamentos'), dados); }
+    document.querySelector('.modal-fundo').remove();
+    window.RENDERIZADORES.equipamentos();
+  } catch (e) {
+    alert('Não foi possível salvar: ' + e.message);
+    botao.disabled = false; botao.innerText = 'Salvar';
+  }
+}
+window.salvarEquip = salvarEquip;
+async function excluirEquip(docId) {
+  if (!confirm('Excluir este empréstimo?')) return;
+  try { await deleteDoc(doc(db, 'equipamentos', docId)); window.RENDERIZADORES.equipamentos(); }
+  catch (e) { alert('Não foi possível excluir: ' + e.message); }
+}
+window.excluirEquip = excluirEquip;
 </script>
 </body>
 </html>
