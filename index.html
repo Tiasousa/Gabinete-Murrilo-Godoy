@@ -83,16 +83,10 @@
   .btn-secundario{background:var(--superficie-sutil);color:var(--texto);border:1px solid var(--borda);border-radius:var(--raio-s);padding:9px 14px;font-weight:700;font-size:12.5px;}
   .btn-secundario:hover{background:#132238;}
 
-  .kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
-  .kpi-card{border-radius:var(--raio-m);padding:20px 22px;color:#fff;position:relative;overflow:hidden;min-height:100px;}
-  .kpi-card .icone-kpi{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:16px;}
-  .kpi-card .num{font-size:28px;font-weight:900;letter-spacing:-.5px;line-height:1;}
-  .kpi-card .rot{font-size:10.5px;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:6px;}
-  .kpi-azul{background:linear-gradient(135deg,#1F6FD1 0%,#0B3F80 100%);}
-  .kpi-verde{background:linear-gradient(135deg,#16A34A 0%,#0A5C2A 100%);}
-  .kpi-amarelo{background:linear-gradient(135deg,#D9A300 0%,#8A6600 100%);}
-  .kpi-roxo{background:linear-gradient(135deg,#7C4FD1 0%,#43267A 100%);}
-  .kpi-vermelho{background:linear-gradient(135deg,var(--acento) 0%,#5A1013 100%);}
+  .kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px;}
+  .kpi-card{background:var(--superficie);border:1px solid var(--borda);border-left:4px solid var(--acento);border-radius:var(--raio-s);padding:18px 20px;}
+  .kpi-card .num{font-size:28px;font-weight:900;letter-spacing:-.5px;line-height:1;color:#fff;}
+  .kpi-card .rot{font-size:10.5px;color:var(--acento);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-top:6px;}
 
   .grafico-box,.painel-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:20px;}
   .grafico-box h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto-suave);}
@@ -102,7 +96,7 @@
   /* ===== Tabela ===== */
   .tabela-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);overflow-x:auto;}
   table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  thead th{text-align:left;padding:12px 14px;color:var(--texto-fraco);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;font-weight:800;border-bottom:1px solid var(--borda);white-space:nowrap;}
+  thead th{text-align:left;padding:12px 14px;color:var(--acento);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;font-weight:800;border-bottom:1px solid var(--borda);background:rgba(229,39,45,.06);white-space:nowrap;}
   tbody td{padding:11px 14px;border-bottom:1px solid rgba(132,158,190,.08);vertical-align:middle;}
   tbody tr:hover{background:rgba(255,255,255,.02);}
   .barra-acoes{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
@@ -413,10 +407,10 @@ window.RENDERIZADORES.dashboard = async function () {
   c.innerHTML = `
     <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
     <div class="kpis-grid">
-      <div class="kpi-card kpi-azul"><div class="icone-kpi">👥</div><div class="num">${atend.length}</div><div class="rot">Atendimentos</div></div>
-      <div class="kpi-card kpi-verde"><div class="icone-kpi">🚐</div><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
-      <div class="kpi-card kpi-amarelo"><div class="icone-kpi">🏆</div><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
-      <div class="kpi-card kpi-roxo"><div class="icone-kpi">📇</div><div class="num">${totalPessoas}</div><div class="rot">Pessoas cadastradas</div></div>
+      <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos</div></div>
+      <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
+      <div class="kpi-card"><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
+      <div class="kpi-card"><div class="num">${totalPessoas}</div><div class="rot">Pessoas cadastradas</div></div>
     </div>
     <div class="painel-box">
       <h3 style="margin-top:0;">🎂 Aniversariantes</h3>
