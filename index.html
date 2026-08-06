@@ -84,9 +84,15 @@
   .btn-secundario:hover{background:#132238;}
 
   .kpis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px;}
-  .kpi-card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:18px;}
-  .kpi-card .num{font-size:28px;font-weight:900;}
-  .kpi-card .rot{font-size:10.5px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:4px;}
+  .kpi-card{border-radius:var(--raio-m);padding:20px 22px;color:#fff;position:relative;overflow:hidden;min-height:100px;}
+  .kpi-card .icone-kpi{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:16px;}
+  .kpi-card .num{font-size:28px;font-weight:900;letter-spacing:-.5px;line-height:1;}
+  .kpi-card .rot{font-size:10.5px;color:rgba(255,255,255,.9);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-top:6px;}
+  .kpi-azul{background:linear-gradient(135deg,#1F6FD1 0%,#0B3F80 100%);}
+  .kpi-verde{background:linear-gradient(135deg,#16A34A 0%,#0A5C2A 100%);}
+  .kpi-amarelo{background:linear-gradient(135deg,#D9A300 0%,#8A6600 100%);}
+  .kpi-roxo{background:linear-gradient(135deg,#7C4FD1 0%,#43267A 100%);}
+  .kpi-vermelho{background:linear-gradient(135deg,var(--acento) 0%,#5A1013 100%);}
 
   .grafico-box,.painel-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:20px;}
   .grafico-box h3{margin:0 0 14px;font-size:13px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto-suave);}
@@ -148,7 +154,7 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, onSnapshot, collection, query, orderBy, limit
+  getFirestore, doc, getDoc, getDocs, onSnapshot, collection, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ---- Config real do projeto Gabinete-Murillo Godoy ----
@@ -357,13 +363,32 @@ onAuthStateChanged(auth, async (user) => {
 window.RENDERIZADORES = window.RENDERIZADORES || {};
 window.RENDERIZADORES.dashboard = async function () {
   const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+
+  const [atendSnap, transpSnap, equipSnap, pessoasSnap] = await Promise.all([
+    getDocs(collection(db, 'atendimentos')),
+    getDocs(collection(db, 'transportes')),
+    getDocs(collection(db, 'equipamentos')),
+    getDocs(collection(db, 'pessoas'))
+  ]);
+
+  const atend = atendSnap.docs.map(d => d.data());
+  const transp = transpSnap.docs.map(d => d.data());
+  const equip = equipSnap.docs.map(d => d.data());
+  const totalPessoas = pessoasSnap.size;
+
+  const norm = s => (s || '').toString().trim().toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const equipEmUso = equip.filter(e => norm(e.devolucao) === 'USANDO').length;
+
   c.innerHTML = `
     <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
     <div class="kpis-grid">
-      <div class="kpi-card"><div class="num">—</div><div class="rot">Atendimentos</div></div>
-      <div class="kpi-card"><div class="num">—</div><div class="rot">Transportes</div></div>
-      <div class="kpi-card"><div class="num">—</div><div class="rot">Equipamentos em uso</div></div>
-      <div class="kpi-card"><div class="num">—</div><div class="rot">Pessoas cadastradas</div></div>
+      <div class="kpi-card kpi-azul"><div class="icone-kpi">👥</div><div class="num">${atend.length}</div><div class="rot">Atendimentos</div></div>
+      <div class="kpi-card kpi-verde"><div class="icone-kpi">🚐</div><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
+      <div class="kpi-card kpi-amarelo"><div class="icone-kpi">🏆</div><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
+      <div class="kpi-card kpi-roxo"><div class="icone-kpi">📇</div><div class="num">${totalPessoas}</div><div class="rot">Pessoas cadastradas</div></div>
     </div>
     <div class="painel-box">
       <h3 style="margin-top:0;">🎂 Aniversariantes</h3>
