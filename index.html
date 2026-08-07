@@ -887,5 +887,15 @@ async function excluirEquip(docId) {
 }
 window.excluirEquip = excluirEquip;
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.error('Erro ao registrar Service Worker:', err));
+  });
+}
+</script>
+
 </body>
 </html>
