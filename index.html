@@ -154,6 +154,81 @@
   .rot-kpi-mini{font-size:9px;color:var(--texto-fraco);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
 
 
+
+  /* ===== DASHBOARD PREMIUM ===== */
+  .dash-topo{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+  .dash-topo h2{margin:0;font-size:24px;font-weight:900;}
+  .dash-topo p{margin:5px 0 0;color:var(--texto-fraco);font-size:11.5px;}
+  .dash-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px;}
+  .dash-kpi{position:relative;overflow:hidden;background:linear-gradient(180deg,#0B1B2F,#091626);border:1px solid var(--borda);border-radius:14px;padding:16px 16px 14px;min-height:96px;}
+  .dash-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acento);}
+  .dash-kpi .icone{position:absolute;right:13px;top:12px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(229,39,45,.12);font-size:15px;}
+  .dash-kpi .valor{font-size:29px;line-height:1;font-weight:900;color:#fff;}
+  .dash-kpi .label{margin-top:8px;font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:900;color:#8EA3BF;max-width:150px;}
+  .dash-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;margin-bottom:14px;}
+  .dash-grid-3{display:grid;grid-template-columns:1.1fr .9fr .8fr;gap:14px;margin-bottom:14px;}
+  .dash-card{background:var(--superficie);border:1px solid var(--borda);border-radius:14px;padding:16px;min-width:0;}
+  .dash-card h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#DDE6F2;}
+  .dash-sub{font-size:10px;color:var(--texto-fraco);margin-top:4px;}
+  .dash-status-wrap{display:flex;align-items:center;gap:24px;min-height:210px;}
+  .dash-donut{width:150px;height:150px;border-radius:50%;position:relative;flex:0 0 150px;}
+  .dash-donut::after{content:"";position:absolute;inset:30px;border-radius:50%;background:var(--superficie);border:1px solid var(--borda);}
+  .dash-donut-centro{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+  .dash-donut-centro b{font-size:25px;color:#fff;}
+  .dash-donut-centro span{font-size:8px;text-transform:uppercase;color:var(--texto-fraco);font-weight:900;letter-spacing:.5px;}
+  .dash-legenda{display:flex;flex-direction:column;gap:9px;flex:1;}
+  .dash-legenda-item{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;font-size:11px;color:var(--texto-suave);}
+  .dash-legenda-cor{width:8px;height:8px;border-radius:50%;}
+  .dash-legenda-item b{color:#fff;}
+  .dash-barras{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+  .dash-barra-linha{display:grid;grid-template-columns:minmax(100px,180px) 1fr 36px;align-items:center;gap:10px;}
+  .dash-barra-rot{font-size:10px;color:var(--texto-suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dash-barra-trilho{height:8px;border-radius:20px;background:#12253B;overflow:hidden;}
+  .dash-barra-preench{height:100%;border-radius:20px;background:linear-gradient(90deg,#D61F26,#F05258);}
+  .dash-barra-num{text-align:right;font-size:10px;color:#fff;font-weight:800;}
+  .dash-lista{margin-top:13px;display:flex;flex-direction:column;gap:7px;}
+  .dash-lista-item{display:grid;grid-template-columns:1.15fr .8fr auto;gap:9px;align-items:center;padding:8px 9px;border:1px solid #17304C;border-radius:9px;background:#09182A;font-size:10.5px;}
+  .dash-lista-item b{font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dash-lista-item span{color:#8EA3BF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dash-bairros{margin-top:13px;display:flex;flex-direction:column;gap:9px;}
+  .dash-bairro-linha{display:grid;grid-template-columns:120px 1fr 32px;gap:8px;align-items:center;font-size:10px;}
+  .dash-bairro-linha .nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--texto-suave);}
+  .dash-bairro-linha .trilho{height:7px;border-radius:10px;background:#12253B;overflow:hidden;}
+  .dash-bairro-linha .fill{height:100%;background:#426B9B;border-radius:10px;}
+  .dash-bairro-linha b{text-align:right;color:#fff;}
+  .acoes-rapidas{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px;}
+  .acao-rapida{border:1px solid var(--borda);background:#0A1A2E;color:#E9EFF8;padding:12px 9px;border-radius:10px;text-align:left;font-weight:800;font-size:10.5px;cursor:pointer;}
+  .acao-rapida:hover{border-color:#476685;background:#0D2239;}
+  .acao-rapida span{display:block;font-size:16px;margin-bottom:5px;}
+  .dash-agenda-lista{margin-top:13px;display:flex;flex-direction:column;gap:8px;}
+  .dash-agenda-item{display:grid;grid-template-columns:52px 1fr;gap:9px;padding:8px;border:1px solid #17304C;border-radius:9px;background:#09182A;}
+  .dash-agenda-data{font-size:9px;color:#FF6B70;font-weight:900;text-align:center;text-transform:uppercase;}
+  .dash-agenda-texto b{display:block;font-size:10.5px;color:#fff;}
+  .dash-agenda-texto span{font-size:9.5px;color:#8198B7;}
+  .dash-rodape{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .dash-indicador{background:#081625;border:1px solid var(--borda);border-radius:12px;padding:12px 14px;}
+  .dash-indicador b{display:block;font-size:19px;color:#fff;}
+  .dash-indicador span{font-size:8.5px;text-transform:uppercase;color:#7F91AA;font-weight:900;letter-spacing:.5px;}
+  .dash-vazio{padding:28px 10px;text-align:center;color:var(--texto-fraco);font-size:11px;}
+
+  @media(max-width:1150px){
+    .dash-kpis{grid-template-columns:repeat(3,1fr);}
+    .dash-grid-3{grid-template-columns:1fr 1fr;}
+    .dash-grid-3 .dash-card:last-child{grid-column:1/-1;}
+  }
+  @media(max-width:820px){
+    .dash-kpis{grid-template-columns:1fr 1fr;}
+    .dash-grid-2,.dash-grid-3{grid-template-columns:1fr;}
+    .dash-grid-3 .dash-card:last-child{grid-column:auto;}
+    .dash-status-wrap{flex-direction:column;align-items:flex-start;}
+    .dash-rodape{grid-template-columns:1fr;}
+  }
+  @media(max-width:520px){
+    .dash-kpis{grid-template-columns:1fr;}
+    .acoes-rapidas{grid-template-columns:1fr;}
+    .dash-barra-linha{grid-template-columns:95px 1fr 28px;}
+  }
+
   /* ===== AGENDA — layout do Tatiquinho adaptado ao Murillo ===== */
   main.modo-agenda{height:calc(100vh - 122px);overflow:hidden;display:flex;flex-direction:column;padding-bottom:20px;}
   main.modo-agenda .topo-pagina{flex:0 0 auto;}
@@ -505,44 +580,200 @@ onAuthStateChanged(auth, async (user) => {
   });
 });
 
-// ---------------- DASHBOARD (provisório — outros módulos entram depois) ----------------
+// ---------------- DASHBOARD ----------------
 window.RENDERIZADORES = window.RENDERIZADORES || {};
 window.RENDERIZADORES.dashboard = async function () {
   const c = document.getElementById('conteudo');
-  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  c.classList.remove('modo-agenda');
+  c.innerHTML = '<div class="carregando-tela">Carregando Dashboard...</div>';
 
-  const [atendSnap, transpSnap, equipSnap, pessoasSnap] = await Promise.all([
-    getDocs(collection(db, 'atendimentos')),
-    getDocs(collection(db, 'transportes')),
-    getDocs(collection(db, 'equipamentos')),
-    getDocs(collection(db, 'pessoas'))
-  ]);
+  try{
+    const [atendSnap, transpSnap, equipSnap, pessoasSnap, agendaSnap] = await Promise.all([
+      getDocs(collection(db, 'atendimentos')),
+      getDocs(collection(db, 'transportes')),
+      getDocs(collection(db, 'equipamentos')),
+      getDocs(collection(db, 'pessoas')),
+      getDocs(collection(db, 'agendaEventos'))
+    ]);
 
-  const atend = atendSnap.docs.map(d => d.data());
-  const transp = transpSnap.docs.map(d => d.data());
-  const equip = equipSnap.docs.map(d => d.data());
-  const totalPessoas = pessoasSnap.size;
+    const atend = atendSnap.docs.map(d => ({_docId:d.id,...d.data()}));
+    const transp = transpSnap.docs.map(d => ({_docId:d.id,...d.data()}));
+    const equip = equipSnap.docs.map(d => ({_docId:d.id,...d.data()}));
+    const agenda = agendaSnap.docs.map(d => ({_docId:d.id,...d.data()}));
+    const totalPessoas = pessoasSnap.size;
 
-  const norm = s => (s || '').toString().trim().toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normaliza = s => (s || '').toString().trim().toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  const equipEmUso = equip.filter(e => norm(e.devolucao) === 'USANDO').length;
-  const transpConfirmados = transp.filter(t => norm(t.confirmado) === 'SIM').length;
-  const concluidos = atend.filter(a => norm(a.status) === 'CONCLUIDO').length;
-  const emAnalise = atend.filter(a => norm(a.status) === 'EM ANALISE').length;
-  const cancelados = atend.filter(a => norm(a.status) === 'CANCELADO').length;
+    const parseBR = txt => {
+      const m=String(txt||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(!m) return null;
+      const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));
+      d.setHours(0,0,0,0);
+      return isNaN(d.getTime())?null:d;
+    };
 
-  c.innerHTML = `
-    <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
-    <div class="kpis-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
-      <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos totais</div></div>
-      <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes solicitados</div></div>
-      <div class="kpi-card"><div class="num">${transpConfirmados}</div><div class="rot">Transportes confirmados</div></div>
-      <div class="kpi-card"><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
-      <div class="kpi-card"><div class="num">${concluidos}</div><div class="rot">Atendimentos concluídos</div></div>
-    </div>
-    <div class="painel-box"><h3 style="margin-top:0;">Resumo operacional</h3><p style="color:var(--texto-fraco);font-size:13px;">Em análise: <b>${emAnalise}</b> &nbsp; • &nbsp; Cancelados: <b>${cancelados}</b> &nbsp; • &nbsp; Pessoas cadastradas: <b>${totalPessoas}</b></p></div>
-  `;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+    const concluidos = atend.filter(a => normaliza(a.status) === 'CONCLUIDO').length;
+    const emAnalise = atend.filter(a => normaliza(a.status) === 'EM ANALISE').length;
+    const cancelados = atend.filter(a => normaliza(a.status) === 'CANCELADO').length;
+    const transpConfirmados = transp.filter(t => normaliza(t.confirmado) === 'SIM').length;
+    const equipEmUso = equip.filter(e => normaliza(e.devolucao) === 'USANDO').length;
+
+    const ciclos = atend.map(a => {
+      if(a.cicloDias!==undefined && a.cicloDias!==null && !isNaN(Number(a.cicloDias))) return Number(a.cicloDias);
+      if(a.ciclo!==undefined && a.ciclo!==null && !isNaN(Number(a.ciclo))) return Number(a.ciclo);
+      const ini=parseBR(a.data);
+      const fim=parseBR(a.finalizado||a.dataFinalizacao||a.finalizadoEm);
+      if(!ini||!fim) return null;
+      return Math.max(0,Math.round((fim-ini)/86400000));
+    }).filter(v=>v!==null && Number.isFinite(v));
+
+    const mediaDias = ciclos.length ? (ciclos.reduce((s,v)=>s+v,0)/ciclos.length) : 0;
+
+    const atendMes = atend.filter(a => {
+      const d=parseBR(a.data);
+      return d && d>=inicioMes && d<=hoje;
+    }).length;
+
+    const resolutividade = atend.length ? Math.round((concluidos/atend.length)*100) : 0;
+
+    const statusTotal = Math.max(atend.length,1);
+    const pctCon = (concluidos/statusTotal)*100;
+    const pctAna = (emAnalise/statusTotal)*100;
+    const pctCan = (cancelados/statusTotal)*100;
+    const donut = `conic-gradient(#22C55E 0 ${pctCon}%, #F2B23A ${pctCon}% ${pctCon+pctAna}%, #E5272D ${pctCon+pctAna}% ${pctCon+pctAna+pctCan}%, #324A66 ${pctCon+pctAna+pctCan}% 100%)`;
+
+    const conta = (lista, campo) => {
+      const mapa={};
+      lista.forEach(x=>{
+        const chave=String(x[campo]||'Sem informação').trim()||'Sem informação';
+        mapa[chave]=(mapa[chave]||0)+1;
+      });
+      return Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
+    };
+
+    const tipos = conta(atend,'tipoAtendimento').slice(0,8);
+    const maxTipo = Math.max(...tipos.map(x=>x[1]),1);
+    const bairros = conta(atend,'bairro').slice(0,7);
+    const maxBairro = Math.max(...bairros.map(x=>x[1]),1);
+
+    const ultimos = [...atend].sort((a,b)=>{
+      const da=parseBR(a.data), db=parseBR(b.data);
+      return (db?db.getTime():0)-(da?da.getTime():0);
+    }).slice(0,7);
+
+    const hojeISO = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+    const agendaProxima = agenda
+      .filter(e => e.data && e.data >= hojeISO && normaliza(e.status)!=='CANCELADO')
+      .sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora))
+      .slice(0,5);
+
+    c.innerHTML = `
+      <div class="dash-topo">
+        <div>
+          <h2>Visão <span style="color:var(--acento)">Geral</span></h2>
+          <p>Resumo operacional do Gabinete Digital em tempo real.</p>
+        </div>
+        <div style="font-size:10px;color:var(--texto-fraco);">Pessoas cadastradas: <b style="color:#fff">${totalPessoas}</b></div>
+      </div>
+
+      <div class="dash-kpis">
+        <div class="dash-kpi"><div class="icone">👥</div><div class="valor">${atend.length}</div><div class="label">Atendimentos Totais</div></div>
+        <div class="dash-kpi"><div class="icone">🚐</div><div class="valor">${transp.length}</div><div class="label">Transportes Solicitados</div></div>
+        <div class="dash-kpi"><div class="icone">✅</div><div class="valor">${transpConfirmados}</div><div class="label">Transportes Confirmados</div></div>
+        <div class="dash-kpi"><div class="icone">🏆</div><div class="valor">${equipEmUso}</div><div class="label">Equipamentos em Uso</div></div>
+        <div class="dash-kpi"><div class="icone">⏱️</div><div class="valor">${mediaDias.toFixed(1)}</div><div class="label">Dias Médios por Atendimento</div></div>
+      </div>
+
+      <div class="dash-grid-2">
+        <div class="dash-card">
+          <h3>Atendimentos por Status</h3>
+          <div class="dash-sub">Distribuição atual dos registros.</div>
+          <div class="dash-status-wrap">
+            <div style="position:relative">
+              <div class="dash-donut" style="background:${donut}"></div>
+              <div class="dash-donut-centro"><b>${atend.length}</b><span>Total</span></div>
+            </div>
+            <div class="dash-legenda">
+              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#22C55E"></span><span>Concluídos</span><b>${concluidos}</b></div>
+              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#F2B23A"></span><span>Em análise</span><b>${emAnalise}</b></div>
+              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#E5272D"></span><span>Cancelados</span><b>${cancelados}</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <h3>Atendimentos por Tipo</h3>
+          <div class="dash-sub">Tipos mais registrados no sistema.</div>
+          ${tipos.length ? `<div class="dash-barras">${tipos.map(([nome,qtd])=>`
+            <div class="dash-barra-linha">
+              <div class="dash-barra-rot" title="${escapar(nome)}">${escapar(nome)}</div>
+              <div class="dash-barra-trilho"><div class="dash-barra-preench" style="width:${Math.max(4,(qtd/maxTipo)*100)}%"></div></div>
+              <div class="dash-barra-num">${qtd}</div>
+            </div>`).join('')}</div>` : '<div class="dash-vazio">Ainda não há tipos de atendimento para exibir.</div>'}
+        </div>
+      </div>
+
+      <div class="dash-grid-3">
+        <div class="dash-card">
+          <h3>Últimos Atendimentos</h3>
+          <div class="dash-sub">Registros mais recentes.</div>
+          ${ultimos.length ? `<div class="dash-lista">${ultimos.map(a=>`
+            <div class="dash-lista-item">
+              <b title="${escapar(a.nome||'-')}">${escapar(a.nome||'-')}</b>
+              <span title="${escapar(a.tipoAtendimento||'-')}">${escapar(a.tipoAtendimento||'-')}</span>
+              ${badgeStatus(a.status)}
+            </div>`).join('')}</div>` : '<div class="dash-vazio">Nenhum atendimento cadastrado.</div>'}
+        </div>
+
+        <div class="dash-card">
+          <h3>Atendimentos por Bairro</h3>
+          <div class="dash-sub">Bairros com maior volume de atendimentos.</div>
+          ${bairros.length ? `<div class="dash-bairros">${bairros.map(([nome,qtd])=>`
+            <div class="dash-bairro-linha">
+              <div class="nome" title="${escapar(nome)}">${escapar(nome)}</div>
+              <div class="trilho"><div class="fill" style="width:${Math.max(5,(qtd/maxBairro)*100)}%"></div></div>
+              <b>${qtd}</b>
+            </div>`).join('')}</div>` : '<div class="dash-vazio">Ainda não há bairros registrados.</div>'}
+        </div>
+
+        <div class="dash-card">
+          <h3>Ações Rápidas</h3>
+          <div class="dash-sub">Acesso direto aos módulos principais.</div>
+          <div class="acoes-rapidas">
+            <button class="acao-rapida" onclick="irPara('atendimentos')"><span>👥</span>Novo Atendimento</button>
+            <button class="acao-rapida" onclick="irPara('transportes')"><span>🚐</span>Solicitar Transporte</button>
+            <button class="acao-rapida" onclick="irPara('equipamentos')"><span>🏆</span>Equipamentos</button>
+            <button class="acao-rapida" onclick="irPara('agenda')"><span>📅</span>Ver Agenda</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="margin-bottom:14px">
+        <h3>Próximos Compromissos</h3>
+        <div class="dash-sub">Compromissos futuros cadastrados na Agenda.</div>
+        ${agendaProxima.length ? `<div class="dash-agenda-lista">${agendaProxima.map(e=>{
+          const [y,m,d]=e.data.split('-');
+          return `<div class="dash-agenda-item">
+            <div class="dash-agenda-data">${d}/${m}<br>${escapar(e.hora||'--:--')}</div>
+            <div class="dash-agenda-texto"><b>${escapar(e.titulo||'Compromisso')}</b><span>${escapar(e.tipo||'')}${e.local?' · '+escapar(e.local):''}</span></div>
+          </div>`;
+        }).join('')}</div>` : '<div class="dash-vazio">Nenhum compromisso futuro cadastrado.</div>'}
+      </div>
+
+      <div class="dash-rodape">
+        <div class="dash-indicador"><b>${atendMes}</b><span>Atendimentos no mês</span></div>
+        <div class="dash-indicador"><b>${mediaDias.toFixed(1)} dias</b><span>Tempo médio de resolução</span></div>
+        <div class="dash-indicador"><b>${resolutividade}%</b><span>Resolutividade</span></div>
+      </div>
+    `;
+  }catch(e){
+    console.error('Erro Dashboard:', e);
+    c.innerHTML = '<div class="painel-box">Não foi possível carregar o Dashboard. '+String(e.message||e)+'</div>';
+  }
 };
 
 // ---------------- ATENDIMENTOS ----------------
