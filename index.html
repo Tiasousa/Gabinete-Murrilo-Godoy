@@ -480,19 +480,21 @@ window.RENDERIZADORES.dashboard = async function () {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   const equipEmUso = equip.filter(e => norm(e.devolucao) === 'USANDO').length;
+  const transpConfirmados = transp.filter(t => norm(t.confirmado) === 'SIM').length;
+  const concluidos = atend.filter(a => norm(a.status) === 'CONCLUIDO').length;
+  const emAnalise = atend.filter(a => norm(a.status) === 'EM ANALISE').length;
+  const cancelados = atend.filter(a => norm(a.status) === 'CANCELADO').length;
 
   c.innerHTML = `
     <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
-    <div class="kpis-grid">
-      <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos</div></div>
-      <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
+    <div class="kpis-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+      <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos totais</div></div>
+      <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes solicitados</div></div>
+      <div class="kpi-card"><div class="num">${transpConfirmados}</div><div class="rot">Transportes confirmados</div></div>
       <div class="kpi-card"><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
-      <div class="kpi-card"><div class="num">${totalPessoas}</div><div class="rot">Pessoas cadastradas</div></div>
+      <div class="kpi-card"><div class="num">${concluidos}</div><div class="rot">Atendimentos concluídos</div></div>
     </div>
-    <div class="painel-box">
-      <h3 style="margin-top:0;">🎂 Aniversariantes</h3>
-      <p style="color:var(--texto-fraco);font-size:13px;">Módulo Pessoas ainda não conectado — chega no próximo passo.</p>
-    </div>
+    <div class="painel-box"><h3 style="margin-top:0;">Resumo operacional</h3><p style="color:var(--texto-fraco);font-size:13px;">Em análise: <b>${emAnalise}</b> &nbsp; • &nbsp; Cancelados: <b>${cancelados}</b> &nbsp; • &nbsp; Pessoas cadastradas: <b>${totalPessoas}</b></p></div>
   `;
 };
 
@@ -853,20 +855,24 @@ function aplicarFiltroTransp() {
 window.aplicarFiltroTransp = aplicarFiltroTransp;
 function desenharTransportes() {
   const c = document.getElementById('conteudo');
-  const lista = transportesCache.filter(t => !filtroTranspTexto || norm(t.nome).includes(filtroTranspTexto) || norm(t.hospital).includes(filtroTranspTexto));
+  const lista = transportesCache.filter(t => !filtroTranspTexto || norm(t.nome).includes(filtroTranspTexto) || norm(t.hospital).includes(filtroTranspTexto) || norm(t.contato).includes(filtroTranspTexto));
+  const confirmados = transportesCache.filter(t => norm(t.confirmado)==='SIM').length;
+  const naoConfirmados = transportesCache.filter(t => norm(t.confirmado)==='NAO').length;
+  const espera = transportesCache.filter(t => norm(t.espera)==='SIM').length;
   const podeEditar = !somenteLeitura();
   c.innerHTML = `
     <div class="topo-pagina">
       <h2>Solicitação de <span class="destaque">Transportes</span></h2>
       ${podeEditar ? '<button class="btn-primario" onclick="abrirModalTransporte()">+ Nova Solicitação</button>' : ''}
     </div>
-    <div class="barra-acoes"><input id="fTextoTransp" placeholder="Buscar por nome ou hospital..." oninput="aplicarFiltroTransp()"></div>
+    <div class="kpis-mini-row" style="margin-bottom:14px;"><div class="kpi-mini"><div><div class="num-kpi-mini">${transportesCache.length}</div><div class="rot-kpi-mini">Total</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${confirmados}</div><div class="rot-kpi-mini">Confirmados</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${naoConfirmados}</div><div class="rot-kpi-mini">Não confirmados</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${espera}</div><div class="rot-kpi-mini">Lista de espera</div></div></div></div>
+    <div class="barra-acoes"><input id="fTextoTransp" placeholder="Buscar nome ou telefone..." oninput="aplicarFiltroTransp()"><button class="btn-secundario" onclick="window.RENDERIZADORES.transportes()">↻ Atualizar</button></div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Contato</th><th>Confirmado</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Espera</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th></th>':''}</tr></thead>
       <tbody>
         ${lista.map(t => `<tr>
-          <td>${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td>
-          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.confirmado)}</td>
+          <td>${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
+          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td>${badgeStatus(t.espera)}</td><td>${t.observacoes||'-'}</td><td>${t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirTransporte('${t._docId}')">Excluir</button></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
       </tbody>
@@ -889,10 +895,9 @@ function abrirModalTransporte(registro) {
         <div class="campo-modal"><label>Data</label><input id="t_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Horário</label><input id="t_horario" placeholder="hh:mm" value="${(registro.horario||'').replace(/"/g,'&quot;')}"></div>
       </div>
-      <div class="grid-2">
-        <div class="campo-modal"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div>
-        <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
-      </div>
+      <div class="grid-2"><div class="campo-modal"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div><div class="campo-modal"><label>Cidade</label><input id="t_cidade" value="${(registro.cidade||'').replace(/"/g,'&quot;')}"></div></div>
+      <div class="grid-2"><div class="campo-modal"><label>Acompanhante</label><select id="t_acompanhante"><option ${registro.acompanhante==='SIM'?'selected':''}>SIM</option><option ${registro.acompanhante==='NAO'?'selected':''}>NAO</option></select></div><div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div></div>
+      <div class="grid-2"><div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div><div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div></div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
         <button class="btn-primario" id="btnSalvarTransp" onclick="salvarTransporte('${registro._docId||''}')">Salvar</button>
@@ -912,6 +917,10 @@ async function salvarTransporte(docId) {
     data: document.getElementById('t_data').value.trim(),
     horario: document.getElementById('t_horario').value.trim(),
     hospital: document.getElementById('t_hospital').value.trim(),
+    cidade: document.getElementById('t_cidade').value.trim(),
+    acompanhante: document.getElementById('t_acompanhante').value,
+    espera: document.getElementById('t_espera').value,
+    observacoes: document.getElementById('t_observacoes').value.trim(),
     confirmado: document.getElementById('t_confirmado').value,
     ultimaEdicaoPor: USUARIO.nome,
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
@@ -948,20 +957,19 @@ function desenharEquip() {
   const c = document.getElementById('conteudo');
   const podeEditar = !somenteLeitura();
   const emUso = equipCacheLista.filter(e => norm(e.devolucao) === 'USANDO').length;
+  const tiposResumo = [...new Set([...TIPOS_EQUIPAMENTO_SEMENTE, ...equipCacheLista.map(e=>norm(e.equipamento)).filter(Boolean)])].slice(0,5);
   c.innerHTML = `
     <div class="topo-pagina">
       <h2>Controle de <span class="destaque">Equipamentos</span></h2>
       ${podeEditar ? '<button class="btn-primario" onclick="abrirModalEquip()">+ Novo Empréstimo</button>' : ''}
     </div>
-    <div class="kpis-mini-row" style="margin-bottom:16px;">
-      <div class="kpi-mini"><div class="icone-kpi-mini" style="background:rgba(229,39,45,.15);color:#F26D6D;">🏆</div><div><div class="num-kpi-mini">${equipCacheLista.length}</div><div class="rot-kpi-mini">Total</div></div></div>
-      <div class="kpi-mini"><div class="icone-kpi-mini" style="background:rgba(242,178,58,.15);color:#F2B23A;">📦</div><div><div class="num-kpi-mini">${emUso}</div><div class="rot-kpi-mini">Em uso</div></div></div>
-    </div>
+    <div class="kpis-mini-row" style="margin-bottom:16px;">${tiposResumo.map(tipo=>`<div class="kpi-mini"><div><div class="num-kpi-mini">${equipCacheLista.filter(e=>norm(e.equipamento)===tipo && norm(e.devolucao)==='USANDO').length}</div><div class="rot-kpi-mini">${tipo}</div></div></div>`).join('')}</div>
+    <div class="barra-acoes"><input placeholder="Buscar por nome, equipamento ou contato..." oninput="const q=norm(this.value);document.querySelectorAll('#tbEquip tr').forEach(r=>r.style.display=!q||norm(r.innerText).includes(q)?'':'none')"><button class="btn-secundario" onclick="window.RENDERIZADORES.equipamentos()">↻ Atualizar</button></div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Equipamento</th><th>Contato</th><th>Status</th>${podeEditar?'<th></th>':''}</tr></thead>
-      <tbody>
+      <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Última edição</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <tbody id="tbEquip">
         ${equipCacheLista.map(e => `<tr>
-          <td>${e.nome||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${badgeStatus(e.devolucao)}</td>
+          <td>${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEquip('${e._docId}')">Excluir</button></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
@@ -981,10 +989,8 @@ function abrirModalEquip(registro) {
         <div class="campo-modal"><label>Nome</label><input id="e_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Contato</label><input id="e_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
       </div>
-      <div class="grid-2">
-        <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
-        <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
-      </div>
+      <div class="grid-2"><div class="campo-modal"><label>Entrega</label><input id="e_entrega" placeholder="dd/mm/aaaa" value="${(registro.entrega||'').replace(/"/g,'&quot;')}"></div><div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div></div>
+      <div class="grid-2"><div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div><div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div></div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
         <button class="btn-primario" id="btnSalvarEquip" onclick="salvarEquip('${registro._docId||''}')">Salvar</button>
@@ -1002,6 +1008,8 @@ async function salvarEquip(docId) {
     nome: document.getElementById('e_nome').value.trim(),
     contato: document.getElementById('e_contato').value.trim(),
     equipamento: document.getElementById('e_equipamento').value,
+    entrega: document.getElementById('e_entrega').value.trim(),
+    responsavel: document.getElementById('e_responsavel').value.trim(),
     devolucao: document.getElementById('e_devolucao').value,
     ultimaEdicaoPor: USUARIO.nome,
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
