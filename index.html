@@ -153,6 +153,52 @@
   .num-kpi-mini{font-size:16px;font-weight:800;color:#fff;line-height:1;}
   .rot-kpi-mini{font-size:9px;color:var(--texto-fraco);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
 
+
+  /* ===== AGENDA — layout do Tatiquinho adaptado ao Murillo ===== */
+  main.modo-agenda{height:calc(100vh - 122px);overflow:hidden;display:flex;flex-direction:column;padding-bottom:20px;}
+  main.modo-agenda .topo-pagina{flex:0 0 auto;}
+  .agenda-layout{display:flex;gap:16px;flex:1;min-height:0;}
+  .agenda-layout > .agenda-box{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
+  .agenda-layout > .agenda-box.agenda-lateral{flex:0 0 320px;}
+  .agenda-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:16px 18px;}
+  .agenda-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex:0 0 auto;}
+  .mes-atual-agenda{font-size:15px;color:#fff;text-transform:capitalize;min-width:150px;text-align:center;}
+  .btn-nav-mes{background:var(--superficie-sutil);border:1px solid var(--borda);color:var(--texto);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:17px;line-height:1;flex-shrink:0;}
+  .btn-nav-mes:hover{border-color:var(--acento);color:#fff;background:rgba(229,39,45,.12);}
+  .agenda-cabecalho-dias{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:clamp(8px,1.2vw,10px);color:#7892B6;font-weight:900;letter-spacing:.45px;margin-bottom:6px;flex:0 0 auto;}
+  .agenda-grade{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,minmax(0,1fr));gap:4px;flex:1;min-height:0;}
+  .dia-agenda{border:1px solid var(--borda);border-radius:8px;padding:5px 7px;cursor:pointer;transition:border-color .15s ease,background .15s ease;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:#09182A;}
+  .dia-agenda:hover{border-color:#476685;background:#0C1E33;}
+  .dia-agenda.vazio{border-color:transparent;background:transparent;cursor:default;}
+  .dia-agenda.vazio:hover{border-color:transparent;background:transparent;}
+  .dia-agenda.hoje{border-color:var(--acento);}
+  .dia-agenda.hoje .num-dia-agenda{color:#FF6469;}
+  .dia-agenda.selecionado{background:#152034;border-color:var(--acento);box-shadow:inset 0 0 0 1px rgba(229,39,45,.25);}
+  .num-dia-agenda{font-size:clamp(10px,1.2vw,12.5px);font-weight:800;color:var(--texto);}
+  .pontos-dia-agenda{display:flex;gap:3px;margin-top:auto;flex-wrap:wrap;align-items:center;}
+  .ponto-evento{width:5px;height:5px;border-radius:50%;background:var(--acento);display:inline-block;flex-shrink:0;}
+  .mais-pontos{font-size:8px;color:var(--texto-fraco);font-weight:800;}
+  .agenda-lateral h3{margin:0 0 12px;font-size:14px;color:#fff;font-weight:900;flex:0 0 auto;}
+  .lista-eventos-dia{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;}
+  .item-evento-dia{display:flex;gap:9px;cursor:pointer;padding:8px;border-radius:8px;transition:background .15s ease;flex-shrink:0;border:1px solid transparent;}
+  .item-evento-dia:hover{background:var(--superficie-sutil);border-color:var(--borda);}
+  .faixa-evento{width:3px;border-radius:4px;background:var(--acento);flex-shrink:0;}
+  .hora-evento-dia{font-size:10px;color:#FF696E;font-weight:900;text-transform:uppercase;letter-spacing:.3px;}
+  .titulo-evento-dia{font-size:12.5px;color:#fff;font-weight:800;margin-top:2px;}
+  .desc-evento-dia{font-size:11px;color:var(--texto-suave);margin-top:2px;line-height:1.35;}
+  .meta-evento-dia{font-size:10px;color:#7892B6;margin-top:3px;}
+  @media(max-width:900px){
+    main.modo-agenda{height:auto;min-height:calc(100vh - 120px);overflow-y:auto;}
+    .agenda-layout{flex-direction:column;min-height:850px;}
+    .agenda-layout > .agenda-box.agenda-lateral{flex:0 0 260px;}
+    .agenda-layout > .agenda-box:first-child{min-height:560px;}
+  }
+  @media(max-width:600px){
+    .agenda-box{padding:12px;}
+    .agenda-grade{gap:3px;min-height:500px;}
+    .dia-agenda{padding:4px;}
+  }
+
   @media(max-width:1180px){
     .topo-pagina-atend{grid-template-columns:1fr;}
     .topo-pagina-atend .btn-primario{justify-self:start;}
@@ -1035,6 +1081,8 @@ window.excluirEquip = excluirEquip;
 
 
 // ---------------- AGENDA ----------------
+// Estrutura visual copiada do padrão da Agenda do Tatiquinho.
+// Dados continuam no Firebase do Murillo, coleção agendaEventos.
 let agendaEventosCache = [];
 let agendaMes = new Date().getMonth();
 let agendaAno = new Date().getFullYear();
@@ -1054,75 +1102,201 @@ window.RENDERIZADORES.agenda = async function(){
   try{
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const hoje=new Date();
+    agendaMes=hoje.getMonth();
+    agendaAno=hoje.getFullYear();
+    agendaSelecionada=hoje;
     desenharAgenda();
     verificarLembretesAgenda();
-  }catch(e){ c.innerHTML='<div class="painel-box">Não foi possível carregar a agenda: '+escapar(e.message)+'</div>'; }
+  }catch(e){
+    c.innerHTML='<div class="painel-box">Não foi possível carregar a agenda: '+escapar(e.message)+'</div>';
+  }
 };
+
+function eventosDoDiaISO(iso){
+  return agendaEventosCache.filter(e=>e.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+}
 
 function desenharAgenda(){
   const c=document.getElementById('conteudo');
-  const nomesMes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const primeiro=new Date(agendaAno,agendaMes,1), ultimo=new Date(agendaAno,agendaMes+1,0);
-  const inicio=(primeiro.getDay()+6)%7; // segunda=0
-  const hojeISO=dataISOlocal(new Date()), selISO=dataISOlocal(agendaSelecionada);
+  const hoje=new Date();
+  const primeiroDia=new Date(agendaAno,agendaMes,1).getDay();
+  const totalDias=new Date(agendaAno,agendaMes+1,0).getDate();
+  const hojeISO=dataISOlocal(hoje);
+  const selISO=dataISOlocal(agendaSelecionada);
+  const nomeMes=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(agendaAno,agendaMes,1));
+
   let celulas='';
-  for(let i=0;i<inicio;i++) celulas+='<div class="agenda-cel vazio"></div>';
-  for(let dia=1;dia<=ultimo.getDate();dia++){
+  for(let i=0;i<primeiroDia;i++) celulas+='<div class="dia-agenda vazio"></div>';
+
+  for(let dia=1;dia<=totalDias;dia++){
     const iso=`${agendaAno}-${String(agendaMes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-    const evs=agendaEventosCache.filter(e=>e.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
-    celulas+=`<div class="agenda-cel ${iso===hojeISO?'hoje':''} ${iso===selISO?'sel':''}" onclick="selecionarDiaAgenda('${iso}')"><span class="agenda-num">${dia}</span>${evs.slice(0,3).map(e=>`<span class="agenda-eventinho">${escapar(e.hora||'')} ${escapar(e.titulo||'Compromisso')}</span>`).join('')}${evs.length>3?`<span class="agenda-eventinho">+${evs.length-3} mais</span>`:''}</div>`;
+    const evs=eventosDoDiaISO(iso);
+    celulas+=`
+      <div class="dia-agenda ${iso===hojeISO?'hoje':''} ${iso===selISO?'selecionado':''}" onclick="selecionarDiaAgenda('${iso}')">
+        <div class="num-dia-agenda">${dia}</div>
+        ${evs.length?`<div class="pontos-dia-agenda">${evs.slice(0,3).map(()=>'<span class="ponto-evento"></span>').join('')}${evs.length>3?`<span class="mais-pontos">+${evs.length-3}</span>`:''}</div>`:''}
+      </div>`;
   }
-  const evDia=agendaEventosCache.filter(e=>e.data===selISO).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+
   const podeEditar=!somenteLeitura();
+
   c.innerHTML=`
-    <div class="agenda-toolbar"><div><h2 style="margin:0">Agenda <span class="destaque">do Gabinete</span></h2><div style="font-size:11px;color:var(--texto-fraco);margin-top:4px">Compromissos, sessões, reuniões e lembretes</div></div>${podeEditar?'<button class="btn-primario" onclick="abrirModalAgenda()">+ Novo Compromisso</button>':''}</div>
+    <div class="topo-pagina">
+      <div>
+        <h2>Agenda</h2>
+        <div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div>
+      </div>
+      ${podeEditar?'<button class="btn-primario" onclick="abrirModalAgenda()">+ Novo Compromisso</button>':''}
+    </div>
+
     <div class="agenda-layout">
-      <section class="agenda-cal">
-        <div class="agenda-nav"><button class="btn-secundario" onclick="mudarMesAgenda(-1)">‹</button><strong>${nomesMes[agendaMes]} ${agendaAno}</strong><button class="btn-secundario" onclick="mudarMesAgenda(1)">›</button></div>
-        <div class="agenda-semana"><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div></div>
+      <div class="agenda-box">
+        <div class="agenda-nav">
+          <button onclick="irParaHojeAgenda()" class="btn-secundario" style="padding:7px 12px;">Hoje</button>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <button class="btn-nav-mes" onclick="mudarMesAgenda(-1)">‹</button>
+            <b class="mes-atual-agenda">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</b>
+            <button class="btn-nav-mes" onclick="mudarMesAgenda(1)">›</button>
+          </div>
+        </div>
+
+        <div class="agenda-cabecalho-dias">
+          <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+        </div>
         <div class="agenda-grade">${celulas}</div>
-      </section>
-      <aside class="agenda-dia"><h3>${dataBRdeISO(selISO)}</h3><div class="agenda-lista">${evDia.map(e=>`<div class="agenda-item" onclick='abrirModalAgenda(${JSON.stringify(e).replace(/'/g,"&#39;")})'><div class="agenda-hora">${escapar(e.hora||'Sem horário')} ${e.horaFim?'– '+escapar(e.horaFim):''}</div><div class="agenda-titulo">${escapar(e.titulo||'Compromisso')}</div><div class="agenda-meta">${escapar(e.tipo||'COMPROMISSO')}${e.local?' · '+escapar(e.local):''}</div>${e.observacoes?`<div class="agenda-meta">${escapar(e.observacoes)}</div>`:''}</div>`).join('')||'<div style="color:var(--texto-fraco);font-size:12px;padding:12px 0">Nenhum compromisso neste dia.</div>'}</div></aside>
+      </div>
+
+      <div class="agenda-box agenda-lateral">
+        <h3 id="tituloDiaAgenda">Compromissos</h3>
+        <div id="listaEventosDia" class="lista-eventos-dia"></div>
+      </div>
     </div>`;
+
+  atualizarPainelDiaAgenda();
 }
 
-function selecionarDiaAgenda(iso){ const [y,m,d]=iso.split('-').map(Number); agendaSelecionada=new Date(y,m-1,d); desenharAgenda(); }
-function mudarMesAgenda(delta){ agendaMes+=delta; if(agendaMes<0){agendaMes=11;agendaAno--} if(agendaMes>11){agendaMes=0;agendaAno++} agendaSelecionada=new Date(agendaAno,agendaMes,1); desenharAgenda(); }
-window.selecionarDiaAgenda=selecionarDiaAgenda; window.mudarMesAgenda=mudarMesAgenda;
+function atualizarPainelDiaAgenda(){
+  const titulo=document.getElementById('tituloDiaAgenda');
+  const lista=document.getElementById('listaEventosDia');
+  if(!titulo||!lista) return;
+
+  const selISO=dataISOlocal(agendaSelecionada);
+  const rotulo=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(agendaSelecionada);
+  titulo.innerText=rotulo.charAt(0).toUpperCase()+rotulo.slice(1);
+
+  const evs=eventosDoDiaISO(selISO);
+  if(!evs.length){
+    lista.innerHTML='<p style="color:var(--texto-fraco);font-size:12.5px;">Nenhum compromisso neste dia.</p>';
+    return;
+  }
+
+  lista.innerHTML=evs.map(ev=>`
+    <div class="item-evento-dia" onclick='abrirModalAgenda(${JSON.stringify(ev).replace(/'/g,"&#39;")})'>
+      <div class="faixa-evento"></div>
+      <div>
+        <div class="hora-evento-dia">${escapar(ev.hora||'Sem horário')}${ev.horaFim?' – '+escapar(ev.horaFim):''}</div>
+        <div class="titulo-evento-dia">${escapar(ev.titulo||'Compromisso')}</div>
+        ${(ev.tipo||ev.local)?`<div class="meta-evento-dia">${escapar(ev.tipo||'COMPROMISSO')}${ev.local?' · '+escapar(ev.local):''}</div>`:''}
+        ${ev.observacoes?`<div class="desc-evento-dia">${escapar(ev.observacoes)}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function selecionarDiaAgenda(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  agendaSelecionada=new Date(y,m-1,d);
+  desenharAgenda();
+}
+
+function mudarMesAgenda(delta){
+  agendaMes+=delta;
+  if(agendaMes<0){agendaMes=11;agendaAno--;}
+  if(agendaMes>11){agendaMes=0;agendaAno++;}
+  agendaSelecionada=new Date(agendaAno,agendaMes,1);
+  desenharAgenda();
+}
+
+function irParaHojeAgenda(){
+  const hoje=new Date();
+  agendaMes=hoje.getMonth();
+  agendaAno=hoje.getFullYear();
+  agendaSelecionada=hoje;
+  desenharAgenda();
+}
+
+window.selecionarDiaAgenda=selecionarDiaAgenda;
+window.mudarMesAgenda=mudarMesAgenda;
+window.irParaHojeAgenda=irParaHojeAgenda;
 
 function abrirModalAgenda(registro={}){
   if(somenteLeitura() && registro._docId===undefined) return;
-  const fundo=document.createElement('div'); fundo.className='modal-fundo'; fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
+  const fundo=document.createElement('div');
+  fundo.className='modal-fundo';
+  fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
   const dataPadrao=registro.data||dataISOlocal(agendaSelecionada);
+
   fundo.innerHTML=`<div class="modal" onclick="event.stopPropagation()"><h2>${registro._docId?'Editar':'Novo'} Compromisso</h2>
     <div class="campo-modal"><label>Título</label><input id="ag_titulo" value="${escapar(registro.titulo)}" placeholder="Ex.: Sessão extraordinária"></div>
     <div class="grid-2"><div class="campo-modal"><label>Data</label><input id="ag_data" type="date" value="${dataPadrao}"></div><div class="campo-modal"><label>Tipo</label><select id="ag_tipo">${['SESSÃO','REUNIÃO','ATENDIMENTO','EVENTO','VIAGEM','COMPROMISSO'].map(x=>`<option ${norm(x)===norm(registro.tipo)?'selected':''}>${x}</option>`).join('')}</select></div></div>
     <div class="grid-2"><div class="campo-modal"><label>Início</label><input id="ag_hora" type="time" value="${escapar(registro.hora)}"></div><div class="campo-modal"><label>Fim</label><input id="ag_horaFim" type="time" value="${escapar(registro.horaFim)}"></div></div>
     <div class="campo-modal"><label>Local</label><input id="ag_local" value="${escapar(registro.local)}" placeholder="Ex.: Câmara Municipal"></div>
-    <div class="grid-2"><div class="campo-modal"><label>Status</label><select id="ag_status">${['PLANEJADO','CONFIRMADO','REALIZADO','CANCELADO'].map(x=>`<option ${norm(x)===norm(registro.status)?'selected':''}>${x}</option>`).join('')}</select></div><div class="campo-modal"><label>Lembrete</label><select id="ag_lembrete"><option value="1" ${registro.lembrete!==false?'selected':''}>Avisar no dia anterior</option><option value="0" ${registro.lembrete===false?'selected':''}>Sem lembrete</option></select></div></div>
+    <div class="grid-2"><div class="campo-modal"><label>Status</label><select id="ag_status">${['PLANEJADO','CONFIRMADO','REALIZADO','CANCELADO'].map(x=>`<option ${norm(x)===norm(registro.status)?'selected':''}>${x}</option>`).join('')}</select></div><div class="campo-modal"><label>Lembrete</label><select id="ag_lembrete"><option value="1" ${registro.lembrete!==false?'selected':''}>Avisar pela manhã</option><option value="0" ${registro.lembrete===false?'selected':''}>Sem lembrete</option></select></div></div>
     <div class="campo-modal"><label>Observações</label><textarea id="ag_obs">${escapar(registro.observacoes)}</textarea></div>
     <div class="modal-acoes">${registro._docId&&!somenteLeitura()?`<button class="btn-secundario" style="color:#F26D6D" onclick="excluirAgenda('${registro._docId}')">Excluir</button>`:'<span></span>'}<div style="display:flex;gap:8px"><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>${!somenteLeitura()?`<button class="btn-primario" id="btnSalvarAgenda" onclick="salvarAgenda('${registro._docId||''}')">Salvar</button>`:''}</div></div>
-  </div>`; document.body.appendChild(fundo);
+  </div>`;
+  document.body.appendChild(fundo);
 }
 window.abrirModalAgenda=abrirModalAgenda;
 
 async function salvarAgenda(docId){
-  const b=document.getElementById('btnSalvarAgenda'); b.disabled=true; b.innerText='Salvando...';
-  const dados={titulo:document.getElementById('ag_titulo').value.trim(),data:document.getElementById('ag_data').value,hora:document.getElementById('ag_hora').value,horaFim:document.getElementById('ag_horaFim').value,tipo:document.getElementById('ag_tipo').value,local:document.getElementById('ag_local').value.trim(),status:document.getElementById('ag_status').value,lembrete:document.getElementById('ag_lembrete').value==='1',observacoes:document.getElementById('ag_obs').value.trim(),ultimaEdicaoPor:USUARIO.nome,ultimaEdicaoData:new Date().toLocaleString('pt-BR')};
+  const b=document.getElementById('btnSalvarAgenda');
+  b.disabled=true;b.innerText='Salvando...';
+  const dados={
+    titulo:document.getElementById('ag_titulo').value.trim(),
+    data:document.getElementById('ag_data').value,
+    hora:document.getElementById('ag_hora').value,
+    horaFim:document.getElementById('ag_horaFim').value,
+    tipo:document.getElementById('ag_tipo').value,
+    local:document.getElementById('ag_local').value.trim(),
+    status:document.getElementById('ag_status').value,
+    lembrete:document.getElementById('ag_lembrete').value==='1',
+    observacoes:document.getElementById('ag_obs').value.trim(),
+    ultimaEdicaoPor:USUARIO.nome,
+    ultimaEdicaoData:new Date().toLocaleString('pt-BR')
+  };
   if(!dados.titulo||!dados.data){alert('Informe pelo menos o título e a data.');b.disabled=false;b.innerText='Salvar';return}
-  try{ if(docId) await updateDoc(doc(db,'agendaEventos',docId),dados); else{dados.criadoPor=USUARIO.nome;await addDoc(collection(db,'agendaEventos'),dados)} document.querySelector('.modal-fundo').remove(); await window.RENDERIZADORES.agenda(); }
-  catch(e){alert('Não foi possível salvar: '+e.message);b.disabled=false;b.innerText='Salvar'}
+  try{
+    if(docId) await updateDoc(doc(db,'agendaEventos',docId),dados);
+    else{dados.criadoPor=USUARIO.nome;await addDoc(collection(db,'agendaEventos'),dados)}
+    document.querySelector('.modal-fundo').remove();
+    const [y,m,d]=dados.data.split('-').map(Number);
+    agendaAno=y;agendaMes=m-1;agendaSelecionada=new Date(y,m-1,d);
+    const snap=await getDocs(collection(db,'agendaEventos'));
+    agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
+    desenharAgenda();
+  }catch(e){alert('Não foi possível salvar: '+e.message);b.disabled=false;b.innerText='Salvar'}
 }
-async function excluirAgenda(id){ if(!confirm('Excluir este compromisso?'))return; try{await deleteDoc(doc(db,'agendaEventos',id));document.querySelector('.modal-fundo').remove();await window.RENDERIZADORES.agenda()}catch(e){alert('Não foi possível excluir: '+e.message)} }
-window.salvarAgenda=salvarAgenda; window.excluirAgenda=excluirAgenda;
+
+async function excluirAgenda(id){
+  if(!confirm('Excluir este compromisso?'))return;
+  try{
+    await deleteDoc(doc(db,'agendaEventos',id));
+    document.querySelector('.modal-fundo').remove();
+    const snap=await getDocs(collection(db,'agendaEventos'));
+    agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
+    desenharAgenda();
+  }catch(e){alert('Não foi possível excluir: '+e.message)}
+}
+window.salvarAgenda=salvarAgenda;window.excluirAgenda=excluirAgenda;
 
 function verificarLembretesAgenda(){
-  const amanha=new Date(); amanha.setDate(amanha.getDate()+1); const iso=dataISOlocal(amanha);
+  const hoje=new Date();
+  const iso=dataISOlocal(hoje);
   const evs=agendaEventosCache.filter(e=>e.data===iso && e.lembrete!==false && norm(e.status)!=='CANCELADO');
-  if(!evs.length) return;
-  const chave='agendaAviso-'+iso; if(sessionStorage.getItem(chave)) return; sessionStorage.setItem(chave,'1');
-  const texto=evs.length===1?`Amanhã: ${evs[0].hora?evs[0].hora+' · ':''}${evs[0].titulo}`:`Você tem ${evs.length} compromissos amanhã.`;
-  if('Notification' in window && Notification.permission==='granted') new Notification('Agenda do Gabinete',{body:texto,icon:'./icon-192.png'});
+  if(!evs.length)return;
+  const badge=document.getElementById('notificacaoBadge');
+  if(badge){badge.textContent=String(evs.length);badge.style.display='flex';}
 }
 
 </script>
