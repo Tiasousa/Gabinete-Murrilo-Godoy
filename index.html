@@ -139,6 +139,116 @@
     main{padding:16px;}
     nav.menu-nav-topo{padding:0 8px;}
   }
+
+
+  /* ============================================================
+     RESPONSIVIDADE — PADRÃO TATIQUINHO / IDENTIDADE MURILLO
+     Somente camada visual. Não altera Firebase, coleções ou dados.
+     ============================================================ */
+  html,body{min-height:100%;overflow-x:hidden;}
+  #app{min-height:100dvh;width:100%;}
+
+  header.topo-app{
+    padding:clamp(10px,1vw,16px) clamp(12px,1.7vw,30px);
+    gap:clamp(10px,1.1vw,18px);
+  }
+  .logo-topo img{
+    height:clamp(34px,3vw,50px);
+    max-width:clamp(110px,12vw,190px);
+  }
+  .saudacao-bloco{min-width:0;}
+  .saudacao-bloco h2{font-size:clamp(16px,1.3vw,22px);}
+  .saudacao-bloco .sub{font-size:clamp(9px,.7vw,11px);}
+  .topo-direita{gap:clamp(8px,1vw,14px);}
+
+  nav.menu-nav-topo{
+    padding:0 clamp(4px,1.5vw,28px);
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
+  }
+  nav.menu-nav-topo button{
+    padding:clamp(10px,.9vw,14px) clamp(9px,1vw,16px);
+    font-size:clamp(11px,.82vw,13.5px);
+  }
+
+  main{
+    flex:1;
+    width:100%;
+    max-width:none;
+    margin:0;
+    padding:clamp(16px,1.7vw,30px) clamp(12px,1.7vw,30px) clamp(34px,4vw,64px);
+  }
+  .topo-pagina{margin-bottom:clamp(14px,1.2vw,20px);}
+  .topo-pagina h2{font-size:clamp(20px,1.5vw,27px);}
+  .dashboard-titulo-linha{
+    width:clamp(54px,4.5vw,80px);
+    height:3px;
+    border-radius:999px;
+    margin-top:7px;
+    background:linear-gradient(90deg,var(--acento),#ff6670);
+  }
+
+  .kpis-grid{
+    display:grid;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:clamp(10px,1vw,16px);
+    margin-bottom:clamp(18px,1.5vw,26px);
+  }
+  .kpi-card{
+    min-width:0;
+    padding:clamp(14px,1.15vw,21px);
+    border-radius:clamp(9px,.7vw,13px);
+  }
+  .kpi-card .num{font-size:clamp(24px,1.9vw,35px);}
+  .kpi-card .rot{
+    font-size:clamp(9px,.64vw,11px);
+    line-height:1.3;
+  }
+
+  .dashboard-bloco{margin-bottom:clamp(18px,1.5vw,26px);}
+  .tabela-box{width:100%;overflow:auto;max-height:min(60vh,680px);}
+  table{min-width:720px;font-size:clamp(11.5px,.76vw,13.5px);}
+  thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    padding:clamp(10px,.8vw,13px) clamp(10px,1vw,16px);
+    font-size:clamp(9px,.62vw,10.8px);
+  }
+  tbody td{padding:clamp(10px,.8vw,13px) clamp(10px,1vw,16px);}
+
+  @media (min-width:1800px){
+    header.topo-app,main{padding-left:36px;padding-right:36px;}
+    nav.menu-nav-topo{padding-left:36px;padding-right:36px;}
+  }
+  @media (max-width:1399px){
+    .kpis-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+  @media (max-width:899px){
+    .kpis-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .perfil-topo{padding-left:8px;}
+    .perfil-texto b{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  }
+  @media (max-width:640px){
+    header.topo-app{padding:10px 12px;flex-wrap:nowrap;}
+    .logo-topo img{height:34px;max-width:105px;}
+    .saudacao-bloco h2{font-size:15px;max-width:135px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .saudacao-bloco .sub{display:none;}
+    .perfil-texto{display:none;}
+    .perfil-topo{border-left:0;padding-left:0;}
+    .avatar-topo{width:32px;height:32px;}
+    #btnSair{padding:7px 10px;font-size:11px;}
+    nav.menu-nav-topo{padding:0 4px;}
+    nav.menu-nav-topo button{padding:11px 10px;}
+    main{padding:14px 12px 34px;}
+    .grid-2{grid-template-columns:1fr;}
+    .modal{padding:20px 16px;}
+  }
+  @media (max-width:419px){
+    .kpis-grid{grid-template-columns:1fr;}
+    .saudacao-bloco{display:none;}
+    .topo-direita{margin-left:auto;}
+  }
 </style>
 </head>
 <body>
@@ -394,42 +504,116 @@ onAuthStateChanged(auth, async (user) => {
   });
 });
 
-// ---------------- DASHBOARD (provisório — outros módulos entram depois) ----------------
+// ---------------- DASHBOARD RESPONSIVO ----------------
 window.RENDERIZADORES = window.RENDERIZADORES || {};
 window.RENDERIZADORES.dashboard = async function () {
   const c = document.getElementById('conteudo');
   c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
 
-  const [atendSnap, transpSnap, equipSnap, pessoasSnap] = await Promise.all([
-    getDocs(collection(db, 'atendimentos')),
-    getDocs(collection(db, 'transportes')),
-    getDocs(collection(db, 'equipamentos')),
-    getDocs(collection(db, 'pessoas'))
-  ]);
+  try {
+    const [atendSnap, transpSnap, equipSnap, pessoasSnap] = await Promise.all([
+      getDocs(collection(db, 'atendimentos')),
+      getDocs(collection(db, 'transportes')),
+      getDocs(collection(db, 'equipamentos')),
+      getDocs(collection(db, 'pessoas'))
+    ]);
 
-  const atend = atendSnap.docs.map(d => d.data());
-  const transp = transpSnap.docs.map(d => d.data());
-  const equip = equipSnap.docs.map(d => d.data());
-  const totalPessoas = pessoasSnap.size;
+    const atend = atendSnap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    const transp = transpSnap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    const equip = equipSnap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    const pessoas = pessoasSnap.docs.map(d => ({ _docId: d.id, ...d.data() }));
 
-  const norm = s => (s || '').toString().trim().toUpperCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizar = s => (s || '').toString().trim().toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  const equipEmUso = equip.filter(e => norm(e.devolucao) === 'USANDO').length;
+    const emAnalise = atend.filter(a => normalizar(a.status) === 'EM ANALISE').length;
+    const concluidos = atend.filter(a => normalizar(a.status) === 'CONCLUIDO').length;
+    const transportesConfirmados = transp.filter(t => normalizar(t.confirmado) === 'SIM').length;
+    const equipamentosEmUso = equip.filter(e => normalizar(e.devolucao) === 'USANDO').length;
 
-  c.innerHTML = `
-    <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
-    <div class="kpis-grid">
-      <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos</div></div>
-      <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
-      <div class="kpi-card"><div class="num">${equipEmUso}</div><div class="rot">Equipamentos em uso</div></div>
-      <div class="kpi-card"><div class="num">${totalPessoas}</div><div class="rot">Pessoas cadastradas</div></div>
-    </div>
-    <div class="painel-box">
-      <h3 style="margin-top:0;">🎂 Aniversariantes</h3>
-      <p style="color:var(--texto-fraco);font-size:13px;">Módulo Pessoas ainda não conectado — chega no próximo passo.</p>
-    </div>
-  `;
+    const converterData = valor => {
+      const partes = String(valor || '').split('/');
+      if (partes.length !== 3) return 0;
+      const [dia, mes, ano] = partes.map(Number);
+      const data = new Date(ano, mes - 1, dia);
+      return Number.isNaN(data.getTime()) ? 0 : data.getTime();
+    };
+
+    const ultimosAtendimentos = [...atend]
+      .sort((a, b) => converterData(b.data) - converterData(a.data))
+      .slice(0, 10);
+
+    const aniversariantes = pessoas
+      .map(p => ({ pessoa: p, dias: diasAteProximoAniversario(p.dataNascimento) }))
+      .filter(x => x.dias !== null && x.dias <= 7)
+      .sort((a, b) => a.dias - b.dias);
+
+    const rotuloDias = dias => dias === 0 ? 'Hoje' : dias === 1 ? 'Amanhã' : `Em ${dias} dias`;
+
+    c.innerHTML = `
+      <div class="topo-pagina">
+        <div>
+          <h2>Visão <span class="destaque">Geral</span></h2>
+          <div class="dashboard-titulo-linha"></div>
+        </div>
+      </div>
+
+      <div class="kpis-grid">
+        <div class="kpi-card"><div class="num">${atend.length}</div><div class="rot">Atendimentos totais</div></div>
+        <div class="kpi-card"><div class="num">${emAnalise}</div><div class="rot">Em análise</div></div>
+        <div class="kpi-card"><div class="num">${concluidos}</div><div class="rot">Concluídos</div></div>
+        <div class="kpi-card"><div class="num">${transp.length}</div><div class="rot">Transportes</div></div>
+        <div class="kpi-card"><div class="num">${transportesConfirmados}</div><div class="rot">Confirmados</div></div>
+        <div class="kpi-card"><div class="num">${equipamentosEmUso}</div><div class="rot">Equipamentos em uso</div></div>
+      </div>
+
+      ${aniversariantes.length ? `
+        <div class="painel-box dashboard-bloco">
+          <h3 style="margin:0 0 4px;font-size:15px;">🎂 Aniversariantes dos próximos 7 dias</h3>
+          <p style="font-size:11.5px;color:var(--texto-suave);margin:0 0 14px;">Clique em Enviar para abrir o WhatsApp com a mensagem preparada.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${aniversariantes.map(x => {
+              const primeiroNome = String(x.pessoa.nome || '').split(' ')[0];
+              const mensagem = `Olá, ${primeiroNome}! Passando para desejar um feliz aniversário em nome do vereador Murillo Godoy. Muita saúde e felicidades! 🎉`;
+              const link = linkWhatsappComMensagem(x.pessoa.telefone, mensagem);
+              return `
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:var(--superficie-sutil);border-radius:var(--raio-s);">
+                  <div style="min-width:0;">
+                    <b style="font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${x.pessoa.nome || '-'}</b>
+                    <span style="font-size:11px;color:var(--acento);font-weight:800;">${rotuloDias(x.dias)}</span>
+                  </div>
+                  ${link ? `<a href="${link}" target="_blank" class="btn-secundario" style="text-decoration:none;white-space:nowrap;">💬 Enviar</a>` : '<span style="font-size:11px;color:var(--texto-fraco);">Sem telefone</span>'}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+
+      <div class="tabela-box">
+        <table>
+          <thead>
+            <tr><th>Data</th><th>Nome</th><th>Tipo</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${ultimosAtendimentos.map(a => `
+              <tr>
+                <td>${a.data || '-'}</td>
+                <td>${a.nome || '-'}</td>
+                <td>${a.tipoAtendimento || '-'}</td>
+                <td>${badgeStatus(a.status)}</td>
+              </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum atendimento cadastrado ainda.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (erro) {
+    console.error('Erro ao carregar dashboard:', erro);
+    c.innerHTML = `
+      <div class="topo-pagina"><h2>Visão <span class="destaque">Geral</span></h2></div>
+      <div class="painel-box">
+        <p style="margin:0;color:#F26D6D;">Não foi possível carregar o Dashboard.</p>
+        <button class="btn-secundario" style="margin-top:12px;" onclick="irPara('dashboard')">Tentar novamente</button>
+      </div>`;
+  }
 };
 
 // ---------------- ATENDIMENTOS ----------------
