@@ -724,7 +724,7 @@ function desenharAtendimentos() {
             <tr>
               <td>${valorSeguro(a.data)}</td>
               <td class="td-wrap">${valorSeguro(a.nome)}</td>
-              <td>${valorSeguro(a.telefone)}</td>
+              <td>${a.telefone ? linkWhatsapp(a.telefone) : '—'}</td>
               <td class="td-wrap">${valorSeguro(a.endereco)}</td>
               <td class="td-wrap">${valorSeguro(a.bairro)}</td>
               <td>${valorSeguro(a.tipoAtendimento)}</td>
