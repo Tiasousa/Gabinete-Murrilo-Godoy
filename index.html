@@ -56,28 +56,44 @@
 
   /* ===== APP ===== */
   #app{min-height:100vh;display:flex;flex-direction:column;}
-  header.topo-app{background:var(--superficie);border-bottom:1px solid var(--borda);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-  .logo-topo img{height:42px;width:auto;max-width:170px;object-fit:contain;border-radius:6px;}
-  .saudacao-bloco h2{margin:0;font-size:19px;font-weight:800;}
-  .saudacao-bloco .sub{font-size:11px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:.4px;font-weight:700;}
+  header.topo-app{background:#071425;border-bottom:1px solid var(--borda);padding:10px 30px;display:flex;align-items:center;gap:16px;min-height:68px;}
+  .logo-topo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .logo-topo img{height:46px;width:auto;max-width:92px;object-fit:contain;border-radius:6px;}
+  .marca-topo{font-size:13px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--texto-suave);white-space:nowrap;}
+  .marca-topo span{color:var(--acento);}
+  .saudacao-bloco{padding-left:4px;}
+  .saudacao-bloco h2{margin:0;font-size:22px;font-weight:900;line-height:1.05;}
+  .saudacao-bloco .sub{font-size:10.5px;color:#7590B5;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-top:5px;}
   .topo-direita{display:flex;align-items:center;gap:14px;margin-left:auto;}
+  .data-topo{min-width:142px;padding:8px 12px;border:1px solid var(--borda);border-radius:12px;text-align:right;background:#09182A;}
+  .data-topo b{display:block;font-size:11px;color:#fff;}
+  .data-topo span{font-size:9.5px;color:#7892B6;}
+  .notificacao-topo{position:relative;width:38px;height:38px;border:none;background:transparent;color:#FFD166;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .notificacao-badge{position:absolute;top:0;right:1px;min-width:16px;height:16px;border-radius:10px;background:var(--acento);color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;padding:0 4px;}
   .perfil-topo{display:flex;align-items:center;gap:9px;padding-left:14px;border-left:1px solid var(--borda);}
-  .avatar-topo{width:36px;height:36px;border-radius:50%;background:var(--superficie-sutil);border:1px solid var(--borda);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;}
+  .avatar-topo{width:38px;height:38px;border-radius:50%;background:var(--superficie-sutil);border:1px solid var(--borda);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;overflow:hidden;}
+  .avatar-topo img{width:100%;height:100%;object-fit:cover;}
   .perfil-texto b{display:block;font-size:12.5px;}
-  .perfil-texto span{font-size:10.5px;color:var(--texto-fraco);}
-  #btnSair{background:none;border:1px solid #4A2430;color:#F26D6D;border-radius:var(--raio-s);padding:8px 14px;font-weight:700;font-size:12.5px;}
+  .perfil-texto span{font-size:10px;color:#7892B6;text-transform:uppercase;}
+  #btnSair{background:none;border:1px solid #5A2832;color:#FF6B70;border-radius:var(--raio-s);padding:8px 14px;font-weight:800;font-size:12.5px;}
   #btnSair:hover{background:#2A1218;}
 
-  nav.menu-nav-topo{display:flex;gap:4px;padding:0 24px;background:var(--superficie);border-bottom:1px solid var(--borda);overflow-x:auto;}
-  nav.menu-nav-topo button{background:none;border:none;color:var(--texto-suave);padding:13px 16px;font-size:13.5px;font-weight:700;white-space:nowrap;border-bottom:3px solid transparent;}
-  nav.menu-nav-topo button.ativo{color:#fff;border-bottom-color:var(--acento);}
+  nav.menu-nav-topo{display:flex;gap:2px;padding:0 28px;background:#071425;border-bottom:1px solid var(--borda);overflow-x:auto;scrollbar-width:thin;}
+  nav.menu-nav-topo button{background:none;border:none;color:#BFCBDD;padding:13px 14px;font-size:12.5px;font-weight:800;white-space:nowrap;border-bottom:3px solid transparent;}
+  nav.menu-nav-topo button.ativo{color:#fff;border-bottom-color:var(--acento);background:rgba(229,39,45,.06);}
   nav.menu-nav-topo button:hover{color:#fff;}
 
-  main{flex:1;padding:22px 24px 60px;max-width:1400px;width:100%;margin:0 auto;}
+  main{flex:1;padding:26px 28px 60px;width:100%;max-width:none;margin:0;}
 
-  .topo-pagina{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
-  .topo-pagina h2{margin:0;font-size:21px;font-weight:800;}
+  .topo-pagina{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:14px;}
+  .topo-pagina h2{margin:0;font-size:21px;font-weight:900;white-space:nowrap;}
   .topo-pagina h2 .destaque{color:var(--acento);}
+  .topo-pagina-atend{display:grid;grid-template-columns:auto minmax(520px,1fr) minmax(230px,305px);align-items:center;gap:12px;margin-bottom:12px;}
+  .kpis-faixa{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--borda);border-radius:14px;overflow:hidden;background:var(--superficie);}
+  .kpi-faixa-item{padding:8px 14px;min-width:0;border-right:1px solid var(--borda);}
+  .kpi-faixa-item:last-child{border-right:none;}
+  .kpi-faixa-item .num{font-size:25px;font-weight:900;line-height:1;color:#fff;}
+  .kpi-faixa-item .rot{font-size:8.5px;color:#7F91AA;text-transform:uppercase;font-weight:900;letter-spacing:.5px;margin-top:4px;}
   .btn-primario{background:var(--acento);color:#fff;border:none;border-radius:var(--raio-s);padding:11px 18px;font-weight:800;font-size:13px;}
   .btn-primario:hover{filter:brightness(1.1);}
   .btn-secundario{background:var(--superficie-sutil);color:var(--texto);border:1px solid var(--borda);border-radius:var(--raio-s);padding:9px 14px;font-weight:700;font-size:12.5px;}
@@ -94,14 +110,19 @@
   .carregando-tela{text-align:center;padding:60px 20px;color:var(--texto-fraco);}
 
   /* ===== Tabela ===== */
-  .tabela-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);overflow-x:auto;}
-  table{width:100%;border-collapse:collapse;font-size:12.5px;}
-  thead th{text-align:left;padding:12px 14px;color:var(--acento);text-transform:uppercase;font-size:10.5px;letter-spacing:.4px;font-weight:800;border-bottom:1px solid var(--borda);background:rgba(229,39,45,.06);white-space:nowrap;}
-  tbody td{padding:11px 14px;border-bottom:1px solid rgba(132,158,190,.08);vertical-align:middle;}
-  tbody tr:hover{background:rgba(255,255,255,.02);}
-  .barra-acoes{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-  .barra-acoes input,.barra-acoes select{padding:10px 12px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:13px;}
-  .barra-acoes input{flex:1;min-width:180px;}
+  .tabela-box{background:var(--superficie);border-top:2px solid #17304C;border-bottom:1px solid var(--borda);overflow:auto;max-height:calc(100vh - 315px);}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:1650px;}
+  thead th{position:sticky;top:0;z-index:3;text-align:center;padding:12px 8px;color:#F4F7FC;text-transform:uppercase;font-size:8.5px;letter-spacing:.15px;font-weight:900;border-bottom:1px solid #315171;background:#09192B;white-space:nowrap;}
+  tbody td{padding:9px 8px;border-bottom:1px solid #1A3048;vertical-align:middle;line-height:1.25;}
+  tbody tr:hover{background:#0D2239;}
+  .barra-acoes{display:grid;grid-template-columns:minmax(185px,1fr) 178px 138px 100px;gap:10px;margin-bottom:12px;}
+  .barra-acoes input,.barra-acoes select{width:100%;padding:10px 12px;border-radius:var(--raio-s);border:1px solid #28415D;background:#0B1B2F;color:var(--texto);font-size:12px;outline:none;}
+  .barra-acoes input:focus,.barra-acoes select:focus{border-color:#496785;}
+  .barra-acoes .btn-secundario{height:100%;}
+  .td-wrap{white-space:normal;min-width:120px;}
+  .td-obs{white-space:normal;min-width:170px;max-width:230px;overflow:hidden;text-overflow:ellipsis;}
+  .acoes-linha{display:flex;gap:5px;white-space:nowrap;}
+  .btn-tabela{padding:6px 10px;font-size:10px;}
   .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;}
   .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
   .badge-verde{background:rgba(34,197,94,.15);color:#4ADE80;}
@@ -132,12 +153,35 @@
   .num-kpi-mini{font-size:16px;font-weight:800;color:#fff;line-height:1;}
   .rot-kpi-mini{font-size:9px;color:var(--texto-fraco);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
 
-  @media(max-width:640px){
-    header.topo-app{padding:12px 16px;}
-    .saudacao-bloco h2{font-size:16px;}
+  @media(max-width:1180px){
+    .topo-pagina-atend{grid-template-columns:1fr;}
+    .topo-pagina-atend .btn-primario{justify-self:start;}
+    .kpis-faixa{width:100%;}
+    .data-topo{display:none;}
+  }
+  @media(max-width:820px){
+    header.topo-app{padding:10px 14px;gap:10px;flex-wrap:wrap;}
+    .marca-topo{display:none;}
+    .logo-topo img{height:40px;}
+    .saudacao-bloco h2{font-size:17px;}
     .saudacao-bloco .sub{display:none;}
-    main{padding:16px;}
+    .topo-direita{gap:8px;}
+    .perfil-texto{display:none;}
+    main{padding:16px 12px 40px;}
     nav.menu-nav-topo{padding:0 8px;}
+    .barra-acoes{grid-template-columns:1fr 1fr;}
+    .kpis-faixa{grid-template-columns:1fr 1fr;}
+    .kpi-faixa-item:nth-child(2){border-right:none;}
+    .kpi-faixa-item:nth-child(-n+2){border-bottom:1px solid var(--borda);}
+  }
+  @media(max-width:520px){
+    .saudacao-bloco{flex:1;}
+    .notificacao-topo{display:none;}
+    .barra-acoes{grid-template-columns:1fr;}
+    .topo-pagina-atend{gap:10px;}
+    .topo-pagina h2,.topo-pagina-atend h2{font-size:18px;}
+    .kpi-faixa-item .num{font-size:20px;}
+    table{font-size:11px;}
   }
 </style>
 </head>
@@ -164,17 +208,22 @@
 
 <div id="app" class="hidden">
   <header class="topo-app">
-    <div class="logo-topo"><img src="./icon-512.png" alt="Logo" onerror="this.style.display='none'"></div>
+    <div class="logo-topo">
+      <img src="./icon-512.png" alt="Logo" onerror="this.style.display='none'">
+      <div class="marca-topo">GABINETE <span>DIGITAL</span></div>
+    </div>
     <div class="saudacao-bloco">
       <h2 id="saudacaoTopo">Olá!</h2>
       <div class="sub">Painel Geral de Gestão • Gabinete Digital</div>
     </div>
     <div class="topo-direita">
+      <div class="data-topo"><b id="dataTopo">-</b><span id="diaSemanaTopo">-</span></div>
+      <button class="notificacao-topo" type="button" title="Notificações">🔔<span class="notificacao-badge" id="notificacaoBadge">0</span></button>
       <div class="perfil-topo">
         <div class="avatar-topo" id="avatarTopo">-</div>
         <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
       </div>
-      <button id="btnSair">Sair</button>
+      <button id="btnSair">↩ Sair</button>
     </div>
   </header>
   <nav class="menu-nav-topo" id="menuNav"></nav>
@@ -330,6 +379,17 @@ function saudacaoHora() {
   return 'Boa noite';
 }
 
+function atualizarDataTopo() {
+  const agora = new Date();
+  const dataEl = document.getElementById('dataTopo');
+  const semanaEl = document.getElementById('diaSemanaTopo');
+  if (dataEl) dataEl.innerText = agora.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+  if (semanaEl) {
+    const dia = agora.toLocaleDateString('pt-BR', { weekday:'long' });
+    semanaEl.innerText = dia.charAt(0).toUpperCase() + dia.slice(1);
+  }
+}
+
 function abrirApp() {
   telaSplash.classList.add('hidden');
   telaLogin.classList.add('hidden');
@@ -337,7 +397,11 @@ function abrirApp() {
   document.getElementById('saudacaoTopo').innerText = `${saudacaoHora()}, ${USUARIO.nome.split(' ')[0]}! 👋`;
   document.getElementById('nomeTopo').innerText = USUARIO.nome;
   document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
-  document.getElementById('avatarTopo').innerText = iniciaisNome(USUARIO.nome);
+  const avatarTopo = document.getElementById('avatarTopo');
+  avatarTopo.innerHTML = USUARIO.foto
+    ? `<img src="${USUARIO.foto}" alt="${USUARIO.nome}">`
+    : iniciaisNome(USUARIO.nome);
+  atualizarDataTopo();
   montarMenu();
   carregarConfiguraveis().then(() => irPara('dashboard'));
 }
@@ -557,50 +621,123 @@ window.RENDERIZADORES.atendimentos = async function () {
 
 let filtroAtendTexto = '';
 let filtroAtendTextoOriginal = '';
+let filtroAtendTipo = '';
+let filtroAtendStatus = '';
+
+function valorSeguro(v) {
+  return (v === undefined || v === null || String(v).trim() === '') ? '-' : v;
+}
+
+function parseDataBR(txt) {
+  const m = String(txt || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  d.setHours(0,0,0,0);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function cicloDiasAtendimento(a) {
+  if (a.cicloDias !== undefined && a.cicloDias !== null && String(a.cicloDias) !== '') return a.cicloDias;
+  if (a.ciclo !== undefined && a.ciclo !== null && String(a.ciclo) !== '') return a.ciclo;
+  const inicio = parseDataBR(a.data);
+  if (!inicio) return '-';
+  const fim = parseDataBR(a.finalizado || a.dataFinalizacao || a.finalizadoEm) || new Date();
+  fim.setHours(0,0,0,0);
+  return Math.max(0, Math.floor((fim - inicio) / 86400000));
+}
+
+function opcoesAtendimento(campo) {
+  return [...new Set(atendimentosCache.map(a => String(a[campo] || '').trim()).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, 'pt-BR'));
+}
 
 function aplicarFiltroAtend() {
-  filtroAtendTextoOriginal = document.getElementById('fTextoAtend').value;
+  const textoEl = document.getElementById('fTextoAtend');
+  const tipoEl = document.getElementById('fTipoAtend');
+  const statusEl = document.getElementById('fStatusAtend');
+  filtroAtendTextoOriginal = textoEl ? textoEl.value : filtroAtendTextoOriginal;
   filtroAtendTexto = norm(filtroAtendTextoOriginal);
+  filtroAtendTipo = tipoEl ? tipoEl.value : filtroAtendTipo;
+  filtroAtendStatus = statusEl ? statusEl.value : filtroAtendStatus;
   desenharAtendimentos();
 }
 window.aplicarFiltroAtend = aplicarFiltroAtend;
 
 function desenharAtendimentos() {
   const c = document.getElementById('conteudo');
-  const lista = atendimentosCache.filter(a =>
-    !filtroAtendTexto ||
-    norm(a.nome).includes(filtroAtendTexto) ||
-    norm(a.bairro).includes(filtroAtendTexto) ||
-    norm(a.telefone).includes(filtroAtendTexto)
-  );
+  const lista = atendimentosCache.filter(a => {
+    const bateTexto = !filtroAtendTexto ||
+      norm(a.nome).includes(filtroAtendTexto) ||
+      norm(a.bairro).includes(filtroAtendTexto) ||
+      norm(a.telefone).includes(filtroAtendTexto) ||
+      norm(a.endereco).includes(filtroAtendTexto) ||
+      norm(a.responsavel).includes(filtroAtendTexto) ||
+      norm(a.indicador).includes(filtroAtendTexto);
+    const bateTipo = !filtroAtendTipo || norm(a.tipoAtendimento) === norm(filtroAtendTipo);
+    const bateStatus = !filtroAtendStatus || norm(a.status) === norm(filtroAtendStatus);
+    return bateTexto && bateTipo && bateStatus;
+  });
   const podeEditar = !somenteLeitura();
 
+  const total = atendimentosCache.length;
+  const concluidos = atendimentosCache.filter(a => norm(a.status) === 'CONCLUIDO').length;
+  const emAnalise = atendimentosCache.filter(a => norm(a.status) === 'EM ANALISE').length;
+  const cancelados = atendimentosCache.filter(a => norm(a.status) === 'CANCELADO').length;
+  const tipos = opcoesAtendimento('tipoAtendimento');
+
   c.innerHTML = `
-    <div class="topo-pagina">
-      <h2>Controle de <span class="destaque">Atendimentos</span></h2>
-      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalAtendimento()">+ Novo Atendimento</button>' : ''}
+    <div class="topo-pagina-atend">
+      <h2>Controle de <span style="color:var(--acento);">Atendimentos</span></h2>
+
+      <div class="kpis-faixa">
+        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${concluidos}</div><div class="rot">Concluídos</div></div>
+        <div class="kpi-faixa-item"><div class="num">${emAnalise}</div><div class="rot">Em análise</div></div>
+        <div class="kpi-faixa-item"><div class="num">${cancelados}</div><div class="rot">Cancelados</div></div>
+      </div>
+
+      ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalAtendimento()">+ Novo Atendimento</button>' : ''}
     </div>
+
     <div class="barra-acoes">
-      <input id="fTextoAtend" placeholder="Buscar por nome, bairro ou telefone..." oninput="aplicarFiltroAtend()" value="${filtroAtendTextoOriginal.replace(/"/g,'&quot;')}">
+      <input id="fTextoAtend" placeholder="Buscar nome ou bairro..." oninput="aplicarFiltroAtend()" value="${filtroAtendTextoOriginal.replace(/"/g,'&quot;')}">
+      <select id="fTipoAtend" onchange="aplicarFiltroAtend()">
+        <option value="">Todos os tipos</option>
+        ${tipos.map(t => `<option value="${t.replace(/"/g,'&quot;')}" ${norm(t)===norm(filtroAtendTipo)?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <select id="fStatusAtend" onchange="aplicarFiltroAtend()">
+        <option value="">Todos os status</option>
+        ${STATUS_ATENDIMENTO.map(s => `<option value="${s}" ${norm(s)===norm(filtroAtendStatus)?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.atendimentos()">↻ Atualizar</button>
     </div>
+
     <div class="tabela-box">
       <table>
         <thead><tr>
-          <th>Data</th><th>Nome</th><th>Telefone</th><th>Bairro</th><th>Tipo</th><th>Status</th><th>Responsável</th>${podeEditar ? '<th></th>' : ''}
+          <th>Data</th><th>Nome</th><th>Telefone</th><th>Endereço</th><th>Bairro</th><th>Tipo</th><th>Status</th>
+          <th>Indicador</th><th>Responsável</th><th>Finalizado</th><th>Ciclo (dias)</th><th>Anexos</th><th>Obs.</th>
+          ${podeEditar ? '<th>Ações</th>' : ''}
         </tr></thead>
         <tbody>
           ${lista.map(a => `
             <tr>
-              <td>${a.data || '-'}</td>
-              <td>${a.nome || '-'}</td>
-              <td>${a.telefone || '-'}</td>
-              <td>${a.bairro || '-'}</td>
-              <td>${a.tipoAtendimento || '-'}</td>
+              <td>${valorSeguro(a.data)}</td>
+              <td class="td-wrap">${valorSeguro(a.nome)}</td>
+              <td>${valorSeguro(a.telefone)}</td>
+              <td class="td-wrap">${valorSeguro(a.endereco)}</td>
+              <td class="td-wrap">${valorSeguro(a.bairro)}</td>
+              <td>${valorSeguro(a.tipoAtendimento)}</td>
               <td>${badgeStatus(a.status)}</td>
-              <td>${a.responsavel || '-'}</td>
-              ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></td>` : ''}
+              <td>${valorSeguro(a.indicador)}</td>
+              <td class="td-wrap">${valorSeguro(a.responsavel)}</td>
+              <td>${valorSeguro(a.finalizado || a.dataFinalizacao || a.finalizadoEm)}</td>
+              <td style="text-align:center;">${cicloDiasAtendimento(a)}</td>
+              <td style="text-align:center;">${a.qtdAnexos ? '📎 '+a.qtdAnexos : (Array.isArray(a.anexos) && a.anexos.length ? '📎 '+a.anexos.length : '—')}</td>
+              <td class="td-obs" title="${String(a.observacoes||'').replace(/"/g,'&quot;')}">${valorSeguro(a.observacoes)}</td>
+              ${podeEditar ? `<td><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></div></td>` : ''}
             </tr>
-          `).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
+          `).join('') || `<tr><td colspan="${podeEditar ? 14 : 13}" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto || filtroAtendTipo || filtroAtendStatus ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
         </tbody>
       </table>
     </div>
