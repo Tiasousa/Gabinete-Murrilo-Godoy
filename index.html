@@ -41,18 +41,36 @@
   #pularSplash{color:#5C86D8;font-size:12.5px;text-decoration:underline;background:none;border:none;margin-top:4px;}
 
   /* ===== LOGIN ===== */
-  #telaLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#101F35,#070E19 60%);padding:20px;}
-  .card-login{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-l);padding:40px 32px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(0,0,0,.5);}
-  .card-login img{width:100%;max-width:220px;display:block;margin:0 auto 16px;border-radius:8px;}
-  .card-login h1{text-align:center;font-size:15px;letter-spacing:.5px;color:var(--texto-suave);margin:0 0 28px;text-transform:uppercase;font-weight:700;}
-  .card-login h1 span{color:var(--acento);}
-  .campo-login{margin-bottom:14px;}
-  .campo-login input{width:100%;padding:13px 14px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:14px;outline:none;}
-  .campo-login input:focus{border-color:var(--acento);}
-  #btnEntrar{width:100%;padding:14px;border:none;border-radius:var(--raio-s);background:var(--acento);color:#fff;font-weight:800;font-size:14.5px;margin-top:6px;transition:filter .15s;}
-  #btnEntrar:hover{filter:brightness(1.1);}
-  #btnEntrar:disabled{opacity:.6;cursor:default;}
+  #telaLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:24px;background:radial-gradient(circle at 50% 38%,rgba(25,61,103,.34) 0,rgba(10,23,40,.16) 28%,transparent 54%),linear-gradient(145deg,#050B14 0%,#081321 48%,#050B14 100%);}
+  #telaLogin::before,#telaLogin::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none;}
+  #telaLogin::before{width:520px;height:520px;left:-260px;top:-260px;background:radial-gradient(circle,rgba(229,39,45,.10),transparent 68%);}
+  #telaLogin::after{width:600px;height:600px;right:-330px;bottom:-330px;background:radial-gradient(circle,rgba(37,99,235,.11),transparent 68%);}
+  .card-login{position:relative;z-index:1;background:linear-gradient(145deg,rgba(13,29,51,.97),rgba(7,20,37,.98));border:1px solid rgba(93,125,164,.28);border-radius:24px;padding:34px 34px 30px;width:100%;max-width:430px;box-shadow:0 35px 90px rgba(0,0,0,.58),0 12px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.05);animation:loginEntrada .55s cubic-bezier(.2,.8,.2,1) both;}
+  .card-login::before{content:"";position:absolute;inset:-1px;border-radius:24px;padding:1px;background:linear-gradient(145deg,rgba(255,255,255,.12),transparent 38%,rgba(229,39,45,.18));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+  .login-logo-wrap{width:100%;max-width:270px;height:172px;margin:0 auto 20px;border-radius:18px;display:flex;align-items:center;justify-content:center;position:relative;background:radial-gradient(circle at 50% 48%,rgba(37,99,235,.13),rgba(7,20,37,.28) 62%,transparent 74%);perspective:800px;}
+  .login-logo-wrap::after{content:"";position:absolute;width:68%;height:18px;left:16%;bottom:13px;border-radius:50%;background:rgba(0,0,0,.40);filter:blur(12px);}
+  .card-login img{position:relative;z-index:1;width:88%;max-width:245px;display:block;object-fit:contain;filter:drop-shadow(0 14px 18px rgba(0,0,0,.48));transform:translateY(-2px) rotateX(1deg);animation:logoFlutua 4s ease-in-out infinite;}
+  .login-eyebrow{text-align:center;color:#7590B5;font-size:10px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;margin-bottom:7px;}
+  .card-login h1{text-align:center;font-size:19px;letter-spacing:1.2px;color:#F5F8FC;margin:0 0 5px;text-transform:uppercase;font-weight:900;}
+  .card-login h1 span{color:var(--acento);text-shadow:0 0 22px rgba(229,39,45,.22);}
+  .login-subtitulo{text-align:center;color:#70849F;font-size:11px;font-weight:600;letter-spacing:.5px;margin:0 0 25px;}
+  .campo-login{margin-bottom:13px;position:relative;}
+  .campo-login::before{position:absolute;left:15px;top:50%;transform:translateY(-50%);z-index:2;color:#7186A3;font-size:15px;pointer-events:none;}
+  .campo-login.email::before{content:"✉";}
+  .campo-login.senha::before{content:"●";font-size:10px;}
+  .campo-login input{width:100%;padding:14px 15px 14px 42px;border-radius:11px;border:1px solid rgba(77,105,140,.38);background:linear-gradient(180deg,rgba(13,29,51,.94),rgba(10,25,44,.94));color:var(--texto);font-size:14px;outline:none;box-shadow:inset 0 1px 4px rgba(0,0,0,.22);transition:border-color .2s,box-shadow .2s,transform .2s;}
+  .campo-login input::placeholder{color:#6F8096;}
+  .campo-login input:focus{border-color:#456FAD;box-shadow:0 0 0 3px rgba(37,99,235,.10),inset 0 1px 4px rgba(0,0,0,.18);transform:translateY(-1px);}
+  #btnEntrar{width:100%;padding:15px;border:1px solid rgba(255,104,108,.18);border-radius:11px;background:linear-gradient(180deg,#F03238 0%,#D91F26 100%);color:#fff;font-weight:900;font-size:14.5px;margin-top:7px;box-shadow:0 12px 24px rgba(229,39,45,.22),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .15s,filter .15s,box-shadow .15s;}
+  #btnEntrar:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 15px 30px rgba(229,39,45,.28),inset 0 1px 0 rgba(255,255,255,.18);}
+  #btnEntrar:active{transform:translateY(1px);box-shadow:0 6px 14px rgba(229,39,45,.20);}
+  #btnEntrar:disabled{opacity:.6;cursor:default;transform:none;}
   #erroLogin{color:#FF7479;font-size:12.5px;margin-top:12px;text-align:center;min-height:16px;}
+  .login-rodape{text-align:center;margin-top:13px;color:#536A87;font-size:9.5px;letter-spacing:.45px;text-transform:uppercase;font-weight:700;}
+  @keyframes loginEntrada{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes logoFlutua{0%,100%{transform:translateY(-2px)}50%{transform:translateY(-7px)}}
+  @media(max-width:520px){#telaLogin{padding:16px}.card-login{max-width:390px;padding:28px 22px 24px;border-radius:21px}.login-logo-wrap{height:150px;max-width:245px;margin-bottom:17px}.card-login h1{font-size:17px}.login-subtitulo{margin-bottom:21px}}
+  @media(prefers-reduced-motion:reduce){.card-login,.card-login img{animation:none}}
 
   /* ===== APP ===== */
   #app{min-height:100vh;display:flex;flex-direction:column;}
@@ -318,12 +336,15 @@
 
 <div id="telaLogin" class="hidden">
   <div class="card-login">
-    <img src="./icon-512.png" alt="Gabinete Digital" onerror="this.style.display='none'">
+    <div class="login-logo-wrap"><img src="./icon-512.png" alt="Gabinete Digital" onerror="this.style.display='none'"></div>
+    <div class="login-eyebrow">Painel de Gestão</div>
     <h1>GABINETE <span>DIGITAL</span></h1>
-    <div class="campo-login"><input id="inputEmail" type="email" placeholder="E-mail" autocomplete="username"></div>
-    <div class="campo-login"><input id="inputSenha" type="password" placeholder="Senha" autocomplete="current-password"></div>
+    <div class="login-subtitulo">Acesso institucional • Vereador Murillo Godoy</div>
+    <div class="campo-login email"><input id="inputEmail" type="email" placeholder="E-mail" autocomplete="username"></div>
+    <div class="campo-login senha"><input id="inputSenha" type="password" placeholder="Senha" autocomplete="current-password"></div>
     <button id="btnEntrar">Entrar</button>
     <div id="erroLogin"></div>
+    <div class="login-rodape">Gabinete Digital • Acesso Seguro</div>
   </div>
 </div>
 
