@@ -452,6 +452,25 @@
     .kpi-faixa-item .num{font-size:20px;}
     table{font-size:11px;}
   }
+
+  /* ===== ADMIN — USUÁRIOS E CONFIGURAÇÕES ===== */
+  .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .admin-card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:18px;min-width:0;}
+  .admin-card h3{margin:0 0 4px;font-size:15px;color:#fff;}
+  .admin-card p{font-size:11.5px;color:var(--texto-suave);margin:0 0 14px;}
+  .admin-add{display:flex;gap:8px;margin-bottom:14px;}
+  .admin-add input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--borda);border-radius:var(--raio-s);background:var(--superficie-sutil);color:var(--texto);font-family:inherit;}
+  .admin-lista{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;}
+  .admin-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;background:#09182A;border:1px solid #17304C;border-radius:8px;}
+  .admin-item span{font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  .admin-table-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);overflow:auto;}
+  .admin-table{width:100%;min-width:760px;table-layout:auto;}
+  .admin-table th{position:sticky;top:0;background:#09192B;color:#F4F7FC;text-align:left;padding:11px 12px;font-size:9px;}
+  .admin-table td{padding:11px 12px;text-align:left;white-space:nowrap;max-width:none;}
+  .admin-table td:last-child,.admin-table th:last-child{text-align:center;width:95px;}
+  .admin-restrito{padding:18px;background:rgba(229,39,45,.08);border:1px solid rgba(229,39,45,.25);border-radius:12px;color:#F5B5B7;}
+  @media(max-width:820px){.admin-grid{grid-template-columns:1fr;}.admin-add{flex-direction:column;}.admin-table{min-width:650px;}}
+
 </style>
 </head>
 <body>
@@ -1687,6 +1706,370 @@ async function excluirAgenda(id){
   }catch(e){alert('Não foi possível excluir: '+e.message)}
 }
 window.salvarAgenda=salvarAgenda;window.excluirAgenda=excluirAgenda;
+
+
+// ============================================================
+// CONFIGURAÇÕES — SOMENTE ADMIN
+// Mesmo funcionamento do Tatiquinho, adaptado ao Murillo.
+// Gerencia as coleções tiposAtendimento e tiposEquipamento.
+// ============================================================
+window.RENDERIZADORES.configuracoes = async function(){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN'){
+    document.getElementById('conteudo').innerHTML =
+      '<div class="topo-pagina"><h2>Acesso restrito</h2></div><div class="admin-restrito">Esta área é exclusiva do administrador.</div>';
+    return;
+  }
+
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="topo-pagina"><h2>Configurações</h2></div><div class="carregando-tela">Carregando...</div>';
+
+  await carregarConfiguraveis();
+  desenharConfiguracoesAdmin();
+};
+
+function desenharConfiguracoesAdmin(){
+  const c = document.getElementById('conteudo');
+
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <div>
+        <h2>Configurações</h2>
+        <div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h3>Tipos de Atendimento</h3>
+        <p>Aparecem no formulário de novo atendimento.</p>
+
+        <div class="admin-add">
+          <input id="novoTipoAtendimento" placeholder="Ex.: CESTA BÁSICA">
+          <button class="btn-primario" onclick="adicionarTipoAtendimentoAdmin()">+ Adicionar</button>
+        </div>
+
+        <div class="admin-lista">
+          ${tiposAtendimentoCache.map(t => `
+            <div class="admin-item">
+              <span>${escapar(t.nome || '')}</span>
+              <button class="btn-secundario" style="padding:5px 10px;font-size:11px;"
+                onclick="excluirTipoAtendimentoAdmin('${t._docId}')">Excluir</button>
+            </div>
+          `).join('') || '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'}
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Tipos de Equipamento</h3>
+        <p>Aparecem no formulário de novo empréstimo.</p>
+
+        <div class="admin-add">
+          <input id="novoTipoEquipamento" placeholder="Ex.: CADEIRA DE RODAS">
+          <button class="btn-primario" onclick="adicionarTipoEquipamentoAdmin()">+ Adicionar</button>
+        </div>
+
+        <div class="admin-lista">
+          ${tiposEquipamentoCache.map(t => `
+            <div class="admin-item">
+              <span>${escapar(t.nome || '')}</span>
+              <button class="btn-secundario" style="padding:5px 10px;font-size:11px;"
+                onclick="excluirTipoEquipamentoAdmin('${t._docId}')">Excluir</button>
+            </div>
+          `).join('') || '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function adicionarTipoAtendimentoAdmin(){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+
+  const campo = document.getElementById('novoTipoAtendimento');
+  const nome = (campo?.value || '').trim().toUpperCase();
+  if(!nome) return;
+
+  if(tiposAtendimentoCache.some(t => norm(t.nome) === norm(nome))){
+    alert('Esse tipo de atendimento já está cadastrado.');
+    return;
+  }
+
+  try{
+    await addDoc(collection(db,'tiposAtendimento'), {
+      nome,
+      criadoPor: USUARIO.nome || '',
+      criadoEmTexto: new Date().toLocaleString('pt-BR')
+    });
+    campo.value = '';
+    await carregarConfiguraveis();
+    desenharConfiguracoesAdmin();
+  }catch(e){
+    alert('Não foi possível adicionar. Só ADMIN pode cadastrar tipos. (' + e.message + ')');
+  }
+}
+window.adicionarTipoAtendimentoAdmin = adicionarTipoAtendimentoAdmin;
+
+async function excluirTipoAtendimentoAdmin(id){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+  if(!confirm('Excluir este tipo? Os atendimentos já cadastrados não serão apagados.')) return;
+
+  try{
+    await deleteDoc(doc(db,'tiposAtendimento',id));
+    await carregarConfiguraveis();
+    desenharConfiguracoesAdmin();
+  }catch(e){
+    alert('Não foi possível excluir. (' + e.message + ')');
+  }
+}
+window.excluirTipoAtendimentoAdmin = excluirTipoAtendimentoAdmin;
+
+async function adicionarTipoEquipamentoAdmin(){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+
+  const campo = document.getElementById('novoTipoEquipamento');
+  const nome = (campo?.value || '').trim().toUpperCase();
+  if(!nome) return;
+
+  if(tiposEquipamentoCache.some(t => norm(t.nome) === norm(nome))){
+    alert('Esse tipo de equipamento já está cadastrado.');
+    return;
+  }
+
+  try{
+    await addDoc(collection(db,'tiposEquipamento'), {
+      nome,
+      criadoPor: USUARIO.nome || '',
+      criadoEmTexto: new Date().toLocaleString('pt-BR')
+    });
+    campo.value = '';
+    await carregarConfiguraveis();
+    desenharConfiguracoesAdmin();
+  }catch(e){
+    alert('Não foi possível adicionar. Só ADMIN pode cadastrar tipos. (' + e.message + ')');
+  }
+}
+window.adicionarTipoEquipamentoAdmin = adicionarTipoEquipamentoAdmin;
+
+async function excluirTipoEquipamentoAdmin(id){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+  if(!confirm('Excluir este tipo? Os empréstimos já cadastrados não serão apagados.')) return;
+
+  try{
+    await deleteDoc(doc(db,'tiposEquipamento',id));
+    await carregarConfiguraveis();
+    desenharConfiguracoesAdmin();
+  }catch(e){
+    alert('Não foi possível excluir. (' + e.message + ')');
+  }
+}
+window.excluirTipoEquipamentoAdmin = excluirTipoEquipamentoAdmin;
+
+
+// ============================================================
+// USUÁRIOS — SOMENTE ADMIN
+// O login (e-mail/senha) continua sendo criado no Firebase Authentication.
+// Aqui o ADMIN cria/edita o perfil vinculado ao UID.
+// ============================================================
+let usuariosAdminCache = [];
+
+window.RENDERIZADORES.usuarios = async function(){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN'){
+    document.getElementById('conteudo').innerHTML =
+      '<div class="topo-pagina"><h2>Acesso restrito</h2></div><div class="admin-restrito">Esta área é exclusiva do administrador.</div>';
+    return;
+  }
+
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="topo-pagina"><h2>Controle de <span style="color:var(--acento);">Usuários</span></h2></div><div class="carregando-tela">Carregando...</div>';
+
+  try{
+    const snap = await getDocs(collection(db,'usuarios'));
+    usuariosAdminCache = snap.docs
+      .map(d => ({ _docId:d.id, ...d.data() }))
+      .sort((a,b) => String(a.nome || '').localeCompare(String(b.nome || '')));
+    desenharUsuariosAdmin();
+  }catch(e){
+    c.innerHTML = '<div class="painel-box">Não foi possível carregar os usuários. ' + escapar(e.message || e) + '</div>';
+  }
+};
+
+function desenharUsuariosAdmin(){
+  const c = document.getElementById('conteudo');
+
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <div>
+        <h2>Controle de <span style="color:var(--acento);">Usuários</span></h2>
+        <div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div>
+      </div>
+      <button class="btn-primario" onclick="abrirModalUsuarioAdmin()">+ Novo Perfil</button>
+    </div>
+
+    <div class="aviso-perfil">
+      Para criar um LOGIN novo (e-mail e senha), use Firebase Console → Authentication → Adicionar usuário.
+      Depois volte aqui, clique em “+ Novo Perfil” e cole o UID gerado pelo Firebase.
+    </div>
+
+    <div class="admin-table-box">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Cargo</th>
+            <th>Status</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${usuariosAdminCache.map(u => `
+            <tr>
+              <td>${escapar(u.nome || '')}</td>
+              <td>${escapar(u.email || '')}</td>
+              <td>${escapar(rotuloCargo(norm(u.cargo)))}</td>
+              <td>${u.ativo === false
+                ? '<span class="badge badge-vermelho">BLOQUEADO</span>'
+                : '<span class="badge badge-verde">ATIVO</span>'}</td>
+              <td>
+                <button class="btn-secundario btn-tabela"
+                  onclick="abrirModalUsuarioAdminPorId('${u._docId}')">Editar</button>
+              </td>
+            </tr>
+          `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--texto-fraco);padding:20px;">Nenhum perfil cadastrado.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function abrirModalUsuarioAdminPorId(id){
+  const registro = usuariosAdminCache.find(u => u._docId === id);
+  abrirModalUsuarioAdmin(registro || {});
+}
+window.abrirModalUsuarioAdminPorId = abrirModalUsuarioAdminPorId;
+
+function abrirModalUsuarioAdmin(registro = {}){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+
+  const editando = !!registro._docId;
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = e => { if(e.target === fundo) fundo.remove(); };
+
+  fundo.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${editando ? 'Editar' : 'Novo'} Perfil de Usuário</h2>
+
+      ${!editando ? `
+        <div class="aviso-perfil">
+          Cole o UID do usuário criado no Firebase Authentication. Este formulário não cria senha.
+        </div>
+      ` : ''}
+
+      ${!editando ? `
+        <div class="campo-modal">
+          <label>UID do Firebase Authentication</label>
+          <input id="u_uid" placeholder="Cole o UID aqui">
+        </div>
+      ` : ''}
+
+      <div class="grid-2">
+        <div class="campo-modal">
+          <label>Nome</label>
+          <input id="u_nome" value="${escapar(registro.nome || '')}">
+        </div>
+
+        <div class="campo-modal">
+          <label>E-mail</label>
+          <input id="u_email" type="email" value="${escapar(registro.email || '')}" ${editando ? 'disabled' : ''}>
+        </div>
+
+        <div class="campo-modal">
+          <label>Cargo</label>
+          <select id="u_cargo">
+            <option value="ADMIN" ${norm(registro.cargo) === 'ADMIN' ? 'selected' : ''}>Administrador</option>
+            <option value="ASSESSOR" ${norm(registro.cargo) === 'ASSESSOR' ? 'selected' : ''}>Assessor</option>
+            <option value="ASSESSORA" ${norm(registro.cargo) === 'ASSESSORA' ? 'selected' : ''}>Assessora</option>
+            <option value="VEREADOR" ${norm(registro.cargo) === 'VEREADOR' ? 'selected' : ''}>Vereador (somente leitura)</option>
+          </select>
+        </div>
+
+        <div class="campo-modal">
+          <label>Status de acesso</label>
+          <select id="u_ativo">
+            <option value="true" ${registro.ativo !== false ? 'selected' : ''}>Ativo (libera entrada)</option>
+            <option value="false" ${registro.ativo === false ? 'selected' : ''}>Bloqueado (derruba na hora)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-acoes">
+        <span></span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+          <button class="btn-primario" id="btnSalvarUsuarioAdmin"
+            onclick="salvarUsuarioAdmin('${registro._docId || ''}')">Salvar</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(fundo);
+}
+window.abrirModalUsuarioAdmin = abrirModalUsuarioAdmin;
+
+async function salvarUsuarioAdmin(id){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+
+  const btn = document.getElementById('btnSalvarUsuarioAdmin');
+  const nome = document.getElementById('u_nome').value.trim();
+  const email = document.getElementById('u_email').value.trim();
+  const cargo = document.getElementById('u_cargo').value;
+  const ativo = document.getElementById('u_ativo').value === 'true';
+
+  if(!nome){
+    alert('Preencha o nome.');
+    return;
+  }
+
+  let uidFinal = id;
+  if(!uidFinal){
+    uidFinal = document.getElementById('u_uid').value.trim();
+    if(!uidFinal){
+      alert('Cole o UID do Firebase Authentication antes de salvar.');
+      return;
+    }
+    if(!email){
+      alert('Preencha o e-mail.');
+      return;
+    }
+  }
+
+  // Evita que o ADMIN bloqueie acidentalmente a própria sessão.
+  if(uidFinal === UID && ativo === false){
+    alert('Você não pode bloquear o seu próprio usuário enquanto está logado.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = 'Salvando...';
+
+  try{
+    const dados = { nome, cargo, ativo };
+    if(!id) dados.email = email;
+
+    await setDoc(doc(db,'usuarios',uidFinal), dados, { merge:true });
+
+    document.querySelector('.modal-fundo')?.remove();
+    await window.RENDERIZADORES.usuarios();
+  }catch(e){
+    alert('Não foi possível salvar. Só ADMIN pode editar perfis. (' + e.message + ')');
+    btn.disabled = false;
+    btn.innerText = 'Salvar';
+  }
+}
+window.salvarUsuarioAdmin = salvarUsuarioAdmin;
+
 
 function verificarLembretesAgenda(){
   const hoje=new Date();
