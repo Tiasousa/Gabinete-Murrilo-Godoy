@@ -388,9 +388,11 @@
   .dia-agenda:hover{border-color:#476685;background:#0C1E33;}
   .dia-agenda.vazio{border-color:transparent;background:transparent;cursor:default;}
   .dia-agenda.vazio:hover{border-color:transparent;background:transparent;}
-  .dia-agenda.hoje{border-color:var(--acento);}
-  .dia-agenda.hoje .num-dia-agenda{color:#FF6469;}
-  .dia-agenda.selecionado{background:#152034;border-color:var(--acento);box-shadow:inset 0 0 0 1px rgba(229,39,45,.25);}
+  .dia-agenda.hoje{border-color:#496785;box-shadow:inset 0 0 0 1px rgba(117,144,181,.14);}
+  .dia-agenda.hoje .num-dia-agenda{color:#AFC4DF;}
+  .dia-agenda.selecionado{background:rgba(229,39,45,.16);border-color:var(--acento);box-shadow:inset 0 0 0 1px rgba(229,39,45,.50),0 0 0 1px rgba(229,39,45,.12);}
+  .dia-agenda.selecionado .num-dia-agenda{color:#fff;font-weight:900;}
+  .dia-agenda.hoje.selecionado{border-color:var(--acento);background:rgba(229,39,45,.18);}
   .num-dia-agenda{font-size:clamp(10px,1.2vw,12.5px);font-weight:800;color:var(--texto);}
   .pontos-dia-agenda{display:flex;gap:3px;margin-top:auto;flex-wrap:wrap;align-items:center;}
   .ponto-evento{width:5px;height:5px;border-radius:50%;background:var(--acento);display:inline-block;flex-shrink:0;}
@@ -1530,6 +1532,7 @@ let agendaEventosCache = [];
 let agendaMes = new Date().getMonth();
 let agendaAno = new Date().getFullYear();
 let agendaSelecionada = new Date();
+let agendaInicializada = false;
 
 function dataISOlocal(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dia=String(d.getDate()).padStart(2,'0');
@@ -1545,10 +1548,19 @@ window.RENDERIZADORES.agenda = async function(){
   try{
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(d=>({_docId:d.id,...d.data()}));
-    const hoje=new Date();
-    agendaMes=hoje.getMonth();
-    agendaAno=hoje.getFullYear();
-    agendaSelecionada=hoje;
+
+    // Inicializa na data de hoje somente na PRIMEIRA abertura da Agenda.
+    // Depois disso, a data/mês escolhidos pelo usuário permanecem ativos
+    // enquanto ele navega pelos outros módulos do sistema.
+    if(!agendaInicializada){
+      const hoje=new Date();
+      hoje.setHours(12,0,0,0);
+      agendaMes=hoje.getMonth();
+      agendaAno=hoje.getFullYear();
+      agendaSelecionada=hoje;
+      agendaInicializada=true;
+    }
+
     desenharAgenda();
     verificarLembretesAgenda();
   }catch(e){
@@ -1589,6 +1601,7 @@ function desenharAgenda(){
       <div>
         <h2>Agenda</h2>
         <div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div>
+        <div style="margin-top:7px;font-size:10.5px;color:var(--texto-fraco);font-weight:700;">Data selecionada: <span style="color:#fff;">${dataBRdeISO(selISO)}</span></div>
       </div>
       ${podeEditar?'<button class="btn-primario" onclick="abrirModalAgenda()">+ Novo Compromisso</button>':''}
     </div>
@@ -1648,7 +1661,9 @@ function atualizarPainelDiaAgenda(){
 
 function selecionarDiaAgenda(iso){
   const [y,m,d]=iso.split('-').map(Number);
-  agendaSelecionada=new Date(y,m-1,d);
+  agendaAno=y;
+  agendaMes=m-1;
+  agendaSelecionada=new Date(y,m-1,d,12,0,0,0);
   desenharAgenda();
 }
 
@@ -1656,15 +1671,17 @@ function mudarMesAgenda(delta){
   agendaMes+=delta;
   if(agendaMes<0){agendaMes=11;agendaAno--;}
   if(agendaMes>11){agendaMes=0;agendaAno++;}
-  agendaSelecionada=new Date(agendaAno,agendaMes,1);
+  agendaSelecionada=new Date(agendaAno,agendaMes,1,12,0,0,0);
   desenharAgenda();
 }
 
 function irParaHojeAgenda(){
   const hoje=new Date();
+  hoje.setHours(12,0,0,0);
   agendaMes=hoje.getMonth();
   agendaAno=hoje.getFullYear();
   agendaSelecionada=hoje;
+  agendaInicializada=true;
   desenharAgenda();
 }
 
@@ -1714,7 +1731,7 @@ async function salvarAgenda(docId){
     else{dados.criadoPor=USUARIO.nome;await addDoc(collection(db,'agendaEventos'),dados)}
     document.querySelector('.modal-fundo').remove();
     const [y,m,d]=dados.data.split('-').map(Number);
-    agendaAno=y;agendaMes=m-1;agendaSelecionada=new Date(y,m-1,d);
+    agendaAno=y;agendaMes=m-1;agendaSelecionada=new Date(y,m-1,d,12,0,0,0);agendaInicializada=true;
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
     desenharAgenda();
@@ -2051,24 +2068,37 @@ window.salvarPessoaMurillo=salvarPessoaMurillo;
 // ============================================================
 // RELATÓRIOS — VISÃO CONSOLIDADA
 // ============================================================
+async function carregarColecaoRelatorio(nome){
+  try{
+    const snap=await getDocs(collection(db,nome));
+    return { nome, dados:snap.docs.map(d=>({_docId:d.id,...d.data()})), erro:null };
+  }catch(e){
+    console.error('Relatórios - erro ao carregar '+nome+':',e);
+    return { nome, dados:[], erro:e };
+  }
+}
+
 window.RENDERIZADORES.relatorios = async function(){
   const c=document.getElementById('conteudo');
   c.innerHTML='<div class="carregando-tela">Carregando relatórios...</div>';
   try{
-    const [aSnap,tSnap,eSnap,pSnap,evSnap,agSnap]=await Promise.all([
-      getDocs(collection(db,'atendimentos')),
-      getDocs(collection(db,'transportes')),
-      getDocs(collection(db,'equipamentos')),
-      getDocs(collection(db,'pessoas')),
-      getDocs(collection(db,'eventos')),
-      getDocs(collection(db,'agendaEventos'))
+    const resultados=await Promise.all([
+      carregarColecaoRelatorio('atendimentos'),
+      carregarColecaoRelatorio('transportes'),
+      carregarColecaoRelatorio('equipamentos'),
+      carregarColecaoRelatorio('pessoas'),
+      carregarColecaoRelatorio('eventos'),
+      carregarColecaoRelatorio('agendaEventos')
     ]);
-    const atend=aSnap.docs.map(d=>d.data());
-    const transp=tSnap.docs.map(d=>d.data());
-    const equip=eSnap.docs.map(d=>d.data());
-    const pessoas=pSnap.docs.map(d=>d.data());
-    const eventos=evSnap.docs.map(d=>d.data());
-    const agenda=agSnap.docs.map(d=>d.data());
+
+    const mapa=Object.fromEntries(resultados.map(r=>[r.nome,r]));
+    const atend=mapa.atendimentos.dados;
+    const transp=mapa.transportes.dados;
+    const equip=mapa.equipamentos.dados;
+    const pessoas=mapa.pessoas.dados;
+    const eventos=mapa.eventos.dados;
+    const agenda=mapa.agendaEventos.dados;
+    const colecoesComErro=resultados.filter(r=>r.erro).map(r=>r.nome);
 
     const concluidos=atend.filter(x=>norm(x.status)==='CONCLUIDO').length;
     const analise=atend.filter(x=>norm(x.status)==='EM ANALISE').length;
@@ -2084,6 +2114,7 @@ window.RENDERIZADORES.relatorios = async function(){
         <div><h2>Relatórios <span style="color:var(--acento);">Gerais</span></h2><div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div></div>
         <button class="btn-secundario" onclick="window.irPara('relatorios')">↻ Atualizar</button>
       </div>
+      ${colecoesComErro.length ? `<div class="aviso-perfil" style="margin-bottom:14px;">Alguns dados não puderam ser lidos agora: <b>${colecoesComErro.map(escapar).join(', ')}</b>. Os demais indicadores continuam disponíveis.</div>` : ''}
       <div class="relatorio-grid">
         <div class="relatorio-card"><b>${atend.length}</b><span>Atendimentos</span></div>
         <div class="relatorio-card"><b>${pessoas.length}</b><span>Pessoas cadastradas</span></div>
