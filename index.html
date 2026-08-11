@@ -169,6 +169,7 @@
   main.modo-atendimentos th:nth-child(13),main.modo-atendimentos td:nth-child(13){width:8%;}
   main.modo-atendimentos th:nth-child(14),main.modo-atendimentos td:nth-child(14){width:5%;}
   /* ===== TRANSPORTES E EQUIPAMENTOS — mesmo padrão visual de Atendimentos ===== */
+  /* V5: alinhamento visual padronizado das tabelas */
   main.modo-transportes,main.modo-equipamentos{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:18px 28px 12px;}
   main.modo-transportes .topo-pagina-atend,main.modo-equipamentos .topo-pagina-atend{flex:0 0 auto;margin-bottom:10px;}
   main.modo-transportes .barra-acoes,main.modo-equipamentos .barra-acoes{flex:0 0 auto;margin-bottom:10px;}
@@ -177,6 +178,9 @@
   main.modo-transportes table,main.modo-equipamentos table{width:100%;min-width:0;table-layout:fixed;font-size:10.5px;background:var(--superficie);}
   main.modo-transportes thead th,main.modo-equipamentos thead th{position:sticky;top:0;z-index:8;padding:10px 5px;font-size:7.8px;line-height:1.1;background:#09192B;border-bottom:1px solid #24435F;white-space:normal;}
   main.modo-transportes tbody td,main.modo-equipamentos tbody td{padding:8px 6px;line-height:1.22;border-bottom:1px solid rgba(49,81,113,.42);white-space:normal;overflow-wrap:anywhere;word-break:normal;}
+  /* Alinhamento organizado: dados centralizados; campos de leitura longa à esquerda */
+  main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td{text-align:center;}
+  main.modo-atendimentos td.td-esquerda,main.modo-transportes td.td-esquerda,main.modo-equipamentos td.td-esquerda{text-align:left;}
   main.modo-transportes tbody tr:last-child td,main.modo-equipamentos tbody tr:last-child td{border-bottom:none;}
   main.modo-transportes .acoes-linha,main.modo-equipamentos .acoes-linha{gap:4px;justify-content:center;flex-wrap:wrap;white-space:normal;}
   main.modo-transportes .btn-tabela,main.modo-equipamentos .btn-tabela{padding:5px 7px;font-size:9px;}
@@ -1155,9 +1159,9 @@ function desenharAtendimentos() {
           ${lista.map(a => `
             <tr ${podeEditar ? `ondblclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
               <td>${valorSeguro(a.data)}</td>
-              <td class="td-wrap">${valorSeguro(a.nome)}</td>
+              <td class="td-wrap td-esquerda">${valorSeguro(a.nome)}</td>
               <td>${a.telefone ? linkWhatsapp(a.telefone) : '—'}</td>
-              <td class="td-wrap">${valorSeguro(a.endereco)}</td>
+              <td class="td-wrap td-esquerda">${valorSeguro(a.endereco)}</td>
               <td class="td-wrap">${valorSeguro(a.bairro)}</td>
               <td>${valorSeguro(a.tipoAtendimento)}</td>
               <td>${badgeStatus(a.status)}</td>
@@ -1166,7 +1170,7 @@ function desenharAtendimentos() {
               <td>${valorSeguro(a.finalizado || a.dataFinalizacao || a.finalizadoEm)}</td>
               <td style="text-align:center;">${cicloDiasAtendimento(a)}</td>
               <td style="text-align:center;">${a.qtdAnexos ? '📎 '+a.qtdAnexos : (Array.isArray(a.anexos) && a.anexos.length ? '📎 '+a.anexos.length : '—')}</td>
-              <td class="td-obs" title="${String(a.observacoes||'').replace(/"/g,'&quot;')}">${valorSeguro(a.observacoes)}</td>
+              <td class="td-obs td-esquerda" title="${String(a.observacoes||'').replace(/"/g,'&quot;')}">${valorSeguro(a.observacoes)}</td>
               ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></div></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${podeEditar ? 14 : 13}" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto || filtroAtendTipo || filtroAtendStatus ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
@@ -1299,8 +1303,8 @@ function desenharTransportes() {
       <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Espera</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody>
         ${lista.map(t => `<tr ${podeEditar ? `ondblclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-          <td>${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
-          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td>${badgeStatus(t.espera)}</td><td>${t.observacoes||'-'}</td><td>${t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
+          <td class="td-esquerda">${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
+          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td>${badgeStatus(t.espera)}</td><td class="td-esquerda">${t.observacoes||'-'}</td><td>${t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirTransporte('${t._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?13:12}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
       </tbody>
@@ -1408,7 +1412,7 @@ function desenharEquip() {
       <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody id="tbEquip">
         ${equipCacheLista.map(e => `<tr ${podeEditar ? `ondblclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-          <td>${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
+          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirEquip('${e._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
@@ -1705,4 +1709,4 @@ if ('serviceWorker' in navigator) {
 </script>
 
 </body>
-</html
+</html>
