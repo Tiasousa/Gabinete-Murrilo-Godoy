@@ -168,6 +168,68 @@
   main.modo-atendimentos th:nth-child(12),main.modo-atendimentos td:nth-child(12){width:4.5%;}
   main.modo-atendimentos th:nth-child(13),main.modo-atendimentos td:nth-child(13){width:8%;}
   main.modo-atendimentos th:nth-child(14),main.modo-atendimentos td:nth-child(14){width:5%;}
+  /* ===== TRANSPORTES E EQUIPAMENTOS — mesmo padrão visual de Atendimentos ===== */
+  main.modo-transportes,main.modo-equipamentos{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:18px 28px 12px;}
+  main.modo-transportes .topo-pagina-atend,main.modo-equipamentos .topo-pagina-atend{flex:0 0 auto;margin-bottom:10px;}
+  main.modo-transportes .barra-acoes,main.modo-equipamentos .barra-acoes{flex:0 0 auto;margin-bottom:10px;}
+  main.modo-transportes .tabela-box,main.modo-equipamentos .tabela-box{flex:1 1 0;min-height:0;max-height:none;width:100%;overflow-y:auto;overflow-x:hidden;background:transparent;border:0;border-radius:0;box-shadow:none;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;scrollbar-width:none;-ms-overflow-style:none;}
+  main.modo-transportes .tabela-box::-webkit-scrollbar,main.modo-equipamentos .tabela-box::-webkit-scrollbar{display:none;width:0;height:0;}
+  main.modo-transportes table,main.modo-equipamentos table{width:100%;min-width:0;table-layout:fixed;font-size:10.5px;background:var(--superficie);}
+  main.modo-transportes thead th,main.modo-equipamentos thead th{position:sticky;top:0;z-index:8;padding:10px 5px;font-size:7.8px;line-height:1.1;background:#09192B;border-bottom:1px solid #24435F;white-space:normal;}
+  main.modo-transportes tbody td,main.modo-equipamentos tbody td{padding:8px 6px;line-height:1.22;border-bottom:1px solid rgba(49,81,113,.42);white-space:normal;overflow-wrap:anywhere;word-break:normal;}
+  main.modo-transportes tbody tr:last-child td,main.modo-equipamentos tbody tr:last-child td{border-bottom:none;}
+  main.modo-transportes .acoes-linha,main.modo-equipamentos .acoes-linha{gap:4px;justify-content:center;flex-wrap:wrap;white-space:normal;}
+  main.modo-transportes .btn-tabela,main.modo-equipamentos .btn-tabela{padding:5px 7px;font-size:9px;}
+  main.modo-transportes .badge,main.modo-equipamentos .badge{padding:3px 6px;font-size:9px;gap:4px;white-space:nowrap;}
+  main.modo-transportes .link-wa,main.modo-equipamentos .link-wa{white-space:normal;}
+
+  /* Transportes — 13 colunas com ações */
+  main.modo-transportes th:nth-child(1),main.modo-transportes td:nth-child(1){width:8%;}
+  main.modo-transportes th:nth-child(2),main.modo-transportes td:nth-child(2){width:6%;}
+  main.modo-transportes th:nth-child(3),main.modo-transportes td:nth-child(3){width:5%;}
+  main.modo-transportes th:nth-child(4),main.modo-transportes td:nth-child(4){width:10%;}
+  main.modo-transportes th:nth-child(5),main.modo-transportes td:nth-child(5){width:7%;}
+  main.modo-transportes th:nth-child(6),main.modo-transportes td:nth-child(6){width:8%;}
+  main.modo-transportes th:nth-child(7),main.modo-transportes td:nth-child(7){width:7%;}
+  main.modo-transportes th:nth-child(8),main.modo-transportes td:nth-child(8){width:7%;}
+  main.modo-transportes th:nth-child(9),main.modo-transportes td:nth-child(9){width:6%;}
+  main.modo-transportes th:nth-child(10),main.modo-transportes td:nth-child(10){width:12%;}
+  main.modo-transportes th:nth-child(11),main.modo-transportes td:nth-child(11){width:8%;}
+  main.modo-transportes th:nth-child(12),main.modo-transportes td:nth-child(12){width:11%;}
+  main.modo-transportes th:nth-child(13),main.modo-transportes td:nth-child(13){width:5%;}
+
+  /* Equipamentos — 8 colunas com ações */
+  main.modo-equipamentos th:nth-child(1),main.modo-equipamentos td:nth-child(1){width:18%;}
+  main.modo-equipamentos th:nth-child(2),main.modo-equipamentos td:nth-child(2){width:10%;}
+  main.modo-equipamentos th:nth-child(3),main.modo-equipamentos td:nth-child(3){width:16%;}
+  main.modo-equipamentos th:nth-child(4),main.modo-equipamentos td:nth-child(4){width:14%;}
+  main.modo-equipamentos th:nth-child(5),main.modo-equipamentos td:nth-child(5){width:14%;}
+  main.modo-equipamentos th:nth-child(6),main.modo-equipamentos td:nth-child(6){width:10%;}
+  main.modo-equipamentos th:nth-child(7),main.modo-equipamentos td:nth-child(7){width:13%;}
+  main.modo-equipamentos th:nth-child(8),main.modo-equipamentos td:nth-child(8){width:5%;}
+
+  /* Modais horizontais de Transporte e Equipamento */
+  .modal-fundo.modal-operacao-fundo{align-items:center;justify-content:center;padding:18px;}
+  .modal.modal-operacao{width:min(1120px,calc(100vw - 36px));max-width:1120px;max-height:none;overflow:visible;padding:22px 24px 20px;}
+  .modal-operacao h2{margin:0 0 14px;font-size:20px;}
+  .modal-operacao-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px;align-items:end;}
+  .modal-operacao-grid .campo-modal{margin-bottom:0;min-width:0;}
+  .modal-operacao-grid .span-2{grid-column:span 2;}
+  .modal-operacao-grid .span-4{grid-column:1/-1;}
+  .modal-operacao-grid input,.modal-operacao-grid select{height:44px;}
+  .modal-operacao-grid textarea{height:76px;min-height:76px;max-height:76px;resize:none;}
+  .modal-operacao .modal-acoes{margin-top:14px;}
+  @media(max-width:900px){
+    .modal-fundo.modal-operacao-fundo{align-items:flex-start;overflow-y:auto;}
+    .modal.modal-operacao{max-height:none;overflow:visible;}
+    .modal-operacao-grid{grid-template-columns:1fr 1fr;}
+    .modal-operacao-grid .span-4{grid-column:1/-1;}
+    .modal-operacao-grid .span-2{grid-column:span 1;}
+  }
+  @media(max-width:560px){
+    .modal-operacao-grid{grid-template-columns:1fr;}
+    .modal-operacao-grid .span-2,.modal-operacao-grid .span-4{grid-column:1;}
+  }
   .barra-acoes{display:grid;grid-template-columns:minmax(185px,1fr) 178px 138px 100px;gap:10px;margin-bottom:12px;}
   .barra-acoes input,.barra-acoes select{width:100%;padding:10px 12px;border-radius:var(--raio-s);border:1px solid #28415D;background:#0B1B2F;color:var(--texto);font-size:12px;outline:none;}
   .barra-acoes input:focus,.barra-acoes select:focus{border-color:#496785;}
@@ -358,6 +420,7 @@
   }
   @media(max-width:820px){
     main.modo-atendimentos{flex:1;min-height:0;overflow:hidden;padding:14px 12px 16px;}
+    main.modo-transportes,main.modo-equipamentos{flex:1;min-height:0;overflow:hidden;padding:14px 12px 16px;}
     main.modo-atendimentos .tabela-box{flex:1 1 0;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;}
     main.modo-atendimentos table{min-width:1120px;table-layout:auto;}
     main.modo-atendimentos thead th{white-space:nowrap;}
@@ -571,6 +634,8 @@ function irPara(pagina) {
   const conteudo = document.getElementById('conteudo');
   conteudo.classList.toggle('modo-agenda', pagina === 'agenda');
   conteudo.classList.toggle('modo-atendimentos', pagina === 'atendimentos');
+  conteudo.classList.toggle('modo-transportes', pagina === 'transportes');
+  conteudo.classList.toggle('modo-equipamentos', pagina === 'equipamentos');
   conteudo.innerHTML = '<div class="carregando-tela">Carregando...</div>';
   const renderFn = window.RENDERIZADORES && window.RENDERIZADORES[pagina];
   if (renderFn) {
@@ -1216,43 +1281,52 @@ function desenharTransportes() {
   const espera = transportesCache.filter(t => norm(t.espera)==='SIM').length;
   const podeEditar = !somenteLeitura();
   c.innerHTML = `
-    <div class="topo-pagina">
-      <h2>Solicitação de <span class="destaque">Transportes</span></h2>
-      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalTransporte()">+ Nova Solicitação</button>' : ''}
+    <div class="topo-pagina-atend">
+      <h2>Solicitação de <span style="color:var(--acento);">Transportes</span></h2>
+      <div class="kpis-faixa">
+        <div class="kpi-faixa-item"><div class="num">${transportesCache.length}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${confirmados}</div><div class="rot">Confirmados</div></div>
+        <div class="kpi-faixa-item"><div class="num">${naoConfirmados}</div><div class="rot">Não confirmados</div></div>
+        <div class="kpi-faixa-item"><div class="num">${espera}</div><div class="rot">Lista de espera</div></div>
+      </div>
+      ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalTransporte()">+ Nova Solicitação</button>' : ''}
     </div>
-    <div class="kpis-mini-row" style="margin-bottom:14px;"><div class="kpi-mini"><div><div class="num-kpi-mini">${transportesCache.length}</div><div class="rot-kpi-mini">Total</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${confirmados}</div><div class="rot-kpi-mini">Confirmados</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${naoConfirmados}</div><div class="rot-kpi-mini">Não confirmados</div></div></div><div class="kpi-mini"><div><div class="num-kpi-mini">${espera}</div><div class="rot-kpi-mini">Lista de espera</div></div></div></div>
-    <div class="barra-acoes"><input id="fTextoTransp" placeholder="Buscar nome ou telefone..." oninput="aplicarFiltroTransp()"><button class="btn-secundario" onclick="window.RENDERIZADORES.transportes()">↻ Atualizar</button></div>
+    <div class="barra-acoes" style="grid-template-columns:minmax(240px,1fr) 110px;">
+      <input id="fTextoTransp" placeholder="Buscar nome, hospital ou telefone..." oninput="aplicarFiltroTransp()" value="${String(filtroTranspTexto||'').replace(/"/g,'&quot;')}">
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.transportes()">↻ Atualizar</button>
+    </div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Espera</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Espera</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody>
-        ${lista.map(t => `<tr>
+        ${lista.map(t => `<tr ${podeEditar ? `ondblclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
           <td>${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
           <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td>${badgeStatus(t.espera)}</td><td>${t.observacoes||'-'}</td><td>${t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
-          ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirTransporte('${t._docId}')">Excluir</button></td>` : ''}
-        </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
+          ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirTransporte('${t._docId}')">Excluir</button></div></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="${podeEditar?13:12}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
       </tbody>
     </table></div>`;
 }
 function abrirModalTransporte(registro) {
   registro = registro || {};
   const fundo = document.createElement('div');
-  fundo.className = 'modal-fundo';
+  fundo.className = 'modal-fundo modal-operacao-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
   fundo.innerHTML = `
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal modal-operacao" onclick="event.stopPropagation()">
       <h2>${registro._docId ? 'Editar' : 'Nova'} Solicitação de Transporte</h2>
-      ${campoBuscaPessoa('t')}
-      <div class="grid-2">
+      <div class="modal-operacao-grid">
+        <div class="span-4">${campoBuscaPessoa('t')}</div>
         <div class="campo-modal"><label>Nome</label><input id="t_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Contato</label><input id="t_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
-      </div>
-      <div class="grid-2">
         <div class="campo-modal"><label>Data</label><input id="t_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Horário</label><input id="t_horario" placeholder="hh:mm" value="${(registro.horario||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-2"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-2"><label>Cidade</label><input id="t_cidade" value="${(registro.cidade||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Acompanhante</label><select id="t_acompanhante"><option ${registro.acompanhante==='SIM'?'selected':''}>SIM</option><option ${registro.acompanhante==='NAO'?'selected':''}>NAO</option></select></div>
+        <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
+        <div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div>
+        <div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div>
       </div>
-      <div class="grid-2"><div class="campo-modal"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div><div class="campo-modal"><label>Cidade</label><input id="t_cidade" value="${(registro.cidade||'').replace(/"/g,'&quot;')}"></div></div>
-      <div class="grid-2"><div class="campo-modal"><label>Acompanhante</label><select id="t_acompanhante"><option ${registro.acompanhante==='SIM'?'selected':''}>SIM</option><option ${registro.acompanhante==='NAO'?'selected':''}>NAO</option></select></div><div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div></div>
-      <div class="grid-2"><div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div><div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div></div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
         <button class="btn-primario" id="btnSalvarTransp" onclick="salvarTransporte('${registro._docId||''}')">Salvar</button>
@@ -1311,22 +1385,32 @@ window.RENDERIZADORES.equipamentos = async function () {
 function desenharEquip() {
   const c = document.getElementById('conteudo');
   const podeEditar = !somenteLeitura();
+  const total = equipCacheLista.length;
   const emUso = equipCacheLista.filter(e => norm(e.devolucao) === 'USANDO').length;
-  const tiposResumo = [...new Set([...TIPOS_EQUIPAMENTO_SEMENTE, ...equipCacheLista.map(e=>norm(e.equipamento)).filter(Boolean)])].slice(0,5);
+  const entregues = equipCacheLista.filter(e => norm(e.devolucao) === 'ENTREGUE').length;
+  const tiposQtd = new Set(equipCacheLista.map(e=>norm(e.equipamento)).filter(Boolean)).size;
   c.innerHTML = `
-    <div class="topo-pagina">
-      <h2>Controle de <span class="destaque">Equipamentos</span></h2>
-      ${podeEditar ? '<button class="btn-primario" onclick="abrirModalEquip()">+ Novo Empréstimo</button>' : ''}
+    <div class="topo-pagina-atend">
+      <h2>Controle de <span style="color:var(--acento);">Equipamentos</span></h2>
+      <div class="kpis-faixa">
+        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${emUso}</div><div class="rot">Em uso</div></div>
+        <div class="kpi-faixa-item"><div class="num">${entregues}</div><div class="rot">Entregues</div></div>
+        <div class="kpi-faixa-item"><div class="num">${tiposQtd}</div><div class="rot">Tipos</div></div>
+      </div>
+      ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalEquip()">+ Novo Empréstimo</button>' : ''}
     </div>
-    <div class="kpis-mini-row" style="margin-bottom:16px;">${tiposResumo.map(tipo=>`<div class="kpi-mini"><div><div class="num-kpi-mini">${equipCacheLista.filter(e=>norm(e.equipamento)===tipo && norm(e.devolucao)==='USANDO').length}</div><div class="rot-kpi-mini">${tipo}</div></div></div>`).join('')}</div>
-    <div class="barra-acoes"><input placeholder="Buscar por nome, equipamento ou contato..." oninput="const q=norm(this.value);document.querySelectorAll('#tbEquip tr').forEach(r=>r.style.display=!q||norm(r.innerText).includes(q)?'':'none')"><button class="btn-secundario" onclick="window.RENDERIZADORES.equipamentos()">↻ Atualizar</button></div>
+    <div class="barra-acoes" style="grid-template-columns:minmax(240px,1fr) 110px;">
+      <input placeholder="Buscar por nome, equipamento ou contato..." oninput="const q=norm(this.value);document.querySelectorAll('#tbEquip tr').forEach(r=>r.style.display=!q||norm(r.innerText).includes(q)?'':'none')">
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.equipamentos()">↻ Atualizar</button>
+    </div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Última edição</th>${podeEditar?'<th></th>':''}</tr></thead>
+      <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody id="tbEquip">
-        ${equipCacheLista.map(e => `<tr>
+        ${equipCacheLista.map(e => `<tr ${podeEditar ? `ondblclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
           <td>${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
-          ${podeEditar ? `<td style="display:flex;gap:6px;"><button class="btn-secundario" onclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEquip('${e._docId}')">Excluir</button></td>` : ''}
-        </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
+          ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirEquip('${e._docId}')">Excluir</button></div></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
     </table></div>`;
 }
@@ -1334,18 +1418,20 @@ function abrirModalEquip(registro) {
   registro = registro || {};
   const opcoes = tiposEquipamentoCache.length ? tiposEquipamentoCache.map(t => t.nome) : TIPOS_EQUIPAMENTO_SEMENTE;
   const fundo = document.createElement('div');
-  fundo.className = 'modal-fundo';
+  fundo.className = 'modal-fundo modal-operacao-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
   fundo.innerHTML = `
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal modal-operacao" onclick="event.stopPropagation()">
       <h2>${registro._docId ? 'Editar' : 'Novo'} Empréstimo</h2>
-      ${campoBuscaPessoa('e')}
-      <div class="grid-2">
-        <div class="campo-modal"><label>Nome</label><input id="e_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
-        <div class="campo-modal"><label>Contato</label><input id="e_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
+      <div class="modal-operacao-grid">
+        <div class="span-4">${campoBuscaPessoa('e')}</div>
+        <div class="campo-modal span-2"><label>Nome</label><input id="e_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-2"><label>Contato</label><input id="e_contato" value="${(registro.contato||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Entrega</label><input id="e_entrega" placeholder="dd/mm/aaaa" value="${(registro.entrega||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
       </div>
-      <div class="grid-2"><div class="campo-modal"><label>Entrega</label><input id="e_entrega" placeholder="dd/mm/aaaa" value="${(registro.entrega||'').replace(/"/g,'&quot;')}"></div><div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div></div>
-      <div class="grid-2"><div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div><div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div></div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
         <button class="btn-primario" id="btnSalvarEquip" onclick="salvarEquip('${registro._docId||''}')">Salvar</button>
@@ -1619,4 +1705,4 @@ if ('serviceWorker' in navigator) {
 </script>
 
 </body>
-</html>
+</html
