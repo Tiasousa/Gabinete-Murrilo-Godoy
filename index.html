@@ -969,11 +969,22 @@ window.RENDERIZADORES.dashboard = async function () {
 // ---------------- ATENDIMENTOS ----------------
 const norm = s => (s || '').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+
+function kpiMiniMurillo(corFundo, corTexto, icone, numero, rotulo){
+  return `<div class="kpi-mini">
+    <div class="icone-kpi-mini" style="background:${corFundo};color:${corTexto};">${icone}</div>
+    <div>
+      <div class="num-kpi-mini">${numero}</div>
+      <div class="rot-kpi-mini">${rotulo}</div>
+    </div>
+  </div>`;
+}
+
 function badgeStatus(status) {
   const s = norm(status);
   let classe = 'badge-cinza';
-  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE') classe = 'badge-verde';
-  else if (s === 'EM ANALISE') classe = 'badge-amarelo';
+  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO') classe = 'badge-verde';
+  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO') classe = 'badge-amarelo';
   else if (s === 'CANCELADO' || s === 'NAO') classe = 'badge-vermelho';
   return `<span class="badge ${classe}">${status || '-'}</span>`;
 }
@@ -1725,19 +1736,19 @@ window.salvarAgenda=salvarAgenda;window.excluirAgenda=excluirAgenda;
 
 
 // ============================================================
-// EVENTOS — LIBERADO PARA TODOS OS PERFIS ATIVOS
-// VEREADOR visualiza; ADMIN/ASSESSOR/ASSESSORA podem cadastrar e editar.
+// EVENTOS — fiel ao funcionamento do Tatiquinho, adaptado ao Murillo.
+// Festas, inaugurações e compromissos maiores da agenda pública.
 // ============================================================
 const STATUS_EVENTO_MURILLO = ['PLANEJAMENTO','CONFIRMADO','REALIZADO','CANCELADO'];
 let eventosMurilloCache = [];
 
 window.RENDERIZADORES.eventos = async function(){
   const c = document.getElementById('conteudo');
-  c.innerHTML = '<div class="carregando-tela">Carregando eventos...</div>';
+  c.innerHTML = '<div class="topo-pagina"><div><h2>Controle de <span style="color:var(--acento);">Eventos</span></h2><div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div></div></div><p style="color:var(--texto-suave);">Carregando...</p>';
+
   try{
     const snap = await getDocs(collection(db,'eventos'));
-    eventosMurilloCache = snap.docs.map(d=>({_docId:d.id,...d.data()}))
-      .sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
+    eventosMurilloCache = snap.docs.map(d=>({ _docId:d.id, ...d.data() }));
     desenharEventosMurillo();
   }catch(e){
     c.innerHTML = '<div class="painel-box">Não foi possível carregar Eventos. '+escapar(e.message||e)+'</div>';
@@ -1746,96 +1757,169 @@ window.RENDERIZADORES.eventos = async function(){
 
 function desenharEventosMurillo(){
   const c = document.getElementById('conteudo');
-  const podeEditar = !somenteLeitura();
+  const botaoNovo = somenteLeitura() ? '' : '<button class="btn-primario" onclick="abrirModalEvtMurillo()">+ Novo Evento</button>';
+
   const hoje = new Date();
   const total = eventosMurilloCache.length;
-  const confirmados = eventosMurilloCache.filter(e=>norm(e.status)==='CONFIRMADO').length;
-  const realizados = eventosMurilloCache.filter(e=>norm(e.status)==='REALIZADO').length;
-  const esteMes = eventosMurilloCache.filter(e=>{
-    const p=String(e.data||'').split('/');
-    return p.length===3 && Number(p[1])===hoje.getMonth()+1 && Number(p[2])===hoje.getFullYear();
+  const confirmados = eventosMurilloCache.filter(ev=>norm(ev.status)==='CONFIRMADO').length;
+  const realizados = eventosMurilloCache.filter(ev=>norm(ev.status)==='REALIZADO').length;
+  const esteMes = eventosMurilloCache.filter(ev=>{
+    const p = String(ev.data||'').split('/');
+    return p.length===3 && Number(p[1])-1===hoje.getMonth() && Number(p[2])===hoje.getFullYear();
   }).length;
 
   c.innerHTML = `
-    <div class="topo-pagina-atend">
-      <h2>Controle de <span style="color:var(--acento);">Eventos</span></h2>
-      <div class="kpis-faixa">
-        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
-        <div class="kpi-faixa-item"><div class="num">${confirmados}</div><div class="rot">Confirmados</div></div>
-        <div class="kpi-faixa-item"><div class="num">${realizados}</div><div class="rot">Realizados</div></div>
-        <div class="kpi-faixa-item"><div class="num">${esteMes}</div><div class="rot">Este mês</div></div>
+    <div class="topo-pagina">
+      <div class="cabecalho-titulo">
+        <h2>Controle de <span style="color:var(--acento);">Eventos</span></h2>
+        <p>Festas, inaugurações e compromissos maiores da agenda pública.</p>
       </div>
-      ${podeEditar?'<button class="btn-primario" onclick="abrirModalEventoMurillo()">+ Novo Evento</button>':''}
+
+      <div class="kpis-mini-row">
+        ${kpiMiniMurillo('rgba(34,197,94,.18)','#4ADE80','🎉',total,'Total')}
+        ${kpiMiniMurillo('rgba(59,130,246,.18)','#60A5FA','✅',confirmados,'Confirmados')}
+        ${kpiMiniMurillo('rgba(242,178,58,.18)','#F2B23A','🏁',realizados,'Realizados')}
+        ${kpiMiniMurillo('rgba(168,85,247,.18)','#C084FC','📅',esteMes,'Este Mês')}
+      </div>
+
+      ${botaoNovo}
     </div>
-    ${somenteLeitura()?'<div class="aviso-perfil">Seu perfil possui acesso para visualização.</div>':''}
-    <div class="modulo-table-box">
-      <table class="modulo-table">
-        <thead><tr><th>Data</th><th>Título</th><th>Local</th><th>Status</th><th>Descrição</th>${podeEditar?'<th>Ação</th>':''}</tr></thead>
+
+    ${somenteLeitura() ? '<div class="aviso-perfil">Seu perfil (VEREADOR) tem acesso somente para visualização.</div>' : ''}
+
+    <div class="tabela-box">
+      <table style="min-width:800px;">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Título</th>
+            <th>Local</th>
+            <th>Status</th>
+            ${somenteLeitura() ? '' : '<th></th>'}
+          </tr>
+        </thead>
         <tbody>
-          ${eventosMurilloCache.map(e=>`
+          ${eventosMurilloCache.map(ev=>`
             <tr>
-              <td>${escapar(e.data||'')}</td>
-              <td>${escapar(e.titulo||'')}</td>
-              <td>${escapar(e.local||'')}</td>
-              <td>${badgeStatus(e.status)}</td>
-              <td>${escapar(e.descricao||'')}</td>
-              ${podeEditar?`<td><button class="btn-secundario btn-tabela" onclick="abrirModalEventoMurilloPorId('${e._docId}')">Editar</button></td>`:''}
-            </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum evento cadastrado.</td></tr>`}
+              <td>${escapar(ev.data||'')}</td>
+              <td>${escapar(ev.titulo||'')}</td>
+              <td>${escapar(ev.local||'')}</td>
+              <td>${badgeStatus(ev.status)}</td>
+              ${somenteLeitura() ? '' : `<td><button class="btn-secundario" onclick="abrirModalEvtMurilloPorId('${ev._docId}')">Editar</button></td>`}
+            </tr>
+          `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--texto-fraco);padding:20px;">Nenhum evento cadastrado ainda.</td></tr>`}
         </tbody>
       </table>
-    </div>`;
+    </div>
+  `;
 }
 
-function abrirModalEventoMurilloPorId(id){
-  abrirModalEventoMurillo(eventosMurilloCache.find(e=>e._docId===id)||{});
+function abrirModalEvtMurilloPorId(id){
+  const registro = eventosMurilloCache.find(ev=>ev._docId===id) || {};
+  abrirModalEvtMurillo(registro);
 }
-window.abrirModalEventoMurilloPorId = abrirModalEventoMurilloPorId;
+window.abrirModalEvtMurilloPorId = abrirModalEvtMurilloPorId;
 
-function abrirModalEventoMurillo(registro={}){
+function abrirModalEvtMurillo(registro){
+  registro = registro || {};
   if(somenteLeitura()) return;
-  const fundo=document.createElement('div');
-  fundo.className='modal-fundo';
-  fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
-  fundo.innerHTML=`
+
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = (ev)=>{ if(ev.target===fundo) fundo.remove(); };
+
+  fundo.innerHTML = `
     <div class="modal" onclick="event.stopPropagation()">
-      <h2>${registro._docId?'Editar':'Novo'} Evento</h2>
-      <div class="campo-modal"><label>Título</label><input id="evt_titulo" value="${escapar(registro.titulo||'')}" placeholder="Ex.: Festa do bairro"></div>
+      <h2>${registro._docId ? 'Editar' : 'Novo'} Evento</h2>
+
       <div class="grid-2">
-        <div class="campo-modal"><label>Data</label><input id="evt_data" value="${escapar(registro.data||'')}" placeholder="dd/mm/aaaa"></div>
-        <div class="campo-modal"><label>Local</label><input id="evt_local" value="${escapar(registro.local||'')}"></div>
+        <div class="campo-modal" style="grid-column:1/-1;">
+          <label>Título</label>
+          <input id="evt_titulo" value="${escapar(registro.titulo||'')}" placeholder="Ex: Festa junina do bairro X">
+        </div>
+
+        <div class="campo-modal">
+          <label>Data</label>
+          <input id="evt_data" value="${escapar(registro.data||'')}" placeholder="dd/mm/aaaa">
+        </div>
+
+        <div class="campo-modal">
+          <label>Local</label>
+          <input id="evt_local" value="${escapar(registro.local||'')}">
+        </div>
+
+        <div class="campo-modal">
+          <label>Status</label>
+          <select id="evt_status">
+            ${STATUS_EVENTO_MURILLO.map(s=>`<option ${s===registro.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="campo-modal" style="grid-column:1/-1;">
+          <label>Descrição</label>
+          <textarea id="evt_desc" rows="3">${escapar(registro.descricao||'')}</textarea>
+        </div>
       </div>
-      <div class="campo-modal"><label>Status</label><select id="evt_status">${STATUS_EVENTO_MURILLO.map(s=>`<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select></div>
-      <div class="campo-modal"><label>Descrição</label><textarea id="evt_desc">${escapar(registro.descricao||'')}</textarea></div>
-      <div class="modal-acoes"><span></span><div style="display:flex;gap:8px"><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button><button class="btn-primario" id="btnSalvarEvt" onclick="salvarEventoMurillo('${registro._docId||''}')">Salvar</button></div></div>
+
+      <div class="modal-acoes">
+        <span></span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+          <button class="btn-primario" id="btnSalvarEvtMurillo" onclick="salvarEvtMurillo('${registro._docId||''}')">Salvar</button>
+        </div>
+      </div>
     </div>`;
+
   document.body.appendChild(fundo);
 }
-window.abrirModalEventoMurillo = abrirModalEventoMurillo;
+window.abrirModalEvtMurillo = abrirModalEvtMurillo;
 
-async function salvarEventoMurillo(id){
-  const b=document.getElementById('btnSalvarEvt');
-  const dados={
-    titulo:document.getElementById('evt_titulo').value.trim(),
-    data:document.getElementById('evt_data').value.trim(),
-    local:document.getElementById('evt_local').value.trim(),
-    status:document.getElementById('evt_status').value,
-    descricao:document.getElementById('evt_desc').value.trim(),
-    ultimaEdicaoPor:USUARIO?.nome||'',
-    ultimaEdicaoData:new Date().toLocaleString('pt-BR')
+async function salvarEvtMurillo(id){
+  if(somenteLeitura()) return;
+
+  const btn = document.getElementById('btnSalvarEvtMurillo');
+  const dados = {
+    titulo: document.getElementById('evt_titulo').value,
+    data: document.getElementById('evt_data').value,
+    local: document.getElementById('evt_local').value,
+    status: document.getElementById('evt_status').value,
+    descricao: document.getElementById('evt_desc').value
   };
-  if(!dados.titulo){alert('Preencha o título.');return;}
-  b.disabled=true;b.innerText='Salvando...';
+
+  if(!dados.titulo.trim()){
+    alert('Preencha o título.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = 'Salvando...';
+
   try{
-    if(id) await updateDoc(doc(db,'eventos',id),dados);
-    else await addDoc(collection(db,'eventos'),{...dados,criadoPor:USUARIO?.nome||'',criadoEmTexto:new Date().toLocaleString('pt-BR')});
+    if(id){
+      await updateDoc(doc(db,'eventos',id), {
+        ...dados,
+        ultimaEdicaoPor: USUARIO?.nome || '',
+        ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+      });
+    }else{
+      await addDoc(collection(db,'eventos'), {
+        ...dados,
+        criadoPor: USUARIO?.nome || '',
+        criadoEmTexto: new Date().toLocaleString('pt-BR'),
+        ultimaEdicaoPor: USUARIO?.nome || '',
+        ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+      });
+    }
+
     document.querySelector('.modal-fundo')?.remove();
     await window.RENDERIZADORES.eventos();
-  }catch(e){
-    alert('Não foi possível salvar o evento. ('+e.message+')');
-    b.disabled=false;b.innerText='Salvar';
+  }catch(erro){
+    alert('Não foi possível salvar. ('+erro.message+')');
+    btn.disabled = false;
+    btn.innerText = 'Salvar';
   }
 }
-window.salvarEventoMurillo = salvarEventoMurillo;
+window.salvarEvtMurillo = salvarEvtMurillo;
 
 
 // ============================================================
