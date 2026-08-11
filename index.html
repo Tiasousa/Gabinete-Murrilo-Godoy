@@ -74,6 +74,7 @@
 
   /* ===== APP ===== */
   #app{min-height:100vh;display:flex;flex-direction:column;}
+  .cabecalho-fixo{position:sticky;top:0;z-index:1000;background:#071425;box-shadow:0 8px 24px rgba(0,0,0,.18);}
   header.topo-app{background:#071425;border-bottom:1px solid var(--borda);padding:10px 30px;display:flex;align-items:center;gap:16px;min-height:68px;}
   .logo-topo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .logo-topo img{height:46px;width:auto;max-width:92px;object-fit:contain;border-radius:6px;}
@@ -349,6 +350,7 @@
 </div>
 
 <div id="app" class="hidden">
+  <div class="cabecalho-fixo">
   <header class="topo-app">
     <div class="logo-topo">
       <img src="./icon-512.png" alt="Logo" onerror="this.style.display='none'">
@@ -369,6 +371,7 @@
     </div>
   </header>
   <nav class="menu-nav-topo" id="menuNav"></nav>
+  </div>
   <main id="conteudo"><div class="carregando-tela">Carregando...</div></main>
 </div>
 
