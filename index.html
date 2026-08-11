@@ -191,6 +191,29 @@
   .campo-modal label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--texto-fraco);font-weight:700;margin-bottom:6px;}
   .campo-modal input,.campo-modal select,.campo-modal textarea{width:100%;padding:10px 12px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:13.5px;box-sizing:border-box;}
   .campo-modal textarea{resize:vertical;min-height:70px;font-family:inherit;}
+
+  /* ===== MODAL ATENDIMENTO — horizontal, centralizado e sem rolagem ===== */
+  .modal-fundo.modal-atendimento-fundo{align-items:center;justify-content:center;padding:18px;}
+  .modal.modal-atendimento{width:min(1120px,calc(100vw - 36px));max-width:1120px;max-height:none;overflow:visible;padding:22px 24px 20px;}
+  .modal-atendimento h2{margin:0 0 14px;font-size:20px;}
+  .modal-atendimento-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px;align-items:end;}
+  .modal-atendimento-grid .campo-modal{margin-bottom:0;min-width:0;}
+  .modal-atendimento-grid .span-2{grid-column:span 2;}
+  .modal-atendimento-grid .span-4{grid-column:1/-1;}
+  .modal-atendimento-grid input,.modal-atendimento-grid select{height:44px;}
+  .modal-atendimento-grid textarea{height:76px;min-height:76px;max-height:76px;resize:none;}
+  .modal-atendimento .modal-acoes{margin-top:14px;}
+  @media(max-width:900px){
+    .modal-fundo.modal-atendimento-fundo{align-items:flex-start;overflow-y:auto;}
+    .modal.modal-atendimento{max-height:none;overflow:visible;}
+    .modal-atendimento-grid{grid-template-columns:1fr 1fr;}
+    .modal-atendimento-grid .span-4{grid-column:1/-1;}
+    .modal-atendimento-grid .span-2{grid-column:span 1;}
+  }
+  @media(max-width:560px){
+    .modal-atendimento-grid{grid-template-columns:1fr;}
+    .modal-atendimento-grid .span-2,.modal-atendimento-grid .span-4{grid-column:1;}
+  }
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .modal-acoes{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;}
   .resultados-busca-pessoa{position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--fundo);border:1px solid var(--acento);border-radius:var(--raio-s);max-height:220px;overflow-y:auto;z-index:30;box-shadow:0 12px 30px rgba(0,0,0,.5);}
@@ -1065,7 +1088,7 @@ function desenharAtendimentos() {
         </tr></thead>
         <tbody>
           ${lista.map(a => `
-            <tr>
+            <tr ${podeEditar ? `ondblclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
               <td>${valorSeguro(a.data)}</td>
               <td class="td-wrap">${valorSeguro(a.nome)}</td>
               <td>${a.telefone ? linkWhatsapp(a.telefone) : '—'}</td>
@@ -1079,7 +1102,7 @@ function desenharAtendimentos() {
               <td style="text-align:center;">${cicloDiasAtendimento(a)}</td>
               <td style="text-align:center;">${a.qtdAnexos ? '📎 '+a.qtdAnexos : (Array.isArray(a.anexos) && a.anexos.length ? '📎 '+a.anexos.length : '—')}</td>
               <td class="td-obs" title="${String(a.observacoes||'').replace(/"/g,'&quot;')}">${valorSeguro(a.observacoes)}</td>
-              ${podeEditar ? `<td><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></div></td>` : ''}
+              ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></div></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${podeEditar ? 14 : 13}" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto || filtroAtendTipo || filtroAtendStatus ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
         </tbody>
@@ -1095,34 +1118,24 @@ function abrirModalAtendimento(registro) {
   registro = registro || {};
   const opcoesTipo = tiposAtendimentoCache.length ? tiposAtendimentoCache.map(t => t.nome) : TIPOS_ATENDIMENTO;
   const fundo = document.createElement('div');
-  fundo.className = 'modal-fundo';
+  fundo.className = 'modal-fundo modal-atendimento-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
   fundo.innerHTML = `
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal modal-atendimento" onclick="event.stopPropagation()">
       <h2>${registro._docId ? 'Editar' : 'Novo'} Atendimento</h2>
-      ${campoBuscaPessoa('m')}
-      <div class="grid-2">
-        <div class="campo-modal"><label>Nome</label><input id="m_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
-        <div class="campo-modal"><label>Telefone</label><input id="m_telefone" value="${(registro.telefone||'').replace(/"/g,'&quot;')}"></div>
-      </div>
-      <div class="campo-modal"><label>Endereço</label><input id="m_endereco" value="${(registro.endereco||'').replace(/"/g,'&quot;')}"></div>
-      <div class="grid-2">
+      <div class="modal-atendimento-grid">
+        ${campoBuscaPessoa('m')}
+        <div class="campo-modal span-2"><label>Nome</label><input id="m_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-2"><label>Telefone</label><input id="m_telefone" value="${(registro.telefone||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-2"><label>Endereço</label><input id="m_endereco" value="${(registro.endereco||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Bairro</label><input id="m_bairro" value="${(registro.bairro||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Data</label><input id="m_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
-      </div>
-      <div class="grid-2">
-        <div class="campo-modal"><label>Tipo de Atendimento</label>
-          <select id="m_tipo">${opcoesTipo.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select>
-        </div>
-        <div class="campo-modal"><label>Status</label>
-          <select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select>
-        </div>
-      </div>
-      <div class="grid-2">
+        <div class="campo-modal"><label>Tipo de Atendimento</label><select id="m_tipo">${opcoesTipo.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="campo-modal"><label>Status</label><select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Responsável</label><input id="m_responsavel" value="${(registro.responsavel||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Indicador</label><input id="m_indicador" value="${(registro.indicador||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="m_obs">${registro.observacoes||''}</textarea></div>
       </div>
-      <div class="campo-modal"><label>Observações</label><textarea id="m_obs">${registro.observacoes||''}</textarea></div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
         <button class="btn-primario" id="btnSalvarAtend" onclick="salvarAtendimento('${registro._docId||''}')">Salvar</button>
