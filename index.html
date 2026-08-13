@@ -487,13 +487,13 @@
     height:calc(100% - 30px);
     min-height:0;
     overflow:hidden;
-    padding-bottom:22px;
+    padding-bottom:20px;
     position:relative;
   }
   .gcal-event{
     display:flex;align-items:center;gap:4px;
-    min-height:18px;
-    height:18px;
+    min-height:16px;
+    height:16px;
     padding:2px 6px;
     border-radius:4px;
     background:#6f7fc7;
@@ -635,8 +635,9 @@
     bottom:0;
     display:flex;
     align-items:center;
-    min-height:20px;
-    padding:2px 6px;
+    min-height:18px;
+    height:18px;
+    padding:1px 6px;
     border-radius:4px;
     font-size:10.5px;
     color:#3c4043;
@@ -2124,7 +2125,8 @@ function escapeAttrJson(obj){
 
 
 function limiteEventosPorDia(){
-  // Padrão igual ao Google Agenda: 2 visíveis e o restante em “Mais X”.
+  // Sempre mostra 2 compromissos no quadrinho.
+  // O 3º espaço vira "Mais X".
   return 2;
 }
 
