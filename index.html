@@ -603,6 +603,24 @@
   }
   .gcal-save:hover{background:#0842a0;}
 
+
+  .gcal-google-btn{
+    height:40px;border:1px solid #dadce0;border-radius:20px;
+    background:#fff;color:#3c4043;padding:0 15px;font-weight:700;
+    display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+  }
+  .gcal-google-btn:hover{background:#f1f3f4;}
+  .gcal-google-btn.conectado{color:#137333;background:#e6f4ea;border-color:#ceead6;}
+  .gcal-google-dot{width:8px;height:8px;border-radius:50%;background:#9aa0a6;display:inline-block;}
+  .gcal-google-btn.conectado .gcal-google-dot{background:#34a853;}
+  .gcal-sync-btn{
+    width:40px;height:40px;border:1px solid #dadce0;border-radius:50%;
+    background:#fff;color:#5f6368;font-size:18px;
+  }
+  .gcal-sync-btn:hover{background:#f1f3f4;}
+  .gcal-sync-btn:disabled{opacity:.45;cursor:default;}
+  .gcal-google-event{box-shadow:inset 3px 0 0 rgba(255,255,255,.65);}
+
   @media(max-width:900px){
     main.modo-agenda{height:auto;min-height:calc(100vh - 120px);overflow:auto;}
     .gcal-shell{min-height:760px;}
@@ -742,6 +760,7 @@
   <main id="conteudo"><div class="carregando-tela">Carregando...</div></main>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
@@ -1722,6 +1741,17 @@ let agendaAno = new Date().getFullYear();
 let agendaSelecionada = new Date();
 let agendaInicializada = false;
 
+let agendaGoogleCache = [];
+let googleAccessToken = '';
+let googleTokenClient = null;
+let googleTokenExpiraEm = 0;
+let googleCarregando = false;
+
+const GOOGLE_CALENDAR_CLIENT_ID = '1039162247732-09p5akmko66785vljicdmna9shgpo2eo.apps.googleusercontent.com';
+const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+const GOOGLE_CALENDAR_ID = 'primary';
+
+
 function dataISOlocal(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dia=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${dia}`;
@@ -1754,7 +1784,243 @@ window.RENDERIZADORES.agenda = async function(){
 };
 
 function eventosDoDiaISO(iso){
-  return agendaEventosCache.filter(e=>e.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+  const locais=agendaEventosCache.filter(e=>e.data===iso);
+  const idsGoogleLocais=new Set(locais.map(e=>e.googleEventId).filter(Boolean));
+  const google=agendaGoogleCache.filter(e=>e.data===iso && !idsGoogleLocais.has(e.googleEventId));
+  return [...locais,...google].sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+}
+
+
+function googleTokenValido(){
+  return !!googleAccessToken && Date.now() < (googleTokenExpiraEm - 30000);
+}
+
+function atualizarEstadoGoogleAgenda(){
+  const btn=document.getElementById('btnGoogleAgenda');
+  const sync=document.getElementById('btnSyncGoogleAgenda');
+  if(btn){
+    const conectado=googleTokenValido();
+    btn.classList.toggle('conectado',conectado);
+    btn.innerHTML=`<span class="gcal-google-dot"></span>${conectado?'Google conectado':'Conectar Google'}`;
+  }
+  if(sync) sync.disabled=!googleTokenValido() || googleCarregando;
+}
+
+function esperarGIS(timeout=10000){
+  return new Promise((resolve,reject)=>{
+    const inicio=Date.now();
+    const t=setInterval(()=>{
+      if(window.google?.accounts?.oauth2){
+        clearInterval(t); resolve();
+      }else if(Date.now()-inicio>timeout){
+        clearInterval(t); reject(new Error('Google Identity Services não carregou.'));
+      }
+    },100);
+  });
+}
+
+async function conectarGoogleAgenda(){
+  try{
+    await esperarGIS();
+
+    if(!googleTokenClient){
+      googleTokenClient=google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CALENDAR_CLIENT_ID,
+        scope: GOOGLE_CALENDAR_SCOPE,
+        callback: async (resp)=>{
+          if(resp.error){
+            alert('Não foi possível conectar ao Google Agenda: '+resp.error);
+            return;
+          }
+          googleAccessToken=resp.access_token||'';
+          googleTokenExpiraEm=Date.now()+((Number(resp.expires_in)||3600)*1000);
+          atualizarEstadoGoogleAgenda();
+          try{
+            await carregarEventosGoogleMes(true);
+          }catch(e){
+            console.error(e);
+            alert('Conectou ao Google, mas não foi possível carregar a agenda: '+e.message);
+          }
+        }
+      });
+    }
+
+    if(googleTokenValido()){
+      await carregarEventosGoogleMes(true);
+      return;
+    }
+
+    googleTokenClient.requestAccessToken({prompt:'select_account'});
+  }catch(e){
+    console.error(e);
+    alert('Não foi possível iniciar a conexão com o Google Agenda: '+e.message);
+  }
+}
+window.conectarGoogleAgenda=conectarGoogleAgenda;
+
+function intervaloVisivelGoogle(){
+  const primeiro=new Date(agendaAno,agendaMes,1,0,0,0,0);
+  const inicio=new Date(primeiro);
+  inicio.setDate(1-primeiro.getDay());
+
+  const fim=new Date(inicio);
+  fim.setDate(inicio.getDate()+42);
+  return {inicio,fim};
+}
+
+function dataHoraGoogleParaCampos(ev){
+  const start=ev.start||{};
+  const end=ev.end||{};
+  const data=start.date || (start.dateTime ? start.dateTime.slice(0,10) : '');
+  let hora='', horaFim='';
+
+  if(start.dateTime){
+    const ds=new Date(start.dateTime);
+    hora=String(ds.getHours()).padStart(2,'0')+':'+String(ds.getMinutes()).padStart(2,'0');
+  }
+  if(end.dateTime){
+    const de=new Date(end.dateTime);
+    horaFim=String(de.getHours()).padStart(2,'0')+':'+String(de.getMinutes()).padStart(2,'0');
+  }
+
+  const privado=ev.extendedProperties?.private||{};
+  return {
+    _docId:'',
+    _origemGoogle:true,
+    googleEventId:ev.id,
+    googleHtmlLink:ev.htmlLink||'',
+    titulo:ev.summary||'(Sem título)',
+    data,
+    hora,
+    horaFim,
+    tipo:privado.gabineteTipo||'COMPROMISSO',
+    local:ev.location||'',
+    status:privado.gabineteStatus||'CONFIRMADO',
+    lembrete:true,
+    observacoes:ev.description||''
+  };
+}
+
+async function googleApi(path, options={}){
+  if(!googleTokenValido()) throw new Error('Google Agenda desconectado. Clique em “Conectar Google”.');
+
+  const resp=await fetch('https://www.googleapis.com/calendar/v3'+path,{
+    ...options,
+    headers:{
+      'Authorization':'Bearer '+googleAccessToken,
+      'Content-Type':'application/json',
+      ...(options.headers||{})
+    }
+  });
+
+  if(resp.status===401){
+    googleAccessToken='';
+    googleTokenExpiraEm=0;
+    atualizarEstadoGoogleAgenda();
+    throw new Error('A autorização do Google expirou. Conecte novamente.');
+  }
+
+  if(resp.status===204) return null;
+  const body=await resp.json().catch(()=>({}));
+  if(!resp.ok){
+    const msg=body?.error?.message||('Erro Google Calendar '+resp.status);
+    throw new Error(msg);
+  }
+  return body;
+}
+
+async function carregarEventosGoogleMes(forcar=false){
+  if(!googleTokenValido()) return;
+  if(googleCarregando && !forcar) return;
+
+  googleCarregando=true;
+  atualizarEstadoGoogleAgenda();
+
+  try{
+    const {inicio,fim}=intervaloVisivelGoogle();
+    const params=new URLSearchParams({
+      timeMin:inicio.toISOString(),
+      timeMax:fim.toISOString(),
+      singleEvents:'true',
+      orderBy:'startTime',
+      maxResults:'2500',
+      timeZone:'America/Sao_Paulo'
+    });
+
+    const dados=await googleApi(`/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events?${params.toString()}`);
+    agendaGoogleCache=(dados.items||[])
+      .filter(ev=>ev.status!=='cancelled')
+      .map(dataHoraGoogleParaCampos)
+      .filter(ev=>ev.data);
+
+    desenharAgenda();
+  }finally{
+    googleCarregando=false;
+    atualizarEstadoGoogleAgenda();
+  }
+}
+window.carregarEventosGoogleMes=carregarEventosGoogleMes;
+
+function proximoDiaISO(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  const dt=new Date(y,m-1,d,12,0,0,0);
+  dt.setDate(dt.getDate()+1);
+  return dataISOlocal(dt);
+}
+
+function corpoEventoGoogle(dados){
+  const base={
+    summary:dados.titulo||'Compromisso',
+    location:dados.local||'',
+    description:dados.observacoes||'',
+    extendedProperties:{
+      private:{
+        gabineteTipo:dados.tipo||'COMPROMISSO',
+        gabineteStatus:dados.status||'PLANEJADO',
+        origem:'gabinete-digital'
+      }
+    },
+    reminders:dados.lembrete!==false
+      ? {useDefault:false,overrides:[{method:'popup',minutes:45}]}
+      : {useDefault:false,overrides:[]}
+  };
+
+  if(dados.hora){
+    const fim=dados.horaFim || (() => {
+      const [hh,mm]=dados.hora.split(':').map(Number);
+      const dt=new Date(2000,0,1,hh,mm||0);
+      dt.setHours(dt.getHours()+1);
+      return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+    })();
+
+    base.start={dateTime:`${dados.data}T${dados.hora}:00`,timeZone:'America/Sao_Paulo'};
+    base.end={dateTime:`${dados.data}T${fim}:00`,timeZone:'America/Sao_Paulo'};
+  }else{
+    base.start={date:dados.data};
+    base.end={date:proximoDiaISO(dados.data)};
+  }
+
+  return base;
+}
+
+async function criarEventoGoogle(dados){
+  return await googleApi(`/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events`,{
+    method:'POST',
+    body:JSON.stringify(corpoEventoGoogle(dados))
+  });
+}
+
+async function atualizarEventoGoogle(eventId,dados){
+  return await googleApi(`/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events/${encodeURIComponent(eventId)}`,{
+    method:'PATCH',
+    body:JSON.stringify(corpoEventoGoogle(dados))
+  });
+}
+
+async function excluirEventoGoogle(eventId){
+  return await googleApi(`/calendars/${encodeURIComponent(GOOGLE_CALENDAR_ID)}/events/${encodeURIComponent(eventId)}`,{
+    method:'DELETE'
+  });
 }
 
 function classeStatusAgenda(status){
@@ -1795,7 +2061,7 @@ function desenharAgenda(){
     const eventosHtml=visiveis.map(ev=>{
       const hora=ev.hora ? escapar(ev.hora) : '';
       const titulo=escapar(ev.titulo||'Compromisso');
-      return `<div class="gcal-event ${classeStatusAgenda(ev.status)}"
+      return `<div class="gcal-event ${classeStatusAgenda(ev.status)} ${ev._origemGoogle?'gcal-google-event':''}"
                    title="${hora?hora+' ':''}${titulo}"
                    onclick='event.stopPropagation();abrirModalAgenda(${escapeAttrJson(ev)})'>
                 ${hora?`<span class="gcal-event-time">${hora}</span>`:''}
@@ -1822,6 +2088,10 @@ function desenharAgenda(){
         <button class="gcal-navbtn" title="Próximo mês" onclick="mudarMesAgenda(1)">›</button>
         <div class="gcal-mes">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</div>
         <div class="gcal-spacer"></div>
+        <button id="btnGoogleAgenda" class="gcal-google-btn ${googleTokenValido()?'conectado':''}" onclick="conectarGoogleAgenda()">
+          <span class="gcal-google-dot"></span>${googleTokenValido()?'Google conectado':'Conectar Google'}
+        </button>
+        <button id="btnSyncGoogleAgenda" class="gcal-sync-btn" title="Atualizar Google Agenda" onclick="carregarEventosGoogleMes(true)" ${googleTokenValido()?'':'disabled'}>↻</button>
         ${podeEditar?'<button class="gcal-novo" onclick="abrirModalAgenda()">＋ Compromisso</button>':''}
         <button class="gcal-view">Mês ▾</button>
       </div>
@@ -1845,15 +2115,16 @@ function selecionarDiaAgenda(iso,abrirNovo=false){
   }
 }
 
-function mudarMesAgenda(delta){
+async function mudarMesAgenda(delta){
   agendaMes+=delta;
   if(agendaMes<0){agendaMes=11;agendaAno--;}
   if(agendaMes>11){agendaMes=0;agendaAno++;}
   agendaSelecionada=new Date(agendaAno,agendaMes,1,12,0,0,0);
   desenharAgenda();
+  if(googleTokenValido()) await carregarEventosGoogleMes(true);
 }
 
-function irParaHojeAgenda(){
+async function irParaHojeAgenda(){
   const hoje=new Date();
   hoje.setHours(12,0,0,0);
   agendaMes=hoje.getMonth();
@@ -1861,6 +2132,7 @@ function irParaHojeAgenda(){
   agendaSelecionada=hoje;
   agendaInicializada=true;
   desenharAgenda();
+  if(googleTokenValido()) await carregarEventosGoogleMes(true);
 }
 
 window.selecionarDiaAgenda=selecionarDiaAgenda;
@@ -1892,6 +2164,8 @@ function abrirModalAgenda(registro={}){
   const dataPadrao=registro.data||dataISOlocal(agendaSelecionada);
   const tipoAtual=registro.tipo||'COMPROMISSO';
   const statusAtual=registro.status||'PLANEJADO';
+  const googleEventId=registro.googleEventId||'';
+  const origemGoogle=registro._origemGoogle===true;
 
   fundo.innerHTML=`
     <div class="gcal-modal" onclick="event.stopPropagation()">
@@ -1906,7 +2180,7 @@ function abrirModalAgenda(registro={}){
 
       <div class="gcal-tabs">
         <button class="gcal-tab active" type="button">Evento</button>
-        <button class="gcal-tab" type="button">Tarefa</button>
+        ${origemGoogle?'<span style="align-self:center;font-size:11px;color:#137333;font-weight:700;">● Google Agenda</span>':''}
       </div>
 
       <div class="gcal-row">
@@ -1958,9 +2232,9 @@ function abrirModalAgenda(registro={}){
       </div>
 
       <div class="gcal-actions">
-        ${registro._docId&&!somenteLeitura()?`<button class="gcal-delete" onclick="excluirAgenda('${registro._docId}')">Excluir</button>`:''}
+        ${(registro._docId||googleEventId)&&!somenteLeitura()?`<button class="gcal-delete" onclick="excluirAgenda('${registro._docId||''}','${googleEventId}',${origemGoogle})">Excluir</button>`:''}
         <button class="gcal-cancel" onclick="this.closest('.gcal-modal-bg').remove()">Cancelar</button>
-        ${!somenteLeitura()?`<button class="gcal-save" id="btnSalvarAgenda" onclick="salvarAgenda('${registro._docId||''}')">Salvar</button>`:''}
+        ${!somenteLeitura()?`<button class="gcal-save" id="btnSalvarAgenda" onclick="salvarAgenda('${registro._docId||''}','${googleEventId}',${origemGoogle})">Salvar</button>`:''}
       </div>
     </div>`;
 
@@ -1969,9 +2243,10 @@ function abrirModalAgenda(registro={}){
 }
 window.abrirModalAgenda=abrirModalAgenda;
 
-async function salvarAgenda(docId){
+async function salvarAgenda(docId,googleEventId='',origemGoogle=false){
   const b=document.getElementById('btnSalvarAgenda');
   b.disabled=true;b.innerText='Salvando...';
+
   const dados={
     titulo:document.getElementById('ag_titulo').value.trim(),
     data:document.getElementById('ag_data').value,
@@ -1985,31 +2260,91 @@ async function salvarAgenda(docId){
     ultimaEdicaoPor:USUARIO.nome,
     ultimaEdicaoData:new Date().toLocaleString('pt-BR')
   };
-  if(!dados.titulo||!dados.data){alert('Informe pelo menos o título e a data.');b.disabled=false;b.innerText='Salvar';return}
+
+  if(!dados.titulo||!dados.data){
+    alert('Informe pelo menos o título e a data.');
+    b.disabled=false;b.innerText='Salvar';
+    return;
+  }
+
   try{
-    if(docId) await updateDoc(doc(db,'agendaEventos',docId),dados);
-    else{dados.criadoPor=USUARIO.nome;await addDoc(collection(db,'agendaEventos'),dados)}
+    let idGoogle=googleEventId||'';
+
+    // Evento que nasceu no Google: atualiza somente o Google.
+    if(origemGoogle){
+      if(!googleTokenValido()) throw new Error('Conecte o Google Agenda para editar este compromisso.');
+      await atualizarEventoGoogle(idGoogle,dados);
+    }else{
+      // Evento do app: quando Google estiver conectado, cria/atualiza também no Calendar.
+      if(googleTokenValido()){
+        if(idGoogle){
+          await atualizarEventoGoogle(idGoogle,dados);
+        }else{
+          const criado=await criarEventoGoogle(dados);
+          idGoogle=criado?.id||'';
+        }
+      }
+
+      const dadosFirestore={...dados};
+      if(idGoogle) dadosFirestore.googleEventId=idGoogle;
+
+      if(docId){
+        await updateDoc(doc(db,'agendaEventos',docId),dadosFirestore);
+      }else{
+        dadosFirestore.criadoPor=USUARIO.nome;
+        await addDoc(collection(db,'agendaEventos'),dadosFirestore);
+      }
+    }
+
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
+
     const [y,m,d]=dados.data.split('-').map(Number);
     agendaAno=y;agendaMes=m-1;agendaSelecionada=new Date(y,m-1,d,12,0,0,0);agendaInicializada=true;
+
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
-    desenharAgenda();
+
+    if(googleTokenValido()) await carregarEventosGoogleMes(true);
+    else desenharAgenda();
+
     atualizarBadgeNotificacoes();
-  }catch(e){alert('Não foi possível salvar: '+e.message);b.disabled=false;b.innerText='Salvar'}
+  }catch(e){
+    console.error(e);
+    alert('Não foi possível salvar: '+e.message);
+    b.disabled=false;b.innerText='Salvar';
+  }
 }
 
-async function excluirAgenda(id){
-  if(!confirm('Excluir este compromisso?'))return;
+async function excluirAgenda(id,googleEventId='',origemGoogle=false){
+  if(!confirm('Excluir este compromisso?')) return;
+
   try{
-    await deleteDoc(doc(db,'agendaEventos',id));
+    if(googleEventId){
+      if(!googleTokenValido()){
+        throw new Error('Conecte o Google Agenda para excluir este compromisso também do Google.');
+      }
+      await excluirEventoGoogle(googleEventId);
+    }
+
+    if(id && !origemGoogle){
+      await deleteDoc(doc(db,'agendaEventos',id));
+    }
+
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
+
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
-    desenharAgenda();
+
+    if(googleTokenValido()) await carregarEventosGoogleMes(true);
+    else desenharAgenda();
+
     atualizarBadgeNotificacoes();
-  }catch(e){alert('Não foi possível excluir: '+e.message)}
+  }catch(e){
+    console.error(e);
+    alert('Não foi possível excluir: '+e.message);
+  }
 }
+
 window.salvarAgenda=salvarAgenda;window.excluirAgenda=excluirAgenda;
 
 const STATUS_EVENTO_MURILLO = ['PLANEJAMENTO','CONFIRMADO','REALIZADO','CANCELADO'];
