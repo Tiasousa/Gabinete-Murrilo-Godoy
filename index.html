@@ -362,51 +362,263 @@
     .dash-barra-linha{grid-template-columns:95px 1fr 28px;}
   }
 
-  /* ===== AGENDA — layout do Tatiquinho adaptado ao Murillo ===== */
-  main.modo-agenda{height:calc(100vh - 122px);overflow:hidden;display:flex;flex-direction:column;padding-bottom:20px;}
-  main.modo-agenda .topo-pagina{flex:0 0 auto;}
-  .agenda-layout{display:flex;gap:16px;flex:1;min-height:0;}
-  .agenda-layout > .agenda-box{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;}
-  .agenda-layout > .agenda-box.agenda-lateral{flex:0 0 320px;}
-  .agenda-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:16px 18px;}
-  .agenda-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex:0 0 auto;}
-  .mes-atual-agenda{font-size:15px;color:#fff;text-transform:capitalize;min-width:150px;text-align:center;}
-  .btn-nav-mes{background:var(--superficie-sutil);border:1px solid var(--borda);color:var(--texto);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:17px;line-height:1;flex-shrink:0;}
-  .btn-nav-mes:hover{border-color:var(--acento);color:#fff;background:rgba(229,39,45,.12);}
-  .agenda-cabecalho-dias{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:clamp(8px,1.2vw,10px);color:#7892B6;font-weight:900;letter-spacing:.45px;margin-bottom:6px;flex:0 0 auto;}
-  .agenda-grade{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,minmax(0,1fr));gap:4px;flex:1;min-height:0;}
-  .dia-agenda{border:1px solid var(--borda);border-radius:8px;padding:5px 7px;cursor:pointer;transition:border-color .15s ease,background .15s ease;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:#09182A;}
-  .dia-agenda:hover{border-color:#476685;background:#0C1E33;}
-  .dia-agenda.vazio{border-color:transparent;background:transparent;cursor:default;}
-  .dia-agenda.vazio:hover{border-color:transparent;background:transparent;}
-  .dia-agenda.hoje{border-color:#496785;box-shadow:inset 0 0 0 1px rgba(117,144,181,.14);}
-  .dia-agenda.hoje .num-dia-agenda{color:#AFC4DF;}
-  .dia-agenda.selecionado{background:rgba(229,39,45,.16);border-color:var(--acento);box-shadow:inset 0 0 0 1px rgba(229,39,45,.50),0 0 0 1px rgba(229,39,45,.12);}
-  .dia-agenda.selecionado .num-dia-agenda{color:#fff;font-weight:900;}
-  .dia-agenda.hoje.selecionado{border-color:var(--acento);background:rgba(229,39,45,.18);}
-  .num-dia-agenda{font-size:clamp(10px,1.2vw,12.5px);font-weight:800;color:var(--texto);}
-  .pontos-dia-agenda{display:flex;gap:3px;margin-top:auto;flex-wrap:wrap;align-items:center;}
-  .ponto-evento{width:5px;height:5px;border-radius:50%;background:var(--acento);display:inline-block;flex-shrink:0;}
-  .mais-pontos{font-size:8px;color:var(--texto-fraco);font-weight:800;}
-  .agenda-lateral h3{margin:0 0 12px;font-size:14px;color:#fff;font-weight:900;flex:0 0 auto;}
-  .lista-eventos-dia{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow-y:auto;}
-  .item-evento-dia{display:flex;gap:9px;cursor:pointer;padding:8px;border-radius:8px;transition:background .15s ease;flex-shrink:0;border:1px solid transparent;}
-  .item-evento-dia:hover{background:var(--superficie-sutil);border-color:var(--borda);}
-  .faixa-evento{width:3px;border-radius:4px;background:var(--acento);flex-shrink:0;}
-  .hora-evento-dia{font-size:10px;color:#FF696E;font-weight:900;text-transform:uppercase;letter-spacing:.3px;}
-  .titulo-evento-dia{font-size:12.5px;color:#fff;font-weight:800;margin-top:2px;}
-  .desc-evento-dia{font-size:11px;color:var(--texto-suave);margin-top:2px;line-height:1.35;}
-  .meta-evento-dia{font-size:10px;color:#7892B6;margin-top:3px;}
+  /* ===== AGENDA — estilo Google Calendar adaptado ao Gabinete ===== */
+  main.modo-agenda{
+    height:calc(100vh - 122px);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    padding:0 0 0;
+    background:#F7F9FC;
+    color:#202124;
+  }
+  main.modo-agenda .topo-pagina{display:none;}
+
+  .gcal-shell{
+    height:100%;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    color:#202124;
+    overflow:hidden;
+  }
+  .gcal-toolbar{
+    height:64px;
+    flex:0 0 64px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:8px 18px;
+    border-bottom:1px solid #dadce0;
+    background:#fff;
+  }
+  .gcal-hoje{
+    height:38px;
+    padding:0 18px;
+    border:1px solid #dadce0;
+    border-radius:20px;
+    background:#fff;
+    color:#3c4043;
+    font-weight:700;
+    font-size:13px;
+  }
+  .gcal-hoje:hover,.gcal-navbtn:hover,.gcal-novo:hover{background:#f1f3f4;}
+  .gcal-navbtn{
+    width:38px;height:38px;border:0;border-radius:50%;
+    background:transparent;color:#5f6368;font-size:25px;line-height:1;
+  }
+  .gcal-mes{
+    font-size:22px;font-weight:500;color:#202124;
+    min-width:210px;text-transform:capitalize;
+  }
+  .gcal-spacer{flex:1;}
+  .gcal-novo{
+    height:40px;
+    border:1px solid #dadce0;
+    border-radius:20px;
+    background:#fff;
+    color:#3c4043;
+    padding:0 16px;
+    font-weight:700;
+  }
+  .gcal-view{
+    height:40px;
+    border:1px solid #dadce0;
+    border-radius:20px;
+    background:#fff;
+    color:#3c4043;
+    padding:0 16px;
+    font-weight:700;
+  }
+
+  .gcal-weekdays{
+    flex:0 0 34px;
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    border-bottom:1px solid #dadce0;
+    background:#fff;
+  }
+  .gcal-weekdays div{
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:#5f6368;
+    text-transform:uppercase;
+    border-right:1px solid #dadce0;
+  }
+  .gcal-weekdays div:last-child{border-right:0;}
+
+  .gcal-grid{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    grid-template-rows:repeat(6,minmax(0,1fr));
+    background:#fff;
+    overflow:hidden;
+  }
+  .gcal-day{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    border-right:1px solid #dadce0;
+    border-bottom:1px solid #dadce0;
+    padding:4px 4px 3px;
+    overflow:hidden;
+    cursor:pointer;
+    background:#fff;
+  }
+  .gcal-day:nth-child(7n){border-right:0;}
+  .gcal-day.outside{background:#fafafa;color:#9aa0a6;}
+  .gcal-day:hover{background:#f8fafd;}
+  .gcal-day.selected{background:#f3f7ff;}
+  .gcal-daynum{
+    width:28px;height:28px;margin:0 auto 2px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    font-size:12px;font-weight:500;color:#3c4043;
+  }
+  .gcal-day.today .gcal-daynum{
+    background:#1a73e8;color:#fff;font-weight:700;
+  }
+  .gcal-events{
+    display:flex;flex-direction:column;gap:2px;
+    max-height:calc(100% - 32px);
+    overflow:hidden;
+  }
+  .gcal-event{
+    display:flex;align-items:center;gap:4px;
+    min-height:20px;
+    padding:2px 6px;
+    border-radius:4px;
+    background:#6f7fc7;
+    color:#fff;
+    font-size:10.5px;
+    line-height:1.2;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    cursor:pointer;
+  }
+  .gcal-event.confirmado{background:#188038;}
+  .gcal-event.cancelado{background:#a50e0e;text-decoration:line-through;}
+  .gcal-event.realizado{background:#5f6368;}
+  .gcal-event.planejado{background:#6f7fc7;}
+  .gcal-event-time{font-weight:500;opacity:.95;flex:0 0 auto;}
+  .gcal-event-title{overflow:hidden;text-overflow:ellipsis;}
+  .gcal-more{
+    font-size:10px;color:#3c4043;font-weight:700;padding:1px 4px;
+  }
+
+  /* modal estilo Google Calendar */
+  .gcal-modal-bg{
+    position:fixed;inset:0;z-index:3000;
+    background:rgba(32,33,36,.28);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+  }
+  .gcal-modal{
+    width:min(720px,calc(100vw - 32px));
+    max-height:calc(100vh - 32px);
+    overflow-y:auto;
+    border-radius:24px;
+    background:#f8fafd;
+    color:#202124;
+    box-shadow:0 18px 48px rgba(60,64,67,.30);
+    padding:18px 22px 20px;
+  }
+  .gcal-modal-top{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .gcal-modal-top .drag{font-size:22px;color:#5f6368;}
+  .gcal-close{
+    width:36px;height:36px;border:0;border-radius:50%;
+    background:transparent;color:#5f6368;font-size:24px;
+  }
+  .gcal-close:hover{background:#e8eaed;}
+  .gcal-title-input{
+    width:100%;border:0;border-bottom:2px solid #1a73e8;
+    outline:0;background:transparent;color:#202124;
+    font-size:28px;font-weight:400;padding:8px 2px 9px;
+    margin-bottom:16px;
+  }
+  .gcal-title-input::placeholder{color:#5f6368;}
+  .gcal-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .gcal-tab{
+    border:0;border-radius:10px;padding:9px 13px;
+    background:transparent;color:#3c4043;font-weight:700;
+  }
+  .gcal-tab.active{background:#c2e7ff;color:#001d35;}
+  .gcal-row{
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr);
+    gap:12px;
+    align-items:start;
+    padding:8px 0;
+  }
+  .gcal-icon{
+    width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;
+    color:#5f6368;font-size:18px;
+  }
+  .gcal-inline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .gcal-field{
+    min-height:42px;border:0;border-radius:8px;
+    background:transparent;color:#202124;
+    padding:8px 10px;font-size:14px;outline:none;
+  }
+  .gcal-field:hover,.gcal-field:focus{background:#e8eaed;}
+  .gcal-field.date{min-width:145px;}
+  .gcal-field.time{min-width:110px;}
+  .gcal-field.full{width:100%;}
+  textarea.gcal-field{min-height:72px;resize:vertical;}
+  .gcal-select{
+    min-height:42px;border:0;border-radius:8px;
+    background:transparent;color:#202124;
+    padding:8px 10px;font-size:14px;outline:none;
+  }
+  .gcal-select:hover,.gcal-select:focus{background:#e8eaed;}
+  .gcal-reminder{
+    display:inline-flex;align-items:center;
+    min-height:40px;border-radius:8px;padding:8px 10px;
+    color:#3c4043;background:#e8f0fe;font-size:13px;font-weight:700;
+  }
+  .gcal-actions{
+    display:flex;align-items:center;justify-content:flex-end;
+    gap:10px;margin-top:14px;
+  }
+  .gcal-delete{
+    margin-right:auto;border:0;background:transparent;
+    color:#d93025;font-weight:700;padding:10px 12px;border-radius:8px;
+  }
+  .gcal-delete:hover{background:#fce8e6;}
+  .gcal-cancel{
+    border:0;background:transparent;color:#1a73e8;
+    font-weight:700;padding:10px 16px;border-radius:8px;
+  }
+  .gcal-save{
+    border:0;background:#0b57d0;color:#fff;
+    font-weight:700;padding:11px 22px;border-radius:22px;
+  }
+  .gcal-save:hover{background:#0842a0;}
+
   @media(max-width:900px){
-    main.modo-agenda{height:auto;min-height:calc(100vh - 120px);overflow-y:auto;}
-    .agenda-layout{flex-direction:column;min-height:850px;}
-    .agenda-layout > .agenda-box.agenda-lateral{flex:0 0 260px;}
-    .agenda-layout > .agenda-box:first-child{min-height:560px;}
+    main.modo-agenda{height:auto;min-height:calc(100vh - 120px);overflow:auto;}
+    .gcal-shell{min-height:760px;}
+    .gcal-toolbar{padding:7px 10px;gap:6px;overflow-x:auto;}
+    .gcal-mes{font-size:18px;min-width:165px;}
+    .gcal-view{display:none;}
+    .gcal-grid{min-width:760px;}
+    .gcal-weekdays{min-width:760px;}
+    .gcal-shell{overflow-x:auto;}
   }
   @media(max-width:600px){
-    .agenda-box{padding:12px;}
-    .agenda-grade{gap:3px;min-height:500px;}
-    .dia-agenda{padding:4px;}
+    .gcal-hoje{padding:0 12px;}
+    .gcal-novo{padding:0 12px;}
+    .gcal-modal{width:100%;border-radius:18px;padding:14px 16px;}
+    .gcal-title-input{font-size:22px;}
+    .gcal-row{grid-template-columns:28px minmax(0,1fr);gap:8px;}
   }
 
   @media(max-width:1180px){
@@ -1271,7 +1483,7 @@ async function salvarAtendimento(docId) {
       dados.criadoPor = USUARIO.nome;
       await addDoc(collection(db, 'atendimentos'), dados);
     }
-    document.querySelector('.modal-fundo').remove();
+    document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.atendimentos();
   } catch (e) {
     alert('Não foi possível salvar: ' + e.message);
@@ -1389,7 +1601,7 @@ async function salvarTransporte(docId) {
   try {
     if (docId) { await updateDoc(doc(db, 'transportes', docId), dados); }
     else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'transportes'), dados); }
-    document.querySelector('.modal-fundo').remove();
+    document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.transportes();
   } catch (e) {
     alert('Não foi possível salvar: ' + e.message);
@@ -1489,7 +1701,7 @@ async function salvarEquip(docId) {
   try {
     if (docId) { await updateDoc(doc(db, 'equipamentos', docId), dados); }
     else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'equipamentos'), dados); }
-    document.querySelector('.modal-fundo').remove();
+    document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.equipamentos();
   } catch (e) {
     alert('Não foi possível salvar: ' + e.message);
@@ -1545,99 +1757,92 @@ function eventosDoDiaISO(iso){
   return agendaEventosCache.filter(e=>e.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
 }
 
+function classeStatusAgenda(status){
+  const s=norm(status||'PLANEJADO');
+  if(s==='CONFIRMADO') return 'confirmado';
+  if(s==='REALIZADO') return 'realizado';
+  if(s==='CANCELADO') return 'cancelado';
+  return 'planejado';
+}
+
+function escapeAttrJson(obj){
+  return JSON.stringify(obj).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function desenharAgenda(){
   const c=document.getElementById('conteudo');
   const hoje=new Date();
-  const primeiroDia=new Date(agendaAno,agendaMes,1).getDay();
-  const totalDias=new Date(agendaAno,agendaMes+1,0).getDate();
+  hoje.setHours(12,0,0,0);
   const hojeISO=dataISOlocal(hoje);
   const selISO=dataISOlocal(agendaSelecionada);
   const nomeMes=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(agendaAno,agendaMes,1));
+  const podeEditar=!somenteLeitura();
+
+  const primeiroMes=new Date(agendaAno,agendaMes,1,12,0,0,0);
+  const inicioGrade=new Date(primeiroMes);
+  inicioGrade.setDate(1-primeiroMes.getDay());
 
   let celulas='';
-  for(let i=0;i<primeiroDia;i++) celulas+='<div class="dia-agenda vazio"></div>';
-
-  for(let dia=1;dia<=totalDias;dia++){
-    const iso=`${agendaAno}-${String(agendaMes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+  for(let i=0;i<42;i++){
+    const d=new Date(inicioGrade);
+    d.setDate(inicioGrade.getDate()+i);
+    d.setHours(12,0,0,0);
+    const iso=dataISOlocal(d);
+    const fora=d.getMonth()!==agendaMes;
     const evs=eventosDoDiaISO(iso);
+    const visiveis=evs.slice(0,4);
+
+    const eventosHtml=visiveis.map(ev=>{
+      const hora=ev.hora ? escapar(ev.hora) : '';
+      const titulo=escapar(ev.titulo||'Compromisso');
+      return `<div class="gcal-event ${classeStatusAgenda(ev.status)}"
+                   title="${hora?hora+' ':''}${titulo}"
+                   onclick='event.stopPropagation();abrirModalAgenda(${escapeAttrJson(ev)})'>
+                ${hora?`<span class="gcal-event-time">${hora}</span>`:''}
+                <span class="gcal-event-title">${titulo}</span>
+              </div>`;
+    }).join('');
+
     celulas+=`
-      <div class="dia-agenda ${iso===hojeISO?'hoje':''} ${iso===selISO?'selecionado':''}" onclick="selecionarDiaAgenda('${iso}')">
-        <div class="num-dia-agenda">${dia}</div>
-        ${evs.length?`<div class="pontos-dia-agenda">${evs.slice(0,3).map(()=>'<span class="ponto-evento"></span>').join('')}${evs.length>3?`<span class="mais-pontos">+${evs.length-3}</span>`:''}</div>`:''}
+      <div class="gcal-day ${fora?'outside':''} ${iso===hojeISO?'today':''} ${iso===selISO?'selected':''}"
+           onclick="selecionarDiaAgenda('${iso}',true)">
+        <div class="gcal-daynum">${d.getDate()}</div>
+        <div class="gcal-events">
+          ${eventosHtml}
+          ${evs.length>4?`<div class="gcal-more">+${evs.length-4} compromissos</div>`:''}
+        </div>
       </div>`;
   }
 
-  const podeEditar=!somenteLeitura();
-
   c.innerHTML=`
-    <div class="topo-pagina">
-      <div>
-        <h2>Agenda</h2>
-        <div style="width:64px;height:3px;border-radius:4px;background:var(--acento);margin-top:7px;"></div>
-        <div style="margin-top:7px;font-size:10.5px;color:var(--texto-fraco);font-weight:700;">Data selecionada: <span style="color:#fff;">${dataBRdeISO(selISO)}</span></div>
-      </div>
-      ${podeEditar?'<button class="btn-primario" onclick="abrirModalAgenda()">+ Novo Compromisso</button>':''}
-    </div>
-
-    <div class="agenda-layout">
-      <div class="agenda-box">
-        <div class="agenda-nav">
-          <button onclick="irParaHojeAgenda()" class="btn-secundario" style="padding:7px 12px;">Hoje</button>
-          <div style="display:flex;align-items:center;gap:14px;">
-            <button class="btn-nav-mes" onclick="mudarMesAgenda(-1)">‹</button>
-            <b class="mes-atual-agenda">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</b>
-            <button class="btn-nav-mes" onclick="mudarMesAgenda(1)">›</button>
-          </div>
-        </div>
-
-        <div class="agenda-cabecalho-dias">
-          <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
-        </div>
-        <div class="agenda-grade">${celulas}</div>
+    <div class="gcal-shell">
+      <div class="gcal-toolbar">
+        <button class="gcal-hoje" onclick="irParaHojeAgenda()">Hoje</button>
+        <button class="gcal-navbtn" title="Mês anterior" onclick="mudarMesAgenda(-1)">‹</button>
+        <button class="gcal-navbtn" title="Próximo mês" onclick="mudarMesAgenda(1)">›</button>
+        <div class="gcal-mes">${nomeMes.charAt(0).toUpperCase()+nomeMes.slice(1)}</div>
+        <div class="gcal-spacer"></div>
+        ${podeEditar?'<button class="gcal-novo" onclick="abrirModalAgenda()">＋ Compromisso</button>':''}
+        <button class="gcal-view">Mês ▾</button>
       </div>
 
-      <div class="agenda-box agenda-lateral">
-        <h3 id="tituloDiaAgenda">Compromissos</h3>
-        <div id="listaEventosDia" class="lista-eventos-dia"></div>
+      <div class="gcal-weekdays">
+        <div>DOM.</div><div>SEG.</div><div>TER.</div><div>QUA.</div><div>QUI.</div><div>SEX.</div><div>SÁB.</div>
       </div>
+
+      <div class="gcal-grid">${celulas}</div>
     </div>`;
-
-  atualizarPainelDiaAgenda();
 }
 
-function atualizarPainelDiaAgenda(){
-  const titulo=document.getElementById('tituloDiaAgenda');
-  const lista=document.getElementById('listaEventosDia');
-  if(!titulo||!lista) return;
-
-  const selISO=dataISOlocal(agendaSelecionada);
-  const rotulo=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(agendaSelecionada);
-  titulo.innerText=rotulo.charAt(0).toUpperCase()+rotulo.slice(1);
-
-  const evs=eventosDoDiaISO(selISO);
-  if(!evs.length){
-    lista.innerHTML='<p style="color:var(--texto-fraco);font-size:12.5px;">Nenhum compromisso neste dia.</p>';
-    return;
-  }
-
-  lista.innerHTML=evs.map(ev=>`
-    <div class="item-evento-dia" onclick='abrirModalAgenda(${JSON.stringify(ev).replace(/'/g,"&#39;")})'>
-      <div class="faixa-evento"></div>
-      <div>
-        <div class="hora-evento-dia">${escapar(ev.hora||'Sem horário')}${ev.horaFim?' – '+escapar(ev.horaFim):''}</div>
-        <div class="titulo-evento-dia">${escapar(ev.titulo||'Compromisso')}</div>
-        ${(ev.tipo||ev.local)?`<div class="meta-evento-dia">${escapar(ev.tipo||'COMPROMISSO')}${ev.local?' · '+escapar(ev.local):''}</div>`:''}
-        ${ev.observacoes?`<div class="desc-evento-dia">${escapar(ev.observacoes)}</div>`:''}
-      </div>
-    </div>`).join('');
-}
-
-function selecionarDiaAgenda(iso){
+function selecionarDiaAgenda(iso,abrirNovo=false){
   const [y,m,d]=iso.split('-').map(Number);
   agendaAno=y;
   agendaMes=m-1;
   agendaSelecionada=new Date(y,m-1,d,12,0,0,0);
   desenharAgenda();
+  if(abrirNovo && !somenteLeitura()){
+    abrirModalAgenda();
+  }
 }
 
 function mudarMesAgenda(delta){
@@ -1663,36 +1868,104 @@ window.mudarMesAgenda=mudarMesAgenda;
 window.irParaHojeAgenda=irParaHojeAgenda;
 
 function formatarHorarioMurillo(input){
-  let digitos = input.value.replace(/\D/g,'').slice(0,4);
-  if(digitos.length >= 2){
-    let hh = digitos.slice(0,2);
-    if(Number(hh) > 23) hh = '23';
-    let mm = digitos.slice(2,4);
-    if(mm.length === 2 && Number(mm) > 59) mm = '59';
-    input.value = digitos.length > 2 ? hh+':'+mm : hh;
-  } else {
-    input.value = digitos;
+  let digitos=input.value.replace(/\D/g,'').slice(0,4);
+  if(digitos.length>=2){
+    let hh=digitos.slice(0,2);
+    if(Number(hh)>23) hh='23';
+    let mm=digitos.slice(2,4);
+    if(mm.length===2 && Number(mm)>59) mm='59';
+    input.value=digitos.length>2?hh+':'+mm:hh;
+  }else{
+    input.value=digitos;
   }
 }
-window.formatarHorarioMurillo = formatarHorarioMurillo;
+window.formatarHorarioMurillo=formatarHorarioMurillo;
 
 function abrirModalAgenda(registro={}){
   if(somenteLeitura() && registro._docId===undefined) return;
-  const fundo=document.createElement('div');
-  fundo.className='modal-fundo';
-  fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
-  const dataPadrao=registro.data||dataISOlocal(agendaSelecionada);
 
-  fundo.innerHTML=`<div class="modal" onclick="event.stopPropagation()"><h2>${registro._docId?'Editar':'Novo'} Compromisso</h2>
-    <div class="campo-modal"><label>Título</label><input id="ag_titulo" value="${escapar(registro.titulo)}" placeholder="Ex.: Sessão extraordinária"></div>
-    <div class="grid-2"><div class="campo-modal"><label>Data</label><input id="ag_data" type="date" value="${dataPadrao}"></div><div class="campo-modal"><label>Tipo</label><select id="ag_tipo">${['SESSÃO','REUNIÃO','ATENDIMENTO','EVENTO','VIAGEM','COMPROMISSO'].map(x=>`<option ${norm(x)===norm(registro.tipo)?'selected':''}>${x}</option>`).join('')}</select></div></div>
-    <div class="grid-2"><div class="campo-modal"><label>Início</label><input id="ag_hora" type="time" value="${escapar(registro.hora)}"></div><div class="campo-modal"><label>Fim</label><input id="ag_horaFim" type="time" value="${escapar(registro.horaFim)}"></div></div>
-    <div class="campo-modal"><label>Local</label><input id="ag_local" value="${escapar(registro.local)}" placeholder="Ex.: Câmara Municipal"></div>
-    <div class="grid-2"><div class="campo-modal"><label>Status</label><select id="ag_status">${['PLANEJADO','CONFIRMADO','REALIZADO','CANCELADO'].map(x=>`<option ${norm(x)===norm(registro.status)?'selected':''}>${x}</option>`).join('')}</select></div><div class="campo-modal"><label>Lembrete</label><select id="ag_lembrete"><option value="1" ${registro.lembrete!==false?'selected':''}>Avisar pela manhã</option><option value="0" ${registro.lembrete===false?'selected':''}>Sem lembrete</option></select></div></div>
-    <div class="campo-modal"><label>Observações</label><textarea id="ag_obs">${escapar(registro.observacoes)}</textarea></div>
-    <div class="modal-acoes">${registro._docId&&!somenteLeitura()?`<button class="btn-secundario" style="color:#F26D6D" onclick="excluirAgenda('${registro._docId}')">Excluir</button>`:'<span></span>'}<div style="display:flex;gap:8px"><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>${!somenteLeitura()?`<button class="btn-primario" id="btnSalvarAgenda" onclick="salvarAgenda('${registro._docId||''}')">Salvar</button>`:''}</div></div>
-  </div>`;
+  document.querySelector('.gcal-modal-bg')?.remove();
+  const fundo=document.createElement('div');
+  fundo.className='gcal-modal-bg';
+  fundo.onclick=e=>{if(e.target===fundo) fundo.remove();};
+
+  const dataPadrao=registro.data||dataISOlocal(agendaSelecionada);
+  const tipoAtual=registro.tipo||'COMPROMISSO';
+  const statusAtual=registro.status||'PLANEJADO';
+
+  fundo.innerHTML=`
+    <div class="gcal-modal" onclick="event.stopPropagation()">
+      <div class="gcal-modal-top">
+        <span class="drag">☰</span>
+        <button class="gcal-close" onclick="this.closest('.gcal-modal-bg').remove()" title="Fechar">×</button>
+      </div>
+
+      <input id="ag_titulo" class="gcal-title-input"
+             value="${escapar(registro.titulo||'')}"
+             placeholder="Adicionar título e horário">
+
+      <div class="gcal-tabs">
+        <button class="gcal-tab active" type="button">Evento</button>
+        <button class="gcal-tab" type="button">Tarefa</button>
+      </div>
+
+      <div class="gcal-row">
+        <div class="gcal-icon">◷</div>
+        <div class="gcal-inline">
+          <input id="ag_data" class="gcal-field date" type="date" value="${dataPadrao}">
+          <input id="ag_hora" class="gcal-field time" type="time" value="${escapar(registro.hora||'')}">
+          <span style="color:#5f6368;">até</span>
+          <input id="ag_horaFim" class="gcal-field time" type="time" value="${escapar(registro.horaFim||'')}">
+        </div>
+      </div>
+
+      <div class="gcal-row">
+        <div class="gcal-icon">◉</div>
+        <div class="gcal-inline">
+          <select id="ag_tipo" class="gcal-select">
+            ${['SESSÃO','REUNIÃO','ATENDIMENTO','EVENTO','VIAGEM','COMPROMISSO'].map(x=>`<option ${norm(x)===norm(tipoAtual)?'selected':''}>${x}</option>`).join('')}
+          </select>
+          <select id="ag_status" class="gcal-select">
+            ${['PLANEJADO','CONFIRMADO','REALIZADO','CANCELADO'].map(x=>`<option ${norm(x)===norm(statusAtual)?'selected':''}>${x}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div class="gcal-row">
+        <div class="gcal-icon">⌖</div>
+        <input id="ag_local" class="gcal-field full"
+               value="${escapar(registro.local||'')}"
+               placeholder="Adicionar local">
+      </div>
+
+      <div class="gcal-row">
+        <div class="gcal-icon">☰</div>
+        <textarea id="ag_obs" class="gcal-field full"
+                  placeholder="Adicionar descrição">${escapar(registro.observacoes||'')}</textarea>
+      </div>
+
+      <div class="gcal-row">
+        <div class="gcal-icon">🔔</div>
+        <div>
+          <select id="ag_lembrete" class="gcal-select">
+            <option value="1" ${registro.lembrete!==false?'selected':''}>Notificar 45 minutos antes</option>
+            <option value="0" ${registro.lembrete===false?'selected':''}>Sem notificação</option>
+          </select>
+          <div style="font-size:11px;color:#5f6368;margin:4px 10px 0;">
+            O compromisso ficará preparado para o alerta padrão de 45 minutos.
+          </div>
+        </div>
+      </div>
+
+      <div class="gcal-actions">
+        ${registro._docId&&!somenteLeitura()?`<button class="gcal-delete" onclick="excluirAgenda('${registro._docId}')">Excluir</button>`:''}
+        <button class="gcal-cancel" onclick="this.closest('.gcal-modal-bg').remove()">Cancelar</button>
+        ${!somenteLeitura()?`<button class="gcal-save" id="btnSalvarAgenda" onclick="salvarAgenda('${registro._docId||''}')">Salvar</button>`:''}
+      </div>
+    </div>`;
+
   document.body.appendChild(fundo);
+  setTimeout(()=>document.getElementById('ag_titulo')?.focus(),50);
 }
 window.abrirModalAgenda=abrirModalAgenda;
 
@@ -1716,7 +1989,7 @@ async function salvarAgenda(docId){
   try{
     if(docId) await updateDoc(doc(db,'agendaEventos',docId),dados);
     else{dados.criadoPor=USUARIO.nome;await addDoc(collection(db,'agendaEventos'),dados)}
-    document.querySelector('.modal-fundo').remove();
+    document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     const [y,m,d]=dados.data.split('-').map(Number);
     agendaAno=y;agendaMes=m-1;agendaSelecionada=new Date(y,m-1,d,12,0,0,0);agendaInicializada=true;
     const snap=await getDocs(collection(db,'agendaEventos'));
@@ -1730,7 +2003,7 @@ async function excluirAgenda(id){
   if(!confirm('Excluir este compromisso?'))return;
   try{
     await deleteDoc(doc(db,'agendaEventos',id));
-    document.querySelector('.modal-fundo').remove();
+    document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     const snap=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snap.docs.map(x=>({_docId:x.id,...x.data()}));
     desenharAgenda();
