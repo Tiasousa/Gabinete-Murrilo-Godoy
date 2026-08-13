@@ -621,6 +621,81 @@
   .gcal-sync-btn:disabled{opacity:.45;cursor:default;}
   .gcal-google-event{box-shadow:inset 3px 0 0 rgba(255,255,255,.65);}
 
+
+  .gcal-more{
+    display:inline-flex;
+    align-items:center;
+    min-height:20px;
+    padding:2px 6px;
+    border-radius:4px;
+    font-size:10.5px;
+    color:#3c4043;
+    font-weight:700;
+    cursor:pointer;
+    background:transparent;
+  }
+  .gcal-more:hover{background:#e8eaed;}
+
+  .gcal-day-popup{
+    position:fixed;
+    z-index:4200;
+    width:min(330px,calc(100vw - 24px));
+    max-height:min(430px,calc(100vh - 24px));
+    overflow:hidden;
+    background:#f8fafd;
+    color:#202124;
+    border-radius:26px;
+    box-shadow:0 10px 30px rgba(60,64,67,.32);
+    padding:14px 12px 16px;
+    border:1px solid rgba(60,64,67,.10);
+  }
+  .gcal-day-popup-head{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:start;
+    gap:8px;
+    padding:0 4px 10px;
+  }
+  .gcal-day-popup-weekday{
+    text-align:center;
+    font-size:11px;
+    color:#5f6368;
+    text-transform:uppercase;
+    font-weight:500;
+    letter-spacing:.3px;
+  }
+  .gcal-day-popup-num{
+    text-align:center;
+    font-size:34px;
+    line-height:1.05;
+    font-weight:400;
+    color:#202124;
+    margin-top:2px;
+  }
+  .gcal-day-popup-close{
+    width:38px;height:38px;
+    border:0;border-radius:50%;
+    background:transparent;
+    color:#5f6368;
+    font-size:28px;
+    line-height:1;
+  }
+  .gcal-day-popup-close:hover{background:#e8eaed;}
+  .gcal-day-popup-list{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    overflow-y:auto;
+    max-height:320px;
+    padding:2px 0 0;
+  }
+  .gcal-day-popup .gcal-event{
+    min-height:24px;
+    font-size:11px;
+    padding:4px 8px;
+    border-radius:5px;
+  }
+
   @media(max-width:900px){
     main.modo-agenda{height:auto;min-height:calc(100vh - 120px);overflow:auto;}
     .gcal-shell{min-height:760px;}
@@ -2035,7 +2110,89 @@ function escapeAttrJson(obj){
   return JSON.stringify(obj).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+
+function limiteEventosPorDia(){
+  const h=window.innerHeight||800;
+  const w=window.innerWidth||1280;
+
+  if(w<700) return 2;
+  if(h>=1050) return 5;
+  if(h>=900) return 4;
+  if(h>=760) return 3;
+  return 2;
+}
+
+function fecharPopupDiaAgenda(){
+  document.querySelector('.gcal-day-popup')?.remove();
+  document.removeEventListener('mousedown', fecharPopupDiaAgendaFora, true);
+  window.removeEventListener('resize', fecharPopupDiaAgenda);
+}
+window.fecharPopupDiaAgenda=fecharPopupDiaAgenda;
+
+function fecharPopupDiaAgendaFora(e){
+  const pop=document.querySelector('.gcal-day-popup');
+  if(pop && !pop.contains(e.target)) fecharPopupDiaAgenda();
+}
+
+function abrirMaisAgenda(iso,evt){
+  evt?.stopPropagation();
+  fecharPopupDiaAgenda();
+
+  const evs=eventosDoDiaISO(iso);
+  if(!evs.length) return;
+
+  const [y,m,d]=iso.split('-').map(Number);
+  const data=new Date(y,m-1,d,12,0,0,0);
+  const semana=new Intl.DateTimeFormat('pt-BR',{weekday:'short'}).format(data).replace('.','').toUpperCase();
+
+  const pop=document.createElement('div');
+  pop.className='gcal-day-popup';
+
+  pop.innerHTML=`
+    <div class="gcal-day-popup-head">
+      <div>
+        <div class="gcal-day-popup-weekday">${semana}</div>
+        <div class="gcal-day-popup-num">${d}</div>
+      </div>
+      <button class="gcal-day-popup-close" onclick="fecharPopupDiaAgenda()" title="Fechar">×</button>
+    </div>
+
+    <div class="gcal-day-popup-list">
+      ${evs.map(ev=>{
+        const hora=ev.hora?escapar(ev.hora):'';
+        const titulo=escapar(ev.titulo||'Compromisso');
+        return `<div class="gcal-event ${classeStatusAgenda(ev.status)} ${ev._origemGoogle?'gcal-google-event':''}"
+                     onclick='event.stopPropagation();fecharPopupDiaAgenda();abrirModalAgenda(${escapeAttrJson(ev)})'>
+                  ${hora?`<span class="gcal-event-time">${hora}</span>`:''}
+                  <span class="gcal-event-title">${titulo}</span>
+                </div>`;
+      }).join('')}
+    </div>`;
+
+  document.body.appendChild(pop);
+
+  const alvo=evt?.currentTarget || evt?.target;
+  const r=alvo?.getBoundingClientRect?.();
+  const pr=pop.getBoundingClientRect();
+
+  let left=(r ? r.left + (r.width/2) - (pr.width/2) : (window.innerWidth-pr.width)/2);
+  let top=(r ? r.top + 18 : (window.innerHeight-pr.height)/2);
+
+  left=Math.max(12,Math.min(left,window.innerWidth-pr.width-12));
+  top=Math.max(12,Math.min(top,window.innerHeight-pr.height-12));
+
+  pop.style.left=`${left}px`;
+  pop.style.top=`${top}px`;
+
+  setTimeout(()=>{
+    document.addEventListener('mousedown', fecharPopupDiaAgendaFora, true);
+    window.addEventListener('resize', fecharPopupDiaAgenda, {once:true});
+  },0);
+}
+window.abrirMaisAgenda=abrirMaisAgenda;
+
 function desenharAgenda(){
+  fecharPopupDiaAgenda();
   const c=document.getElementById('conteudo');
   const hoje=new Date();
   hoje.setHours(12,0,0,0);
@@ -2056,7 +2213,8 @@ function desenharAgenda(){
     const iso=dataISOlocal(d);
     const fora=d.getMonth()!==agendaMes;
     const evs=eventosDoDiaISO(iso);
-    const visiveis=evs.slice(0,4);
+    const limite=limiteEventosPorDia();
+    const visiveis=evs.slice(0,limite);
 
     const eventosHtml=visiveis.map(ev=>{
       const hora=ev.hora ? escapar(ev.hora) : '';
@@ -2075,7 +2233,7 @@ function desenharAgenda(){
         <div class="gcal-daynum">${d.getDate()}</div>
         <div class="gcal-events">
           ${eventosHtml}
-          ${evs.length>4?`<div class="gcal-more">+${evs.length-4} compromissos</div>`:''}
+          ${evs.length>limite?`<div class="gcal-more" onclick="abrirMaisAgenda('${iso}',event)">Mais ${evs.length-limite}</div>`:''}
         </div>
       </div>`;
   }
@@ -2154,6 +2312,7 @@ function formatarHorarioMurillo(input){
 window.formatarHorarioMurillo=formatarHorarioMurillo;
 
 function abrirModalAgenda(registro={}){
+  fecharPopupDiaAgenda();
   if(somenteLeitura() && registro._docId===undefined) return;
 
   document.querySelector('.gcal-modal-bg')?.remove();
