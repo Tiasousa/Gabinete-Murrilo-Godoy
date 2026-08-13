@@ -2112,13 +2112,7 @@ function escapeAttrJson(obj){
 
 
 function limiteEventosPorDia(){
-  const h=window.innerHeight||800;
-  const w=window.innerWidth||1280;
-
-  if(w<700) return 2;
-  if(h>=1050) return 5;
-  if(h>=900) return 4;
-  if(h>=760) return 3;
+  // Padrão igual ao Google Agenda: 2 visíveis e o restante em “Mais X”.
   return 2;
 }
 
