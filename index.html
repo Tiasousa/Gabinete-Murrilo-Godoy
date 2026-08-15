@@ -782,6 +782,34 @@
   .admin-restrito{padding:18px;background:rgba(229,39,45,.08);border:1px solid rgba(229,39,45,.25);border-radius:12px;color:#F5B5B7;}
   @media(max-width:820px){.admin-grid{grid-template-columns:1fr;}.admin-add{flex-direction:column;}.admin-table{min-width:650px;}}
 
+  /* ===== ADMIN — RECURSO PAGO (ANEXOS) ===== */
+  .admin-card.admin-card-pago{grid-column:1/-1;border-color:rgba(168,85,247,.35);background:linear-gradient(180deg,rgba(168,85,247,.06),var(--superficie) 60%);}
+  .selo-pago{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(168,85,247,.16);color:var(--roxo);font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;margin-left:8px;vertical-align:middle;}
+  .admin-toggle-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:#09182A;border:1px solid #17304C;border-radius:10px;}
+  .admin-toggle-linha b{font-size:13px;color:#fff;}
+  .admin-toggle-linha .admin-toggle-desc{display:block;font-size:11px;color:var(--texto-fraco);margin-top:3px;font-weight:400;}
+  .chave-toggle{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;}
+  .chave-toggle input{opacity:0;width:0;height:0;}
+  .chave-toggle .trilho{position:absolute;cursor:pointer;inset:0;background:#28415D;border-radius:26px;transition:.18s;}
+  .chave-toggle .trilho::before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.18s;}
+  .chave-toggle input:checked + .trilho{background:var(--verde);}
+  .chave-toggle input:checked + .trilho::before{transform:translateX(20px);}
+  .chave-toggle input:disabled + .trilho{opacity:.5;cursor:default;}
+
+  /* ===== ANEXOS (recurso pago, liberado em Configurações) ===== */
+  .campo-anexos{background:#09182A;border:1px solid #17304C;border-radius:10px;padding:12px 14px;}
+  .anexos-lista{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .anexo-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 8px;background:var(--superficie);border:1px solid var(--borda);border-radius:8px;}
+  .anexo-item a{color:#8FB4E8;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+  .anexo-item a:hover{text-decoration:underline;}
+  .anexo-tam{color:var(--texto-fraco);font-size:10px;flex-shrink:0;}
+  .anexo-remover{background:none;border:1px solid #4A2430;color:#F26D6D;border-radius:6px;width:22px;height:22px;flex-shrink:0;font-size:11px;line-height:1;}
+  .anexo-remover:hover{background:#2A1218;}
+  .anexos-vazio{font-size:11.5px;color:var(--texto-fraco);}
+  .anexos-ajuda{font-size:10px;color:var(--texto-fraco);margin-top:6px;}
+  .campo-anexos input[type=file]{width:100%;font-size:11.5px;color:var(--texto-suave);}
+  .aviso-anexos-bloqueado{font-size:11px;color:var(--texto-fraco);background:#09182A;border:1px dashed #28415D;border-radius:8px;padding:8px 10px;grid-column:1/-1;}
+
   /* ===== EVENTOS / PESSOAS / RELATÓRIOS ===== */
   .modulo-table-box{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);overflow:auto;}
   .modulo-table{width:100%;min-width:760px;table-layout:auto;font-size:11.5px;}
@@ -858,6 +886,9 @@ import {
   getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   onSnapshot, collection, query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD23LG4NhHDRfiHeXCSumKyTiXRV_yk5bc",
@@ -871,6 +902,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 window.__db = db;
 window.__auth = auth;
@@ -879,6 +911,11 @@ let USUARIO = null;
 let UID = null;
 let paginaAtual = 'dashboard';
 let pararDeOuvirPerfil = null;
+let pararDeOuvirConfigGeral = null;
+
+const CONFIG_GERAL = { anexosHabilitados: false };
+const PAGINAS_QUE_USAM_ANEXOS = ['atendimentos', 'transportes', 'equipamentos', 'configuracoes'];
+window.CONFIG_GERAL = CONFIG_GERAL;
 
 const telaSplash = document.getElementById('telaSplash');
 const telaLogin = document.getElementById('telaLogin');
@@ -1023,9 +1060,24 @@ function abrirApp() {
     : iniciaisNome(USUARIO.nome);
   atualizarDataTopo();
   montarMenu();
+  ouvirConfigGeral();
   carregarConfiguraveis().then(() => {
     irPara('dashboard');
     atualizarBadgeNotificacoes();
+  });
+}
+
+function ouvirConfigGeral() {
+  if (pararDeOuvirConfigGeral) return;
+  pararDeOuvirConfigGeral = onSnapshot(doc(db, 'configuracoes', 'geral'), (snap) => {
+    const anterior = CONFIG_GERAL.anexosHabilitados;
+    CONFIG_GERAL.anexosHabilitados = snap.exists() && snap.data().anexosHabilitados === true;
+    if (anterior !== CONFIG_GERAL.anexosHabilitados && PAGINAS_QUE_USAM_ANEXOS.includes(paginaAtual)) {
+      const renderFn = window.RENDERIZADORES && window.RENDERIZADORES[paginaAtual];
+      if (renderFn) renderFn();
+    }
+  }, (erro) => {
+    console.error('Erro ao ouvir configurações gerais:', erro);
   });
 }
 
@@ -1036,6 +1088,8 @@ function fecharApp() {
   inputEmail.value = ''; inputSenha.value = ''; erroLogin.innerText = '';
   btnEntrar.disabled = false; btnEntrar.innerText = 'Entrar';
   USUARIO = null; UID = null;
+  if (pararDeOuvirConfigGeral) { pararDeOuvirConfigGeral(); pararDeOuvirConfigGeral = null; }
+  CONFIG_GERAL.anexosHabilitados = false;
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -1393,6 +1447,114 @@ function ligarBuscaPessoa(prefixo, mapaCampos) {
   });
 }
 
+/* ===== ANEXOS — recurso pago, liberado pelo ADMIN em Configurações ===== */
+const LIMITE_ANEXO_MB = 8;
+const LIMITE_ANEXOS_POR_ENVIO = 5;
+
+function formatarTamanhoArquivo(bytes) {
+  if (!bytes) return '';
+  const kb = bytes / 1024;
+  if (kb < 1024) return kb.toFixed(0) + ' KB';
+  return (kb / 1024).toFixed(1) + ' MB';
+}
+
+function sanitizarNomeArquivo(nome) {
+  return String(nome || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.\-_]/g, '_');
+}
+
+function itemAnexoHtml(anexo, indice, colecao, docId, podeExcluir, prefixo) {
+  return `
+    <div class="anexo-item">
+      <a href="${anexo.url}" target="_blank" rel="noopener noreferrer">📄 ${escapar(anexo.nome)}</a>
+      <span class="anexo-tam">${formatarTamanhoArquivo(anexo.tamanho)}</span>
+      ${podeExcluir ? `<button type="button" class="anexo-remover" title="Remover anexo" onclick="event.stopPropagation();excluirAnexoRegistro('${colecao}','${docId}',${indice},'${prefixo}')">✕</button>` : ''}
+    </div>`;
+}
+
+// Bloco de anexos para dentro dos modais de Atendimento, Transporte e Equipamentos.
+// Só aparece quando o ADMIN libera "Anexos de Documentação" em Configurações (recurso pago).
+function campoAnexosModal(prefixo, colecao, registro) {
+  if (!CONFIG_GERAL.anexosHabilitados) return '';
+  const anexos = Array.isArray(registro.anexos) ? registro.anexos : [];
+  const podeEditar = !somenteLeitura();
+  const podeExcluir = podeEditar && !!registro._docId;
+  return `
+    <div class="campo-modal span-4 campo-anexos" onclick="event.stopPropagation()">
+      <label>📎 Anexos / Documentação</label>
+      <div class="anexos-lista" id="${prefixo}_listaAnexos">
+        ${anexos.map((a, i) => itemAnexoHtml(a, i, colecao, registro._docId || '', podeExcluir, prefixo)).join('') || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>'}
+      </div>
+      ${podeEditar ? `
+        <input type="file" id="${prefixo}_arquivosAnexo" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+        <div class="anexos-ajuda">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada (PDF, imagem, Word ou Excel).</div>
+      ` : ''}
+    </div>`;
+}
+
+// Sobe os arquivos selecionados no input de anexos para o Firebase Storage
+// e devolve os metadados prontos para gravar no array "anexos" do documento.
+async function enviarAnexosSelecionados(prefixo, colecao, docId) {
+  const input = document.getElementById(prefixo + '_arquivosAnexo');
+  const arquivos = input && input.files ? Array.from(input.files) : [];
+  if (!arquivos.length) return [];
+
+  if (arquivos.length > LIMITE_ANEXOS_POR_ENVIO) {
+    throw new Error(`Selecione no máximo ${LIMITE_ANEXOS_POR_ENVIO} arquivos por vez.`);
+  }
+  const grandeDemais = arquivos.find(f => f.size > LIMITE_ANEXO_MB * 1024 * 1024);
+  if (grandeDemais) {
+    throw new Error(`O arquivo "${grandeDemais.name}" passa de ${LIMITE_ANEXO_MB}MB.`);
+  }
+
+  const enviados = [];
+  for (const arquivo of arquivos) {
+    const caminho = `anexos/${colecao}/${docId}/${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
+    const refArquivo = ref(storage, caminho);
+    await uploadBytes(refArquivo, arquivo);
+    const url = await getDownloadURL(refArquivo);
+    enviados.push({
+      nome: arquivo.name,
+      url,
+      caminho,
+      tamanho: arquivo.size,
+      tipo: arquivo.type || '',
+      enviadoPor: USUARIO.nome,
+      enviadoEm: new Date().toLocaleString('pt-BR')
+    });
+  }
+  return enviados;
+}
+
+async function excluirAnexoRegistro(colecao, docId, indice, prefixo) {
+  if (!CONFIG_GERAL.anexosHabilitados || somenteLeitura()) return;
+  if (!confirm('Remover este anexo?')) return;
+  try {
+    const refDoc = doc(db, colecao, docId);
+    const snap = await getDoc(refDoc);
+    if (!snap.exists()) return;
+    const anexos = Array.isArray(snap.data().anexos) ? [...snap.data().anexos] : [];
+    const [removido] = anexos.splice(indice, 1);
+    await updateDoc(refDoc, { anexos });
+    if (removido && removido.caminho) {
+      deleteObject(ref(storage, removido.caminho)).catch(() => {});
+    }
+
+    // Atualiza só a lista de anexos dentro do modal aberto, sem fechar o formulário.
+    const lista = document.getElementById(prefixo + '_listaAnexos');
+    if (lista) {
+      lista.innerHTML = anexos.map((a, i) => itemAnexoHtml(a, i, colecao, docId, true, prefixo)).join('')
+        || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>';
+    }
+
+    const cacheDoColecao = { atendimentos: atendimentosCache, transportes: transportesCache, equipamentos: equipCacheLista }[colecao];
+    const registro = cacheDoColecao && cacheDoColecao.find(r => r._docId === docId);
+    if (registro) registro.anexos = anexos;
+  } catch (e) {
+    alert('Não foi possível remover o anexo: ' + e.message);
+  }
+}
+window.excluirAnexoRegistro = excluirAnexoRegistro;
+
 let atendimentosCache = [];
 
 window.RENDERIZADORES.atendimentos = async function () {
@@ -1552,6 +1714,7 @@ function abrirModalAtendimento(registro) {
         <div class="campo-modal"><label>Responsável</label><input id="m_responsavel" value="${(registro.responsavel||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Indicador</label><input id="m_indicador" value="${(registro.indicador||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal span-4"><label>Observações</label><textarea id="m_obs">${registro.observacoes||''}</textarea></div>
+        ${campoAnexosModal('m', 'atendimentos', registro)}
       </div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
@@ -1584,12 +1747,23 @@ async function salvarAtendimento(docId) {
   };
 
   try {
+    let idDoc = docId;
     if (docId) {
       await updateDoc(doc(db, 'atendimentos', docId), dados);
     } else {
       dados.criadoPor = USUARIO.nome;
-      await addDoc(collection(db, 'atendimentos'), dados);
+      const novo = await addDoc(collection(db, 'atendimentos'), dados);
+      idDoc = novo.id;
     }
+
+    if (CONFIG_GERAL.anexosHabilitados) {
+      const novosAnexos = await enviarAnexosSelecionados('m', 'atendimentos', idDoc);
+      if (novosAnexos.length) {
+        const existentes = docId ? (atendimentosCache.find(a => a._docId === docId)?.anexos || []) : [];
+        await updateDoc(doc(db, 'atendimentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      }
+    }
+
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.atendimentos();
   } catch (e) {
@@ -1677,6 +1851,7 @@ function abrirModalTransporte(registro) {
         <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
         <div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div>
         <div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div>
+        ${campoAnexosModal('t', 'transportes', registro)}
       </div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
@@ -1706,8 +1881,18 @@ async function salvarTransporte(docId) {
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
   };
   try {
+    let idDoc = docId;
     if (docId) { await updateDoc(doc(db, 'transportes', docId), dados); }
-    else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'transportes'), dados); }
+    else { dados.criadoPor = USUARIO.nome; const novo = await addDoc(collection(db, 'transportes'), dados); idDoc = novo.id; }
+
+    if (CONFIG_GERAL.anexosHabilitados) {
+      const novosAnexos = await enviarAnexosSelecionados('t', 'transportes', idDoc);
+      if (novosAnexos.length) {
+        const existentes = docId ? (transportesCache.find(t => t._docId === docId)?.anexos || []) : [];
+        await updateDoc(doc(db, 'transportes', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      }
+    }
+
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.transportes();
   } catch (e) {
@@ -1781,6 +1966,7 @@ function abrirModalEquip(registro) {
         <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
+        ${campoAnexosModal('e', 'equipamentos', registro)}
       </div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
@@ -1806,8 +1992,18 @@ async function salvarEquip(docId) {
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
   };
   try {
+    let idDoc = docId;
     if (docId) { await updateDoc(doc(db, 'equipamentos', docId), dados); }
-    else { dados.criadoPor = USUARIO.nome; await addDoc(collection(db, 'equipamentos'), dados); }
+    else { dados.criadoPor = USUARIO.nome; const novo = await addDoc(collection(db, 'equipamentos'), dados); idDoc = novo.id; }
+
+    if (CONFIG_GERAL.anexosHabilitados) {
+      const novosAnexos = await enviarAnexosSelecionados('e', 'equipamentos', idDoc);
+      if (novosAnexos.length) {
+        const existentes = docId ? (equipCacheLista.find(x => x._docId === docId)?.anexos || []) : [];
+        await updateDoc(doc(db, 'equipamentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      }
+    }
+
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
     window.RENDERIZADORES.equipamentos();
   } catch (e) {
@@ -1895,6 +2091,7 @@ function atualizarEstadoGoogleAgenda(){
 }
 
 function esperarGIS(timeout=10000){
+  if(window.google?.accounts?.oauth2) return Promise.resolve();
   return new Promise((resolve,reject)=>{
     const inicio=Date.now();
     const t=setInterval(()=>{
@@ -2985,9 +3182,40 @@ function desenharConfiguracoesAdmin(){
           `).join('') || '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'}
         </div>
       </div>
+
+      <div class="admin-card admin-card-pago">
+        <h3>Anexos de Documentação<span class="selo-pago">Recurso pago</span></h3>
+        <p>Libera o campo de anexo (foto, PDF, comprovante etc.) nos formulários de Atendimento, Transporte e Equipamentos. É um recurso pago contratado à parte — mantenha desligado até o gabinete confirmar a contratação.</p>
+
+        <div class="admin-toggle-linha">
+          <div>
+            <b>Habilitar anexos</b>
+            <span class="admin-toggle-desc">Quando ligado, todo mundo do gabinete passa a ver o campo de upload nesses três módulos.</span>
+          </div>
+          <label class="chave-toggle">
+            <input type="checkbox" id="toggleAnexosHabilitados" ${CONFIG_GERAL.anexosHabilitados ? 'checked' : ''} onchange="alternarAnexosHabilitadosAdmin(this.checked)">
+            <span class="trilho"></span>
+          </label>
+        </div>
+      </div>
     </div>
   `;
 }
+
+async function alternarAnexosHabilitadosAdmin(ligado){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+  const chave = document.getElementById('toggleAnexosHabilitados');
+  if(chave) chave.disabled = true;
+  try{
+    await setDoc(doc(db,'configuracoes','geral'), { anexosHabilitados: ligado === true }, { merge:true });
+  }catch(e){
+    alert('Não foi possível salvar essa configuração: ' + e.message);
+    if(chave) chave.checked = !ligado;
+  }finally{
+    if(chave) chave.disabled = false;
+  }
+}
+window.alternarAnexosHabilitadosAdmin = alternarAnexosHabilitadosAdmin;
 
 async function adicionarTipoAtendimentoAdmin(){
   if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
