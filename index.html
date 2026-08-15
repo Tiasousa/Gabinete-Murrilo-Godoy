@@ -806,6 +806,7 @@
   .anexo-remover{background:none;border:1px solid #4A2430;color:#F26D6D;border-radius:6px;width:22px;height:22px;flex-shrink:0;font-size:11px;line-height:1;}
   .anexo-remover:hover{background:#2A1218;}
   .anexos-vazio{font-size:11.5px;color:var(--texto-fraco);}
+  .anexos-obs{font-size:11px;color:var(--texto-suave);margin:-2px 0 10px;}
   .anexos-ajuda{font-size:10px;color:var(--texto-fraco);margin-top:6px;}
   .campo-anexos input[type=file]{width:100%;font-size:11.5px;color:var(--texto-suave);}
   .aviso-anexos-bloqueado{font-size:11px;color:var(--texto-fraco);background:#09182A;border:1px dashed #28415D;border-radius:8px;padding:8px 10px;grid-column:1/-1;}
@@ -1472,15 +1473,23 @@ function itemAnexoHtml(anexo, indice, colecao, docId, podeExcluir, prefixo) {
 }
 
 // Bloco de anexos para dentro dos modais de Atendimento, Transporte e Equipamentos.
-// Só aparece quando o ADMIN libera "Anexos de Documentação" em Configurações (recurso pago).
+// Quando o ADMIN ainda não liberou "Anexos de Documentação" em Configurações (recurso pago),
+// mostra um aviso de bloqueado em vez de sumir o campo, para o usuário saber que a função existe.
 function campoAnexosModal(prefixo, colecao, registro) {
-  if (!CONFIG_GERAL.anexosHabilitados) return '';
+  if (!CONFIG_GERAL.anexosHabilitados) {
+    return `
+    <div class="campo-modal span-4 campo-anexos aviso-anexos-bloqueado" onclick="event.stopPropagation()">
+      <label>🔒 Anexos / Documentação</label>
+      <div class="anexos-obs">Recurso pago. Para desbloquear o envio de anexos neste sistema, fale com o desenvolvedor.</div>
+    </div>`;
+  }
   const anexos = Array.isArray(registro.anexos) ? registro.anexos : [];
   const podeEditar = !somenteLeitura();
   const podeExcluir = podeEditar && !!registro._docId;
   return `
     <div class="campo-modal span-4 campo-anexos" onclick="event.stopPropagation()">
       <label>📎 Anexos / Documentação</label>
+      <div class="anexos-obs">Anexe aqui fotos, comprovantes, laudos ou qualquer documento que ajude a comprovar este registro.</div>
       <div class="anexos-lista" id="${prefixo}_listaAnexos">
         ${anexos.map((a, i) => itemAnexoHtml(a, i, colecao, registro._docId || '', podeExcluir, prefixo)).join('') || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>'}
       </div>
