@@ -1327,11 +1327,11 @@ function formatarTamanhoArquivo(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-async function carregarAnexosAtendimento(atendimentoId) {
-  const lista = document.getElementById('listaAnexosAtend');
+async function carregarAnexosGenerico(colecao, docId, elementoId) {
+  const lista = document.getElementById(elementoId);
   if (!lista) return;
   try {
-    const snap = await getDocs(collection(db, 'atendimentos', atendimentoId, 'anexos'));
+    const snap = await getDocs(collection(db, colecao, docId, 'anexos'));
     const anexos = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
     if (!anexos.length) {
       lista.innerHTML = '<div class="anexo-vazio">Nenhum documento anexado ainda.</div>';
@@ -1341,13 +1341,64 @@ async function carregarAnexosAtendimento(atendimentoId) {
       <div class="anexo-item">
         <a href="${a.dataBase64}" download="${(a.nome || 'documento').replace(/"/g,'&quot;')}" target="_blank">📎 ${(a.nome || 'documento').replace(/</g,'&lt;')}</a>
         <span class="anexo-tam">${formatarTamanhoArquivo(a.tamanho || 0)}</span>
-        <button type="button" class="anexo-excluir" title="Excluir anexo" onclick="excluirAnexoAtendimento('${atendimentoId}','${a._docId}')">✕</button>
+        <button type="button" class="anexo-excluir" title="Excluir anexo" onclick="excluirAnexoGenerico('${colecao}','${docId}','${a._docId}','${elementoId}')">✕</button>
       </div>`).join('');
   } catch (e) {
     lista.innerHTML = '<div class="anexo-vazio">Não foi possível carregar os anexos.</div>';
   }
 }
+window.carregarAnexosGenerico = carregarAnexosGenerico;
+
+async function enviarAnexoGenerico(colecao, docId, inputId, botaoId, elementoId) {
+  const input = document.getElementById(inputId);
+  const botao = document.getElementById(botaoId);
+  const arquivo = input.files[0];
+  if (!arquivo) { alert('Escolhe um arquivo primeiro.'); return; }
+  if (arquivo.size > TAMANHO_MAX_ANEXO) {
+    alert('Esse arquivo tem ' + formatarTamanhoArquivo(arquivo.size) + ' — o máximo permitido é 700 KB. Tenta comprimir a imagem ou o PDF antes de anexar.');
+    return;
+  }
+  botao.disabled = true; botao.innerText = 'Enviando...';
+  try {
+    const dataBase64 = await lerArquivoComoBase64(arquivo);
+    await addDoc(collection(db, colecao, docId, 'anexos'), {
+      nome: arquivo.name,
+      tipo: arquivo.type || 'aplicacao/octet-stream',
+      tamanho: arquivo.size,
+      dataBase64: dataBase64,
+      criadoPor: USUARIO.nome,
+      criadoEm: new Date().toLocaleString('pt-BR')
+    });
+    const snapAnexos = await getDocs(collection(db, colecao, docId, 'anexos'));
+    await updateDoc(doc(db, colecao, docId), { qtdAnexos: snapAnexos.size });
+    input.value = '';
+    await carregarAnexosGenerico(colecao, docId, elementoId);
+  } catch (e) {
+    alert('Não foi possível anexar: ' + e.message);
+  } finally {
+    botao.disabled = false; botao.innerText = 'Anexar';
+  }
+}
+window.enviarAnexoGenerico = enviarAnexoGenerico;
+
+async function excluirAnexoGenerico(colecao, docId, anexoId, elementoId) {
+  if (!confirm('Excluir este anexo?')) return;
+  try {
+    await deleteDoc(doc(db, colecao, docId, 'anexos', anexoId));
+    const snapAnexos = await getDocs(collection(db, colecao, docId, 'anexos'));
+    await updateDoc(doc(db, colecao, docId), { qtdAnexos: snapAnexos.size });
+    await carregarAnexosGenerico(colecao, docId, elementoId);
+  } catch (e) {
+    alert('Não foi possível excluir o anexo: ' + e.message);
+  }
+}
+window.excluirAnexoGenerico = excluirAnexoGenerico;
+
+// Mantidas por compatibilidade com o modal de Atendimento já existente
+function carregarAnexosAtendimento(atendimentoId) { return carregarAnexosGenerico('atendimentos', atendimentoId, 'listaAnexosAtend'); }
 window.carregarAnexosAtendimento = carregarAnexosAtendimento;
+function enviarAnexoAtendimento(atendimentoId) { return enviarAnexoGenerico('atendimentos', atendimentoId, 'inputAnexoAtend', 'btnUploadAnexo', 'listaAnexosAtend'); }
+window.enviarAnexoAtendimento = enviarAnexoAtendimento;
 
 function lerArquivoComoBase64(arquivo) {
   return new Promise((resolve, reject) => {
@@ -1358,51 +1409,6 @@ function lerArquivoComoBase64(arquivo) {
   });
 }
 
-async function enviarAnexoAtendimento(atendimentoId) {
-  const input = document.getElementById('inputAnexoAtend');
-  const botao = document.getElementById('btnUploadAnexo');
-  const arquivo = input.files[0];
-  if (!arquivo) { alert('Escolhe um arquivo primeiro.'); return; }
-  if (arquivo.size > TAMANHO_MAX_ANEXO) {
-    alert('Esse arquivo tem ' + formatarTamanhoArquivo(arquivo.size) + ' — o máximo permitido é 700 KB. Tenta comprimir a imagem ou o PDF antes de anexar.');
-    return;
-  }
-  botao.disabled = true; botao.innerText = 'Enviando...';
-  try {
-    const dataBase64 = await lerArquivoComoBase64(arquivo);
-    await addDoc(collection(db, 'atendimentos', atendimentoId, 'anexos'), {
-      nome: arquivo.name,
-      tipo: arquivo.type || 'aplicacao/octet-stream',
-      tamanho: arquivo.size,
-      dataBase64: dataBase64,
-      criadoPor: USUARIO.nome,
-      criadoEm: new Date().toLocaleString('pt-BR')
-    });
-    // Mantém o contador de anexos no próprio atendimento (aparece na tabela)
-    const snapAnexos = await getDocs(collection(db, 'atendimentos', atendimentoId, 'anexos'));
-    await updateDoc(doc(db, 'atendimentos', atendimentoId), { qtdAnexos: snapAnexos.size });
-    input.value = '';
-    await carregarAnexosAtendimento(atendimentoId);
-  } catch (e) {
-    alert('Não foi possível anexar: ' + e.message);
-  } finally {
-    botao.disabled = false; botao.innerText = 'Anexar';
-  }
-}
-window.enviarAnexoAtendimento = enviarAnexoAtendimento;
-
-async function excluirAnexoAtendimento(atendimentoId, anexoId) {
-  if (!confirm('Excluir este anexo?')) return;
-  try {
-    await deleteDoc(doc(db, 'atendimentos', atendimentoId, 'anexos', anexoId));
-    const snapAnexos = await getDocs(collection(db, 'atendimentos', atendimentoId, 'anexos'));
-    await updateDoc(doc(db, 'atendimentos', atendimentoId), { qtdAnexos: snapAnexos.size });
-    await carregarAnexosAtendimento(atendimentoId);
-  } catch (e) {
-    alert('Não foi possível excluir o anexo: ' + e.message);
-  }
-}
-window.excluirAnexoAtendimento = excluirAnexoAtendimento;
 
 let transportesCache = [];
 window.RENDERIZADORES.transportes = async function () {
@@ -1471,6 +1477,19 @@ function abrirModalTransporte(registro) {
         <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
         <div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div>
         <div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-4">
+          <label>Documentos anexados</label>
+          <div class="campo-anexos">
+            <div id="listaAnexosTransp" class="anexos-lista">${registro._docId ? '<div class="anexo-vazio">Carregando...</div>' : '<div class="anexo-vazio">Salve a solicitação primeiro pra poder anexar documentos.</div>'}</div>
+            ${registro._docId ? `
+            <div class="anexo-upload-linha">
+              <input type="file" id="inputAnexoTransp" accept="image/*,.pdf">
+              <button type="button" class="btn-secundario" id="btnUploadAnexoTransp" onclick="enviarAnexoGenerico('transportes','${registro._docId}','inputAnexoTransp','btnUploadAnexoTransp','listaAnexosTransp')">Anexar</button>
+            </div>
+            <div class="anexo-aviso-tamanho">Máximo 700 KB por arquivo.</div>
+            ` : ''}
+          </div>
+        </div>
       </div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
@@ -1479,6 +1498,7 @@ function abrirModalTransporte(registro) {
     </div>`;
   document.body.appendChild(fundo);
   ligarBuscaPessoa('t', { nome: 't_nome', telefone: 't_contato' });
+  if (registro._docId) carregarAnexosGenerico('transportes', registro._docId, 'listaAnexosTransp');
 }
 window.abrirModalTransporte = abrirModalTransporte;
 async function salvarTransporte(docId) {
@@ -1575,6 +1595,19 @@ function abrirModalEquip(registro) {
         <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
+        <div class="campo-modal span-4">
+          <label>Documentos anexados</label>
+          <div class="campo-anexos">
+            <div id="listaAnexosEquip" class="anexos-lista">${registro._docId ? '<div class="anexo-vazio">Carregando...</div>' : '<div class="anexo-vazio">Salve o empréstimo primeiro pra poder anexar documentos.</div>'}</div>
+            ${registro._docId ? `
+            <div class="anexo-upload-linha">
+              <input type="file" id="inputAnexoEquip" accept="image/*,.pdf">
+              <button type="button" class="btn-secundario" id="btnUploadAnexoEquip" onclick="enviarAnexoGenerico('equipamentos','${registro._docId}','inputAnexoEquip','btnUploadAnexoEquip','listaAnexosEquip')">Anexar</button>
+            </div>
+            <div class="anexo-aviso-tamanho">Máximo 700 KB por arquivo.</div>
+            ` : ''}
+          </div>
+        </div>
       </div>
       <div class="modal-acoes">
         <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
@@ -1583,6 +1616,7 @@ function abrirModalEquip(registro) {
     </div>`;
   document.body.appendChild(fundo);
   ligarBuscaPessoa('e', { nome: 'e_nome', telefone: 'e_contato' });
+  if (registro._docId) carregarAnexosGenerico('equipamentos', registro._docId, 'listaAnexosEquip');
 }
 window.abrirModalEquip = abrirModalEquip;
 async function salvarEquip(docId) {
