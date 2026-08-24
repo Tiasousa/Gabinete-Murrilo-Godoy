@@ -1032,8 +1032,7 @@ let paginaAtual = 'dashboard';
 let pararDeOuvirPerfil = null;
 let pararDeOuvirConfigGeral = null;
 
-const CONFIG_GERAL = { anexosHabilitados: false };
-const PAGINAS_QUE_USAM_ANEXOS = ['atendimentos', 'transportes', 'equipamentos', 'configuracoes'];
+const CONFIG_GERAL = {};
 window.CONFIG_GERAL = CONFIG_GERAL;
 
 
@@ -1125,15 +1124,9 @@ async function atualizarResumoAssinaturaTopo() {
   usoEl.textContent = 'Calculando espaço...';
   badge.classList.remove('alerta','critico');
   try {
-    const colecoes = ['atendimentos','transportes','equipamentos'];
-    const snaps = await Promise.all(colecoes.map(nome => getDocs(collection(db,nome))));
-    let bytesUsados = 0;
-    snaps.forEach(snap => snap.docs.forEach(d => {
-      const anexos = Array.isArray(d.data().anexos) ? d.data().anexos : [];
-      anexos.forEach(a => { bytesUsados += Number(a.tamanho || 0); });
-    }));
-    const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
-    const pct = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
+    const uso = await calcularUsoAnexos();
+    const bytesUsados = uso.bytesUsados;
+    const pct = uso.pct;
     usoEl.textContent = formatarUsoTopo(bytesUsados);
     if (pct >= 100) { badge.classList.add('critico'); statusEl.textContent = '● LIMITE ATINGIDO'; }
     else if (pct >= 90) { badge.classList.add('critico'); statusEl.textContent = '● ESPAÇO CRÍTICO'; }
@@ -1315,26 +1308,13 @@ function abrirApp() {
     : iniciaisNome(USUARIO.nome);
   atualizarDataTopo();
   montarMenu();
-  ouvirConfigGeral();
   carregarConfiguraveis().then(() => {
     irPara('dashboard');
     atualizarBadgeNotificacoes();
+    atualizarResumoAssinaturaTopo();
   });
 }
 
-function ouvirConfigGeral() {
-  if (pararDeOuvirConfigGeral) return;
-  pararDeOuvirConfigGeral = onSnapshot(doc(db, 'configuracoes', 'geral'), (snap) => {
-    const anterior = CONFIG_GERAL.anexosHabilitados;
-    CONFIG_GERAL.anexosHabilitados = snap.exists() && snap.data().anexosHabilitados === true;
-    if (anterior !== CONFIG_GERAL.anexosHabilitados && PAGINAS_QUE_USAM_ANEXOS.includes(paginaAtual)) {
-      const renderFn = window.RENDERIZADORES && window.RENDERIZADORES[paginaAtual];
-      if (renderFn) renderFn();
-    }
-  }, (erro) => {
-    console.error('Erro ao ouvir configurações gerais:', erro);
-  });
-}
 
 function fecharApp() {
   esconderSplash();
@@ -1343,8 +1323,6 @@ function fecharApp() {
   inputEmail.value = ''; inputSenha.value = ''; erroLogin.innerText = '';
   btnEntrar.disabled = false; btnEntrar.innerText = 'Entrar';
   USUARIO = null; UID = null;
-  if (pararDeOuvirConfigGeral) { pararDeOuvirConfigGeral(); pararDeOuvirConfigGeral = null; }
-  CONFIG_GERAL.anexosHabilitados = false;
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -1809,9 +1787,30 @@ function ligarBuscaPessoa(prefixo, mapaCampos) {
   });
 }
 
-/* ===== ANEXOS — recurso pago, liberado pelo ADMIN em Configurações ===== */
-const LIMITE_ANEXO_MB = 8;
+/* ===== ANEXOS — 2 GB incluídos no plano; espaço adicional é contratado à parte ===== */
+const LIMITE_ANEXO_MB = 5;
 const LIMITE_ANEXOS_POR_ENVIO = 5;
+const ARMAZENAMENTO_STATUS = { bytesUsados: 0, limiteBytes: CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024, pct: 0 };
+
+async function calcularUsoAnexos() {
+  const colecoes = ['atendimentos','transportes','equipamentos'];
+  const snaps = await Promise.all(colecoes.map(nome => getDocs(collection(db,nome))));
+  let bytesUsados = 0;
+  snaps.forEach(snap => snap.docs.forEach(d => {
+    const anexos = Array.isArray(d.data().anexos) ? d.data().anexos : [];
+    anexos.forEach(a => { bytesUsados += Number(a.tamanho || 0); });
+  }));
+  const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
+  const pct = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
+  Object.assign(ARMAZENAMENTO_STATUS, { bytesUsados, limiteBytes, pct });
+  return ARMAZENAMENTO_STATUS;
+}
+
+function abrirAssinaturaPorLimite() {
+  fecharModaisAbertos();
+  irPara('assinatura');
+}
+window.abrirAssinaturaPorLimite = abrirAssinaturaPorLimite;
 
 function formatarTamanhoArquivo(bytes) {
   if (!bytes) return '';
@@ -1833,31 +1832,33 @@ function itemAnexoHtml(anexo, indice, colecao, docId, podeExcluir, prefixo) {
     </div>`;
 }
 
-// Bloco de anexos para dentro dos modais de Atendimento, Transporte e Equipamentos.
-// Quando o ADMIN ainda não liberou "Anexos de Documentação" em Configurações (recurso pago),
-// mostra um aviso de bloqueado em vez de sumir o campo, para o usuário saber que a função existe.
+// Bloco de anexos para Atendimento, Transporte e Equipamentos.
+// O plano inclui 2 GB. Ao atingir 100%, novos uploads são bloqueados e o cliente é direcionado para a assinatura.
 function campoAnexosModal(prefixo, colecao, registro) {
-  if (!CONFIG_GERAL.anexosHabilitados) {
-    return `
-    <div class="campo-modal span-4 campo-anexos aviso-anexos-bloqueado" onclick="event.stopPropagation()">
-      <label>🔒 Anexos / Documentação</label>
-      <div class="anexos-obs">Recurso pago. Para desbloquear o envio de anexos neste sistema, fale com o desenvolvedor.</div>
-    </div>`;
-  }
   const anexos = Array.isArray(registro.anexos) ? registro.anexos : [];
   const podeEditar = !somenteLeitura();
   const podeExcluir = podeEditar && !!registro._docId;
+  const limiteAtingido = ARMAZENAMENTO_STATUS.pct >= 100;
+  const emAlerta = ARMAZENAMENTO_STATUS.pct >= 90;
+  const avisoUso = emAlerta && !limiteAtingido
+    ? `<div class="anexos-ajuda" style="color:#F2B23A;margin-top:6px;">⚠ Armazenamento em ${Math.min(99.9,ARMAZENAMENTO_STATUS.pct).toFixed(1).replace('.',',')}%. Considere aumentar o espaço.</div>`
+    : '';
+
   return `
-    <div class="campo-modal span-4 campo-anexos" onclick="event.stopPropagation()">
-      <label>📎 Anexos / Documentação</label>
-      <div class="anexos-obs">Anexe aqui fotos, comprovantes, laudos ou qualquer documento que ajude a comprovar este registro.</div>
+    <div class="campo-modal span-4 campo-anexos ${limiteAtingido ? 'aviso-anexos-bloqueado' : ''}" onclick="event.stopPropagation()">
+      <label>${limiteAtingido ? '🔒' : '📎'} Anexos / Documentação</label>
+      <div class="anexos-obs">${limiteAtingido
+        ? `O limite de ${CONFIG_ASSINATURA.limiteGB} GB do plano foi atingido. Os documentos existentes continuam disponíveis, mas novos anexos precisam de espaço adicional.`
+        : `Seu plano inclui ${CONFIG_ASSINATURA.limiteGB} GB para documentos. Anexe RG, CPF, comprovantes, receitas, fotos e PDFs.`}</div>
       <div class="anexos-lista" id="${prefixo}_listaAnexos">
         ${anexos.map((a, i) => itemAnexoHtml(a, i, colecao, registro._docId || '', podeExcluir, prefixo)).join('') || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>'}
       </div>
-      ${podeEditar ? `
+      ${podeEditar && !limiteAtingido ? `
         <input type="file" id="${prefixo}_arquivosAnexo" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-        <div class="anexos-ajuda">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada (PDF, imagem, Word ou Excel).</div>
+        <div class="anexos-ajuda">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.</div>
+        ${avisoUso}
       ` : ''}
+      ${limiteAtingido ? `<button type="button" class="btn-primario" style="margin-top:10px;background:#22C55E;" onclick="abrirAssinaturaPorLimite()">Aumentar armazenamento</button>` : ''}
     </div>`;
 }
 
@@ -1874,6 +1875,12 @@ async function enviarAnexosSelecionados(prefixo, colecao, docId) {
   const grandeDemais = arquivos.find(f => f.size > LIMITE_ANEXO_MB * 1024 * 1024);
   if (grandeDemais) {
     throw new Error(`O arquivo "${grandeDemais.name}" passa de ${LIMITE_ANEXO_MB}MB.`);
+  }
+
+  const uso = await calcularUsoAnexos();
+  const bytesNovos = arquivos.reduce((total, f) => total + Number(f.size || 0), 0);
+  if (uso.bytesUsados + bytesNovos > uso.limiteBytes) {
+    throw new Error(`Limite de ${CONFIG_ASSINATURA.limiteGB} GB atingido. Aumente o armazenamento para enviar novos documentos.`);
   }
 
   const { getStorage, ref, uploadBytes, getDownloadURL } = await obterStorageMod();
@@ -1899,7 +1906,7 @@ async function enviarAnexosSelecionados(prefixo, colecao, docId) {
 }
 
 async function excluirAnexoRegistro(colecao, docId, indice, prefixo) {
-  if (!CONFIG_GERAL.anexosHabilitados || somenteLeitura()) return;
+  if (somenteLeitura()) return;
   if (!confirm('Remover este anexo?')) return;
   try {
     const refDoc = doc(db, colecao, docId);
@@ -1915,6 +1922,7 @@ async function excluirAnexoRegistro(colecao, docId, indice, prefixo) {
     }
 
     // Atualiza só a lista de anexos dentro do modal aberto, sem fechar o formulário.
+    await atualizarResumoAssinaturaTopo();
     const lista = document.getElementById(prefixo + '_listaAnexos');
     if (lista) {
       lista.innerHTML = anexos.map((a, i) => itemAnexoHtml(a, i, colecao, docId, true, prefixo)).join('')
@@ -2131,12 +2139,11 @@ async function salvarAtendimento(docId) {
       idDoc = novo.id;
     }
 
-    if (CONFIG_GERAL.anexosHabilitados) {
-      const novosAnexos = await enviarAnexosSelecionados('m', 'atendimentos', idDoc);
-      if (novosAnexos.length) {
-        const existentes = docId ? (atendimentosCache.find(a => a._docId === docId)?.anexos || []) : [];
-        await updateDoc(doc(db, 'atendimentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
-      }
+    const novosAnexos = await enviarAnexosSelecionados('m', 'atendimentos', idDoc);
+    if (novosAnexos.length) {
+      const existentes = docId ? (atendimentosCache.find(a => a._docId === docId)?.anexos || []) : [];
+      await updateDoc(doc(db, 'atendimentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      await atualizarResumoAssinaturaTopo();
     }
 
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
@@ -2260,12 +2267,11 @@ async function salvarTransporte(docId) {
     if (docId) { await updateDoc(doc(db, 'transportes', docId), dados); }
     else { dados.criadoPor = USUARIO.nome; const novo = await addDoc(collection(db, 'transportes'), dados); idDoc = novo.id; }
 
-    if (CONFIG_GERAL.anexosHabilitados) {
-      const novosAnexos = await enviarAnexosSelecionados('t', 'transportes', idDoc);
-      if (novosAnexos.length) {
-        const existentes = docId ? (transportesCache.find(t => t._docId === docId)?.anexos || []) : [];
-        await updateDoc(doc(db, 'transportes', idDoc), { anexos: [...existentes, ...novosAnexos] });
-      }
+    const novosAnexos = await enviarAnexosSelecionados('t', 'transportes', idDoc);
+    if (novosAnexos.length) {
+      const existentes = docId ? (transportesCache.find(t => t._docId === docId)?.anexos || []) : [];
+      await updateDoc(doc(db, 'transportes', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      await atualizarResumoAssinaturaTopo();
     }
 
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
@@ -2371,12 +2377,11 @@ async function salvarEquip(docId) {
     if (docId) { await updateDoc(doc(db, 'equipamentos', docId), dados); }
     else { dados.criadoPor = USUARIO.nome; const novo = await addDoc(collection(db, 'equipamentos'), dados); idDoc = novo.id; }
 
-    if (CONFIG_GERAL.anexosHabilitados) {
-      const novosAnexos = await enviarAnexosSelecionados('e', 'equipamentos', idDoc);
-      if (novosAnexos.length) {
-        const existentes = docId ? (equipCacheLista.find(x => x._docId === docId)?.anexos || []) : [];
-        await updateDoc(doc(db, 'equipamentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
-      }
+    const novosAnexos = await enviarAnexosSelecionados('e', 'equipamentos', idDoc);
+    if (novosAnexos.length) {
+      const existentes = docId ? (equipCacheLista.find(x => x._docId === docId)?.anexos || []) : [];
+      await updateDoc(doc(db, 'equipamentos', idDoc), { anexos: [...existentes, ...novosAnexos] });
+      await atualizarResumoAssinaturaTopo();
     }
 
     document.querySelector('.gcal-modal-bg, .modal-fundo')?.remove();
@@ -3558,39 +3563,9 @@ function desenharConfiguracoesAdmin(){
         </div>
       </div>
 
-      <div class="admin-card admin-card-pago">
-        <h3>Anexos de Documentação<span class="selo-pago">Recurso pago</span></h3>
-        <p>Libera o campo de anexo (foto, PDF, comprovante etc.) nos formulários de Atendimento, Transporte e Equipamentos. É um recurso pago contratado à parte — mantenha desligado até o gabinete confirmar a contratação.</p>
-
-        <div class="admin-toggle-linha">
-          <div>
-            <b>Habilitar anexos</b>
-            <span class="admin-toggle-desc">Quando ligado, todo mundo do gabinete passa a ver o campo de upload nesses três módulos.</span>
-          </div>
-          <label class="chave-toggle">
-            <input type="checkbox" id="toggleAnexosHabilitados" ${CONFIG_GERAL.anexosHabilitados ? 'checked' : ''} onchange="alternarAnexosHabilitadosAdmin(this.checked)">
-            <span class="trilho"></span>
-          </label>
-        </div>
-      </div>
     </div>
   `;
 }
-
-async function alternarAnexosHabilitadosAdmin(ligado){
-  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
-  const chave = document.getElementById('toggleAnexosHabilitados');
-  if(chave) chave.disabled = true;
-  try{
-    await setDoc(doc(db,'configuracoes','geral'), { anexosHabilitados: ligado === true }, { merge:true });
-  }catch(e){
-    alert('Não foi possível salvar essa configuração: ' + e.message);
-    if(chave) chave.checked = !ligado;
-  }finally{
-    if(chave) chave.disabled = false;
-  }
-}
-window.alternarAnexosHabilitadosAdmin = alternarAnexosHabilitadosAdmin;
 
 async function adicionarTipoAtendimentoAdmin(){
   if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
