@@ -833,6 +833,49 @@
   @media(max-width:900px){.relatorio-grid{grid-template-columns:1fr 1fr}.relatorio-secao{grid-template-columns:1fr}.modulo-table{min-width:680px}}
   @media(max-width:520px){.relatorio-grid{grid-template-columns:1fr}}
 
+
+  /* ===== ASSINATURA E ARMAZENAMENTO ===== */
+  .perfil-menu-wrap{position:relative;}
+  .perfil-topo{cursor:pointer;border-radius:12px;padding:6px 10px 6px 14px;transition:background .18s,border-color .18s;}
+  .perfil-topo:hover{background:#0B1B2F;}
+  .perfil-topo::after{content:"▾";font-size:10px;color:#7892B6;margin-left:3px;}
+  .perfil-dropdown{position:absolute;right:0;top:calc(100% + 10px);width:260px;background:#0A1728;border:1px solid #1C2C41;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.45);padding:8px;z-index:1800;}
+  .perfil-dropdown button{width:100%;border:0;background:transparent;color:#DDE6F2;text-align:left;padding:11px 12px;border-radius:9px;font-size:12px;font-weight:800;}
+  .perfil-dropdown button:hover{background:#10243C;}
+  .perfil-dropdown .perfil-dd-destaque{color:#8CC5FF;border:1px solid rgba(37,99,235,.25);background:rgba(37,99,235,.07);}
+  .perfil-dropdown .perfil-dd-sair{color:#FF7479;}
+  .assinatura-wrap{max-width:1120px;margin:0 auto;}
+  .assinatura-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .assinatura-topo h2{margin:0;font-size:23px;font-weight:900;}
+  .assinatura-topo p{margin:5px 0 0;color:var(--texto-fraco);font-size:11.5px;}
+  .assinatura-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .assinatura-card{background:linear-gradient(180deg,#0B1B2F,#091626);border:1px solid var(--borda);border-radius:14px;padding:18px;min-width:0;}
+  .assinatura-card h3{margin:0 0 14px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#8EA3BF;}
+  .assinatura-plano{font-size:20px;font-weight:900;color:#fff;margin-bottom:12px;}
+  .assinatura-linha{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid rgba(49,81,113,.25);font-size:12px;}
+  .assinatura-linha:last-child{border-bottom:0;}
+  .assinatura-linha span{color:#8EA3BF;}
+  .assinatura-linha b{color:#fff;text-align:right;}
+  .assinatura-status{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:900;text-transform:uppercase;}
+  .assinatura-status.ativo{background:rgba(34,197,94,.14);color:#4ADE80;}
+  .assinatura-storage-card{grid-column:1/-1;}
+  .assinatura-storage-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px;}
+  .assinatura-storage-valor{font-size:23px;font-weight:900;color:#fff;}
+  .assinatura-storage-pct{font-size:18px;font-weight:900;color:#fff;}
+  .assinatura-barra{height:12px;border-radius:30px;background:#13253B;overflow:hidden;margin:10px 0 9px;}
+  .assinatura-barra>div{height:100%;border-radius:30px;background:linear-gradient(90deg,#22C55E,#34D399);min-width:0;transition:width .3s;}
+  .assinatura-barra.alerta>div{background:linear-gradient(90deg,#F2B23A,#F59E0B);}
+  .assinatura-barra.critico>div{background:linear-gradient(90deg,#E5272D,#FF5A5F);}
+  .assinatura-storage-rodape{display:flex;justify-content:space-between;gap:12px;color:#7F91AA;font-size:10.5px;}
+  .assinatura-aviso{margin-top:14px;padding:11px 13px;border:1px solid #1D3E60;border-radius:10px;background:#0A2037;color:#A9C4E4;font-size:11.5px;}
+  .assinatura-upgrades{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .assinatura-upgrade{border:1px solid #28415D;border-radius:12px;background:#0A1728;padding:15px;}
+  .assinatura-upgrade b{display:block;font-size:17px;color:#fff;margin-bottom:4px;}
+  .assinatura-upgrade span{font-size:12px;color:#8EA3BF;}
+  .assinatura-upgrade strong{display:block;margin-top:10px;font-size:15px;color:#fff;}
+  .assinatura-acao{margin-top:14px;display:flex;justify-content:flex-end;}
+  .assinatura-acao button{background:#22A95A;color:white;border:0;border-radius:9px;padding:11px 17px;font-weight:900;}
+  @media(max-width:760px){.assinatura-grid{grid-template-columns:1fr}.assinatura-storage-card{grid-column:auto}.assinatura-upgrades{grid-template-columns:1fr}.perfil-dropdown{right:-50px;width:240px}}
 </style>
 </head>
 <body>
@@ -893,9 +936,15 @@
     <div class="topo-direita">
       <div class="data-topo"><b id="dataTopo">-</b><span id="diaSemanaTopo">-</span></div>
       <button class="notificacao-topo" type="button" title="Notificações">🔔<span class="notificacao-badge" id="notificacaoBadge">0</span></button>
-      <div class="perfil-topo">
-        <div class="avatar-topo" id="avatarTopo">-</div>
-        <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
+      <div class="perfil-menu-wrap" id="perfilMenuWrap">
+        <div class="perfil-topo" id="perfilTopoBtn" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false">
+          <div class="avatar-topo" id="avatarTopo">-</div>
+          <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
+        </div>
+        <div class="perfil-dropdown hidden" id="perfilDropdown">
+          <button type="button" onclick="irPara('assinatura');fecharMenuPerfil()" class="perfil-dd-destaque">💳 Assinatura e armazenamento</button>
+          <button type="button" onclick="fecharMenuPerfil();document.getElementById('btnSair').click()" class="perfil-dd-sair">↩ Sair</button>
+        </div>
       </div>
       <button id="btnSair">↩ Sair</button>
     </div>
@@ -951,6 +1000,17 @@ let pararDeOuvirConfigGeral = null;
 const CONFIG_GERAL = { anexosHabilitados: false };
 const PAGINAS_QUE_USAM_ANEXOS = ['atendimentos', 'transportes', 'equipamentos', 'configuracoes'];
 window.CONFIG_GERAL = CONFIG_GERAL;
+
+
+// Configuração comercial inicial da assinatura. Nesta primeira versão fica no código
+// para visualizar a tela. Depois pode ser movida para Firestore/portal do proprietário.
+const CONFIG_ASSINATURA = {
+  plano: 'Gabinete Digital — Profissional',
+  mensalidade: 249.00,
+  limiteGB: 2,
+  diaVencimento: 10,
+  status: 'ATIVO'
+};
 
 const telaSplash = document.getElementById('telaSplash');
 const telaLogin = document.getElementById('telaLogin');
@@ -1064,6 +1124,33 @@ function irPara(pagina) {
 }
 window.irPara = irPara;
 
+
+function fecharMenuPerfil(){
+  const dd = document.getElementById('perfilDropdown');
+  const btn = document.getElementById('perfilTopoBtn');
+  if(dd) dd.classList.add('hidden');
+  if(btn) btn.setAttribute('aria-expanded','false');
+}
+window.fecharMenuPerfil = fecharMenuPerfil;
+
+function alternarMenuPerfil(){
+  const dd = document.getElementById('perfilDropdown');
+  const btn = document.getElementById('perfilTopoBtn');
+  if(!dd || !btn) return;
+  const vaiAbrir = dd.classList.contains('hidden');
+  dd.classList.toggle('hidden', !vaiAbrir);
+  btn.setAttribute('aria-expanded', vaiAbrir ? 'true' : 'false');
+}
+
+const perfilTopoBtn = document.getElementById('perfilTopoBtn');
+if(perfilTopoBtn){
+  perfilTopoBtn.onclick = (e) => { e.stopPropagation(); alternarMenuPerfil(); };
+  perfilTopoBtn.onkeydown = (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); alternarMenuPerfil(); } };
+}
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('#perfilMenuWrap')) fecharMenuPerfil();
+});
+
 function saudacaoHora() {
   const h = new Date().getHours();
   if (h < 12) return 'Bom dia';
@@ -1167,6 +1254,100 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 window.RENDERIZADORES = window.RENDERIZADORES || {};
+window.RENDERIZADORES.assinatura = async function () {
+  const c = document.getElementById('conteudo');
+  c.classList.remove('modo-agenda','modo-atendimentos','modo-transportes','modo-equipamentos');
+  c.innerHTML = '<div class="carregando-tela">Calculando armazenamento...</div>';
+
+  try {
+    const colecoes = ['atendimentos','transportes','equipamentos'];
+    const snaps = await Promise.all(colecoes.map(nome => getDocs(collection(db,nome))));
+    let bytesUsados = 0;
+    let totalArquivos = 0;
+    snaps.forEach(snap => snap.docs.forEach(d => {
+      const anexos = Array.isArray(d.data().anexos) ? d.data().anexos : [];
+      anexos.forEach(a => {
+        bytesUsados += Number(a.tamanho || 0);
+        totalArquivos++;
+      });
+    }));
+
+    const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
+    const pctReal = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
+    const pct = Math.min(100, pctReal);
+    const gbUsados = bytesUsados / 1024 / 1024 / 1024;
+    const gbLivre = Math.max(0, CONFIG_ASSINATURA.limiteGB - gbUsados);
+    const classeBarra = pctReal >= 90 ? 'critico' : pctReal >= 70 ? 'alerta' : '';
+    const aviso = pctReal >= 100
+      ? 'Seu armazenamento atingiu o limite contratado. Novos anexos devem ser bloqueados até ampliar o espaço.'
+      : pctReal >= 90
+      ? 'Seu armazenamento está quase no limite. Considere ampliar o espaço para evitar bloqueio de novos anexos.'
+      : pctReal >= 70
+      ? 'Seu armazenamento passou de 70%. Você será avisado novamente ao atingir 90%.'
+      : 'Seu armazenamento está dentro do limite do plano.';
+
+    const hoje = new Date();
+    let venc = new Date(hoje.getFullYear(), hoje.getMonth(), CONFIG_ASSINATURA.diaVencimento);
+    if (hoje.getDate() > CONFIG_ASSINATURA.diaVencimento) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, CONFIG_ASSINATURA.diaVencimento);
+    const vencimento = venc.toLocaleDateString('pt-BR');
+
+    const fmtBRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const usadoTexto = gbUsados >= 0.01 ? gbUsados.toFixed(2).replace('.',',') + ' GB' : (bytesUsados/1024/1024).toFixed(1).replace('.',',') + ' MB';
+
+    c.innerHTML = `
+      <div class="assinatura-wrap">
+        <div class="assinatura-topo">
+          <div>
+            <h2>Assinatura e <span style="color:var(--acento)">armazenamento</span></h2>
+            <p>Consulte seu plano, vencimento e o espaço utilizado pelos documentos do gabinete.</p>
+          </div>
+          <button class="btn-secundario" onclick="irPara('dashboard')">← Voltar ao painel</button>
+        </div>
+
+        <div class="assinatura-grid">
+          <div class="assinatura-card">
+            <h3>Plano atual</h3>
+            <div class="assinatura-plano">${CONFIG_ASSINATURA.plano}</div>
+            <div class="assinatura-linha"><span>Status</span><b><span class="assinatura-status ativo">● ${CONFIG_ASSINATURA.status}</span></b></div>
+            <div class="assinatura-linha"><span>Manutenção mensal</span><b>${fmtBRL(CONFIG_ASSINATURA.mensalidade)}</b></div>
+            <div class="assinatura-linha"><span>Próximo vencimento</span><b>${vencimento}</b></div>
+          </div>
+
+          <div class="assinatura-card">
+            <h3>Resumo da conta</h3>
+            <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${CONFIG_ASSINATURA.limiteGB} GB</b></div>
+            <div class="assinatura-linha"><span>Documentos armazenados</span><b>${totalArquivos.toLocaleString('pt-BR')}</b></div>
+            <div class="assinatura-linha"><span>Espaço disponível</span><b>${gbLivre.toFixed(2).replace('.',',')} GB</b></div>
+          </div>
+
+          <div class="assinatura-card assinatura-storage-card">
+            <h3>Armazenamento de documentos</h3>
+            <div class="assinatura-storage-head">
+              <div><div class="assinatura-storage-valor">${usadoTexto} de ${CONFIG_ASSINATURA.limiteGB} GB utilizados</div></div>
+              <div class="assinatura-storage-pct">${pctReal.toFixed(1).replace('.',',')}%</div>
+            </div>
+            <div class="assinatura-barra ${classeBarra}"><div style="width:${pct}%"></div></div>
+            <div class="assinatura-storage-rodape"><span>${usadoTexto} usados</span><span>${CONFIG_ASSINATURA.limiteGB},00 GB total</span></div>
+            <div class="assinatura-aviso">ℹ️ ${aviso}</div>
+          </div>
+        </div>
+
+        <div class="assinatura-card">
+          <h3>Precisa de mais espaço?</h3>
+          <div class="assinatura-upgrades">
+            <div class="assinatura-upgrade"><b>+ 5 GB</b><span>Armazenamento adicional</span><strong>R$ 39,90/mês</strong></div>
+            <div class="assinatura-upgrade"><b>+ 10 GB</b><span>Armazenamento adicional</span><strong>R$ 69,90/mês</strong></div>
+            <div class="assinatura-upgrade"><b>+ 20 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong></div>
+          </div>
+          <div class="assinatura-acao"><button type="button" onclick="alert('Solicitação de aumento registrada para demonstração. A integração de cobrança será feita na próxima etapa.')">Aumentar armazenamento</button></div>
+        </div>
+      </div>`;
+  } catch(e) {
+    console.error('Erro ao calcular armazenamento:',e);
+    c.innerHTML = `<div class="painel-box"><b>Não foi possível calcular o armazenamento.</b><br><span style="color:var(--texto-fraco)">${escapar(e.message || '')}</span></div>`;
+  }
+};
+
 window.RENDERIZADORES.dashboard = async function () {
   const c = document.getElementById('conteudo');
   c.classList.remove('modo-agenda');
