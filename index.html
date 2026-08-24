@@ -2334,6 +2334,37 @@ function desenharAtendimentos() {
 const TIPOS_ATENDIMENTO = ['CESTA BASICA','CONSULTA MED','DOACOES','EMENDA IMPOSITIVA','EMPREGO','EQUIPAMENTOS','ESCOLA','EXAME MED','OUTROS','PATROCINIO','REMEDIO','TRANSPORTE','CIRURGIA','TROCA DE LAMPADAS'];
 const STATUS_ATENDIMENTO = ['EM ANALISE','CONCLUIDO','CANCELADO'];
 
+function dataBRparaISO(valor) {
+  const v = String(valor || '').trim();
+  if (!v) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+}
+
+function dataISOparaBR(valor) {
+  const v = String(valor || '').trim();
+  if (!v) return '';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : v;
+}
+
+function maiusculo(valor) {
+  return String(valor || '').trim().toLocaleUpperCase('pt-BR');
+}
+
+
+document.addEventListener('input', (ev) => {
+  const idsMaiusculos = new Set(['m_nome','m_bairro','m_responsavel','m_indicador','t_nome','t_hospital','t_cidade','e_nome','e_responsavel','p_nome','p_bairro']);
+  if (idsMaiusculos.has(ev.target?.id)) {
+    const ini = ev.target.selectionStart;
+    const fim = ev.target.selectionEnd;
+    ev.target.value = ev.target.value.toLocaleUpperCase('pt-BR');
+    try { ev.target.setSelectionRange(ini, fim); } catch (_) {}
+  }
+});
+
 function abrirModalAtendimento(registro) {
   registro = registro || {};
   const opcoesTipo = tiposAtendimentoCache.length ? tiposAtendimentoCache.map(t => t.nome) : TIPOS_ATENDIMENTO;
@@ -2349,7 +2380,7 @@ function abrirModalAtendimento(registro) {
         <div class="campo-modal span-2"><label>Telefone</label><input id="m_telefone" value="${formatarTelefoneBR(registro.telefone||'').replace(/"/g,'&quot;')}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
         <div class="campo-modal span-2"><label>Endereço</label><input id="m_endereco" value="${(registro.endereco||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Bairro</label><input id="m_bairro" value="${(registro.bairro||'').replace(/"/g,'&quot;')}"></div>
-        <div class="campo-modal"><label>Data</label><input id="m_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Data</label><input id="m_data" type="date" value="${dataBRparaISO(registro.data||'')}"></div>
         <div class="campo-modal"><label>Tipo de Atendimento</label><select id="m_tipo">${opcoesTipo.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Status</label><select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Responsável</label><input id="m_responsavel" value="${(registro.responsavel||'').replace(/"/g,'&quot;')}"></div>
@@ -2373,15 +2404,15 @@ async function salvarAtendimento(docId) {
   botao.disabled = true; botao.innerText = 'Salvando...';
 
   const dados = {
-    nome: document.getElementById('m_nome').value.trim(),
+    nome: maiusculo(document.getElementById('m_nome').value),
     telefone: formatarTelefoneBR(document.getElementById('m_telefone').value),
     endereco: document.getElementById('m_endereco').value.trim(),
-    bairro: document.getElementById('m_bairro').value.trim(),
-    data: document.getElementById('m_data').value.trim(),
+    bairro: maiusculo(document.getElementById('m_bairro').value),
+    data: dataISOparaBR(document.getElementById('m_data').value),
     tipoAtendimento: document.getElementById('m_tipo').value,
     status: document.getElementById('m_status').value,
-    responsavel: document.getElementById('m_responsavel').value.trim(),
-    indicador: document.getElementById('m_indicador').value.trim(),
+    responsavel: maiusculo(document.getElementById('m_responsavel').value),
+    indicador: maiusculo(document.getElementById('m_indicador').value),
     observacoes: document.getElementById('m_obs').value.trim(),
     ultimaEdicaoPor: USUARIO.nome,
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
@@ -2504,7 +2535,7 @@ function abrirModalTransporte(registro) {
         <div class="span-4">${campoBuscaPessoa('t')}</div>
         <div class="campo-modal"><label>Nome</label><input id="t_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Contato</label><input id="t_contato" value="${formatarTelefoneBR(registro.contato||'').replace(/"/g,'&quot;')}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
-        <div class="campo-modal"><label>Data</label><input id="t_data" placeholder="dd/mm/aaaa" value="${(registro.data||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Data</label><input id="t_data" type="date" value="${dataBRparaISO(registro.data||'')}"></div>
         <div class="campo-modal"><label>Horário</label><input id="t_horario" placeholder="hh:mm" value="${(registro.horario||'').replace(/"/g,'&quot;')}" inputmode="numeric" maxlength="5" oninput="formatarHorarioMurillo(this)"></div>
         <div class="campo-modal span-2"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal span-2"><label>Cidade</label><input id="t_cidade" value="${(registro.cidade||'').replace(/"/g,'&quot;')}"></div>
@@ -2528,12 +2559,12 @@ async function salvarTransporte(docId) {
   if (botao.disabled) return;
   botao.disabled = true; botao.innerText = 'Salvando...';
   const dados = {
-    nome: document.getElementById('t_nome').value.trim(),
+    nome: maiusculo(document.getElementById('t_nome').value),
     contato: formatarTelefoneBR(document.getElementById('t_contato').value),
-    data: document.getElementById('t_data').value.trim(),
+    data: dataISOparaBR(document.getElementById('t_data').value),
     horario: document.getElementById('t_horario').value.trim(),
-    hospital: document.getElementById('t_hospital').value.trim(),
-    cidade: document.getElementById('t_cidade').value.trim(),
+    hospital: maiusculo(document.getElementById('t_hospital').value),
+    cidade: maiusculo(document.getElementById('t_cidade').value),
     acompanhante: document.getElementById('t_acompanhante').value,
     espera: document.getElementById('t_espera').value,
     observacoes: document.getElementById('t_observacoes').value.trim(),
@@ -2622,7 +2653,7 @@ function abrirModalEquip(registro) {
         <div class="span-4">${campoBuscaPessoa('e')}</div>
         <div class="campo-modal span-2"><label>Nome</label><input id="e_nome" value="${(registro.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal span-2"><label>Contato</label><input id="e_contato" value="${formatarTelefoneBR(registro.contato||'').replace(/"/g,'&quot;')}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
-        <div class="campo-modal"><label>Entrega</label><input id="e_entrega" placeholder="dd/mm/aaaa" value="${(registro.entrega||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Entrega</label><input id="e_entrega" type="date" value="${dataBRparaISO(registro.entrega||'')}"></div>
         <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
@@ -2642,11 +2673,11 @@ async function salvarEquip(docId) {
   if (botao.disabled) return;
   botao.disabled = true; botao.innerText = 'Salvando...';
   const dados = {
-    nome: document.getElementById('e_nome').value.trim(),
+    nome: maiusculo(document.getElementById('e_nome').value),
     contato: formatarTelefoneBR(document.getElementById('e_contato').value),
     equipamento: document.getElementById('e_equipamento').value,
-    entrega: document.getElementById('e_entrega').value.trim(),
-    responsavel: document.getElementById('e_responsavel').value.trim(),
+    entrega: dataISOparaBR(document.getElementById('e_entrega').value),
+    responsavel: maiusculo(document.getElementById('e_responsavel').value),
     devolucao: document.getElementById('e_devolucao').value,
     ultimaEdicaoPor: USUARIO.nome,
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
@@ -3472,7 +3503,7 @@ function abrirModalEvtMurillo(registro){
 
         <div class="campo-modal">
           <label>Data</label>
-          <input id="evt_data" value="${escapar(registro.data||'')}" placeholder="dd/mm/aaaa">
+          <input id="evt_data" type="date" value="${dataBRparaISO(registro.data||'')}">
         </div>
 
         <div class="campo-modal">
@@ -3512,7 +3543,7 @@ async function salvarEvtMurillo(id){
   const btn = document.getElementById('btnSalvarEvtMurillo');
   const dados = {
     titulo: document.getElementById('evt_titulo').value,
-    data: document.getElementById('evt_data').value,
+    data: dataISOparaBR(document.getElementById('evt_data').value),
     local: document.getElementById('evt_local').value,
     status: document.getElementById('evt_status').value,
     descricao: document.getElementById('evt_desc').value
@@ -3643,7 +3674,7 @@ function abrirModalPessoaMurillo(registro={}){
       <div class="campo-modal"><label>Nome</label><input id="p_nome" value="${escapar(registro.nome||'')}"></div>
       <div class="grid-2">
         <div class="campo-modal"><label>Telefone</label><input id="p_tel" value="${escapar(formatarTelefoneBR(registro.telefone||''))}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
-        <div class="campo-modal"><label>Data de nascimento</label><input id="p_nasc" value="${escapar(registro.dataNascimento||'')}" placeholder="dd/mm/aaaa"></div>
+        <div class="campo-modal"><label>Data de nascimento</label><input id="p_nasc" type="date" value="${dataBRparaISO(registro.dataNascimento||'')}"></div>
         <div class="campo-modal"><label>RG</label><input id="p_rg" value="${escapar(registro.rg||'')}"></div>
         <div class="campo-modal"><label>CPF</label><input id="p_cpf" value="${escapar(registro.cpf||'')}"></div>
       </div>
@@ -3662,13 +3693,13 @@ window.abrirModalPessoaMurillo=abrirModalPessoaMurillo;
 async function salvarPessoaMurillo(id){
   const b=document.getElementById('btnSalvarPessoa');
   const dados={
-    nome:document.getElementById('p_nome').value.trim(),
+    nome:maiusculo(document.getElementById('p_nome').value),
     telefone:formatarTelefoneBR(document.getElementById('p_tel').value),
-    dataNascimento:document.getElementById('p_nasc').value.trim(),
+    dataNascimento:dataISOparaBR(document.getElementById('p_nasc').value),
     rg:document.getElementById('p_rg').value.trim(),
     cpf:document.getElementById('p_cpf').value.trim(),
     tituloEleitor:document.getElementById('p_titulo').value.trim(),
-    bairro:document.getElementById('p_bairro').value.trim(),
+    bairro:maiusculo(document.getElementById('p_bairro').value),
     endereco:document.getElementById('p_endereco').value.trim(),
     observacoes:document.getElementById('p_obs').value.trim()
   };
