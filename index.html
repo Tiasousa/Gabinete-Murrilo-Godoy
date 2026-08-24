@@ -904,7 +904,7 @@
   .pix-acoes button{padding:12px 14px;border-radius:10px;font-weight:900;border:0;}
   .pix-copiar{background:#2563EB;color:#fff;}.pix-paguei{background:#22A95A;color:#fff;}
   .pix-nota{margin-top:13px;color:#7F91AA;font-size:11px;line-height:1.45;}
-  .assinatura-pagar{margin-top:14px;width:100%;background:#2563EB!important;color:#fff!important;}
+  .assinatura-pagar{margin-top:14px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#22A95A!important;color:#fff!important;font-weight:900;}
   .assinatura-upgrade button{margin-top:12px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#22A95A;color:#fff;font-weight:900;}
   @media(max-width:560px){.pix-acoes{grid-template-columns:1fr}.pix-modal{padding:18px}.pix-valor strong{font-size:26px}}
 
@@ -1457,7 +1457,7 @@ window.RENDERIZADORES.assinatura = async function () {
             <div class="assinatura-linha"><span>Status</span><b><span class="assinatura-status ativo">● ${CONFIG_ASSINATURA.status}</span></b></div>
             <div class="assinatura-linha"><span>Manutenção mensal</span><b>${fmtBRL(CONFIG_ASSINATURA.mensalidade)}</b></div>
             <div class="assinatura-linha"><span>Próximo vencimento</span><b>${vencimento}</b></div>
-            <button type="button" class="assinatura-acao assinatura-pagar" onclick="abrirPagamentoPix(CONFIG_ASSINATURA.mensalidade,'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
+            <button type="button" class="assinatura-pagar" onclick="abrirPagamentoPix(CONFIG_ASSINATURA.mensalidade,'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
           </div>
 
           <div class="assinatura-card">
