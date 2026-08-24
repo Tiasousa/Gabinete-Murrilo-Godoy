@@ -4238,13 +4238,33 @@ if ('serviceWorker' in navigator) {
 
 
 <script>
-// Abre o calendário ao clicar em qualquer parte de um campo de data.
-document.addEventListener('click', function (event) {
-  const campo = event.target.closest('input[type="date"]');
+// Abre o calendário ao pressionar QUALQUER ponto do campo de data.
+// pointerdown é usado porque showPicker() exige a ação direta do usuário.
+function abrirCalendarioDoCampo(campo) {
   if (!campo || campo.disabled || campo.readOnly) return;
   if (typeof campo.showPicker === 'function') {
-    try { campo.showPicker(); } catch (e) {}
+    try { campo.showPicker(); return; } catch (e) {}
   }
+  campo.focus();
+}
+
+document.addEventListener('pointerdown', function (event) {
+  const campo = event.target.closest('input[type="date"]');
+  if (!campo) return;
+  abrirCalendarioDoCampo(campo);
+}, true);
+
+// Também abre ao receber foco por teclado.
+document.addEventListener('focusin', function (event) {
+  const campo = event.target.closest && event.target.closest('input[type="date"]');
+  if (!campo) return;
+  abrirCalendarioDoCampo(campo);
+});
+
+// Deixa visualmente claro que todo o campo é clicável.
+document.addEventListener('mouseover', function (event) {
+  const campo = event.target.closest && event.target.closest('input[type="date"]');
+  if (campo) campo.style.cursor = 'pointer';
 });
 </script>
 </body>
