@@ -2048,11 +2048,28 @@ function aplicarFiltroAtend() {
   const textoEl = document.getElementById('fTextoAtend');
   const tipoEl = document.getElementById('fTipoAtend');
   const statusEl = document.getElementById('fStatusAtend');
+
+  // Mantém o foco e a posição do cursor durante a pesquisa.
+  // Antes, a tela inteira era redesenhada a cada letra e o input perdia o foco.
+  const pesquisandoTexto = document.activeElement === textoEl;
+  const posCursor = pesquisandoTexto && typeof textoEl.selectionStart === 'number'
+    ? textoEl.selectionStart
+    : null;
+
   filtroAtendTextoOriginal = textoEl ? textoEl.value : filtroAtendTextoOriginal;
   filtroAtendTexto = norm(filtroAtendTextoOriginal);
   filtroAtendTipo = tipoEl ? tipoEl.value : filtroAtendTipo;
   filtroAtendStatus = statusEl ? statusEl.value : filtroAtendStatus;
   desenharAtendimentos();
+
+  if (pesquisandoTexto) {
+    const novoCampo = document.getElementById('fTextoAtend');
+    if (novoCampo) {
+      novoCampo.focus();
+      const p = posCursor === null ? novoCampo.value.length : Math.min(posCursor, novoCampo.value.length);
+      try { novoCampo.setSelectionRange(p, p); } catch (_) {}
+    }
+  }
 }
 window.aplicarFiltroAtend = aplicarFiltroAtend;
 
