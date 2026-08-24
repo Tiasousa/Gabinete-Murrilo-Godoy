@@ -323,6 +323,10 @@
   .dash-kpi .label{margin-top:8px;font-size:9px;text-transform:uppercase;letter-spacing:.6px;font-weight:900;color:#8EA3BF;max-width:150px;}
   .dash-grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;margin-bottom:14px;}
   .dash-grid-3{display:grid;grid-template-columns:1.1fr .9fr .8fr;gap:14px;margin-bottom:14px;}
+  .dash-pendencia-item{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+  .dash-pendencia-item:last-child{border-bottom:0}.dash-pendencia-item b{font-size:11px;color:#fff}.dash-pendencia-item span{display:block;font-size:9.5px;color:var(--texto-fraco);margin-top:3px}.dash-pendencia-dias{color:#F26D6D!important;font-weight:900;font-size:11px!important;white-space:nowrap}
+  .dash-equip-wrap{margin-bottom:14px}.dash-equip-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}.dash-equip-item{background:#091827;border:1px solid var(--borda);border-radius:12px;padding:13px}.dash-equip-item h4{margin:0 0 11px;font-size:10px;color:#fff;text-transform:uppercase}.dash-equip-linha{display:flex;justify-content:space-between;font-size:10px;color:var(--texto-fraco);padding:4px 0}.dash-equip-linha b{color:#fff}.dash-equip-disponivel{border-top:1px solid var(--borda);margin-top:7px;padding-top:9px;display:flex;justify-content:space-between;align-items:end}.dash-equip-disponivel span{font-size:9px;font-weight:800;color:#4ADE80;text-transform:uppercase}.dash-equip-disponivel b{font-size:25px;color:#4ADE80}.dash-equip-disponivel.zerado span,.dash-equip-disponivel.zerado b{color:#F05258}.dash-equip-resumo{margin-top:10px;text-align:center;color:var(--texto-fraco);font-size:10px}.dash-equip-resumo b{color:#fff}
+
   .dash-card{background:var(--superficie);border:1px solid var(--borda);border-radius:14px;padding:16px;min-width:0;}
   .dash-card h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#DDE6F2;}
   .dash-sub{font-size:10px;color:var(--texto-fraco);margin-top:4px;}
@@ -370,11 +374,13 @@
   @media(max-width:1150px){
     .dash-kpis{grid-template-columns:repeat(3,1fr);}
     .dash-grid-3{grid-template-columns:1fr 1fr;}
+    .dash-equip-grid{grid-template-columns:repeat(3,1fr);}
     .dash-grid-3 .dash-card:last-child{grid-column:1/-1;}
   }
   @media(max-width:820px){
     .dash-kpis{grid-template-columns:1fr 1fr;}
     .dash-grid-2,.dash-grid-3{grid-template-columns:1fr;}
+    .dash-equip-grid{grid-template-columns:1fr 1fr;}
     .dash-grid-3 .dash-card:last-child{grid-column:auto;}
     .dash-status-wrap{flex-direction:column;align-items:flex-start;}
     .dash-rodape{grid-template-columns:1fr;}
@@ -1646,194 +1652,65 @@ window.RENDERIZADORES.dashboard = async function () {
   const c = document.getElementById('conteudo');
   c.classList.remove('modo-agenda');
   c.innerHTML = '<div class="carregando-tela">Carregando Dashboard...</div>';
-
   try{
-    const [atendSnap, transpSnap, equipSnap, pessoasSnap, agendaSnap] = await Promise.all([
-      getDocs(collection(db, 'atendimentos')),
-      getDocs(collection(db, 'transportes')),
-      getDocs(collection(db, 'equipamentos')),
-      getDocs(collection(db, 'pessoas')),
-      getDocs(collection(db, 'agendaEventos'))
+    const [atendSnap, transpSnap, equipSnap, pessoasSnap, agendaSnap, tiposEquipSnap] = await Promise.all([
+      getDocs(collection(db,'atendimentos')), getDocs(collection(db,'transportes')),
+      getDocs(collection(db,'equipamentos')), getDocs(collection(db,'pessoas')),
+      getDocs(collection(db,'agendaEventos')), getDocs(collection(db,'tiposEquipamento'))
     ]);
-
-    const atend = atendSnap.docs.map(d => ({_docId:d.id,...d.data()}));
-    const transp = transpSnap.docs.map(d => ({_docId:d.id,...d.data()}));
-    const equip = equipSnap.docs.map(d => ({_docId:d.id,...d.data()}));
-    const agenda = agendaSnap.docs.map(d => ({_docId:d.id,...d.data()}));
-    const totalPessoas = pessoasSnap.size;
-
-    const normaliza = s => (s || '').toString().trim().toUpperCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-    const parseBR = txt => {
-      const m=String(txt||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if(!m) return null;
-      const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));
-      d.setHours(0,0,0,0);
-      return isNaN(d.getTime())?null:d;
-    };
-
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-
-    const concluidos = atend.filter(a => normaliza(a.status) === 'CONCLUIDO').length;
-    const emAnalise = atend.filter(a => normaliza(a.status) === 'EM ANALISE').length;
-    const cancelados = atend.filter(a => normaliza(a.status) === 'CANCELADO').length;
-    const transpConfirmados = transp.filter(t => normaliza(t.confirmado) === 'SIM').length;
-    const equipEmUso = equip.filter(e => normaliza(e.devolucao) === 'USANDO').length;
-
-    const ciclos = atend.map(a => {
-      if(a.cicloDias!==undefined && a.cicloDias!==null && !isNaN(Number(a.cicloDias))) return Number(a.cicloDias);
-      if(a.ciclo!==undefined && a.ciclo!==null && !isNaN(Number(a.ciclo))) return Number(a.ciclo);
-      const ini=parseBR(a.data);
-      const fim=parseBR(a.finalizado||a.dataFinalizacao||a.finalizadoEm);
-      if(!ini||!fim) return null;
-      return Math.max(0,Math.round((fim-ini)/86400000));
-    }).filter(v=>v!==null && Number.isFinite(v));
-
-    const mediaDias = ciclos.length ? (ciclos.reduce((s,v)=>s+v,0)/ciclos.length) : 0;
-
-    const atendMes = atend.filter(a => {
-      const d=parseBR(a.data);
-      return d && d>=inicioMes && d<=hoje;
-    }).length;
-
-    const resolutividade = atend.length ? Math.round((concluidos/atend.length)*100) : 0;
-
-    const statusTotal = Math.max(atend.length,1);
-    const pctCon = (concluidos/statusTotal)*100;
-    const pctAna = (emAnalise/statusTotal)*100;
-    const pctCan = (cancelados/statusTotal)*100;
-    const donut = `conic-gradient(#22C55E 0 ${pctCon}%, #F2B23A ${pctCon}% ${pctCon+pctAna}%, #E5272D ${pctCon+pctAna}% ${pctCon+pctAna+pctCan}%, #324A66 ${pctCon+pctAna+pctCan}% 100%)`;
-
-    const conta = (lista, campo) => {
-      const mapa={};
-      lista.forEach(x=>{
-        const chave=String(x[campo]||'Sem informação').trim()||'Sem informação';
-        mapa[chave]=(mapa[chave]||0)+1;
-      });
-      return Object.entries(mapa).sort((a,b)=>b[1]-a[1]);
-    };
-
-    const tipos = conta(atend,'tipoAtendimento').slice(0,8);
-    const maxTipo = Math.max(...tipos.map(x=>x[1]),1);
-    const bairros = conta(atend,'bairro').slice(0,7);
-    const maxBairro = Math.max(...bairros.map(x=>x[1]),1);
-
-    const ultimos = [...atend].sort((a,b)=>{
-      const da=parseBR(a.data), db=parseBR(b.data);
-      return (db?db.getTime():0)-(da?da.getTime():0);
-    }).slice(0,7);
-
-    const hojeISO = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
-    const agendaProxima = agenda
-      .filter(e => e.data && e.data >= hojeISO && normaliza(e.status)!=='CANCELADO')
-      .sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora))
-      .slice(0,5);
-
-    c.innerHTML = `
-      <div class="dash-topo">
-        <div>
-          <h2>Visão <span style="color:var(--acento)">Geral</span></h2>
-          <p>Resumo operacional do Gabinete Digital em tempo real.</p>
-        </div>
-        <div style="font-size:10px;color:var(--texto-fraco);">Pessoas cadastradas: <b style="color:#fff">${totalPessoas}</b></div>
-      </div>
-
+    const atend=atendSnap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const transp=transpSnap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const equip=equipSnap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const agenda=agendaSnap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const tiposEquip=tiposEquipSnap.docs.map(d=>({_docId:d.id,...d.data()}));
+    const normaliza=s=>(s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const parseBR=txt=>{const m=String(txt||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(!m)return null;const d=new Date(+m[3],+m[2]-1,+m[1]);d.setHours(0,0,0,0);return isNaN(d)?null:d};
+    const hoje=new Date(); hoje.setHours(0,0,0,0); const inicioMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    const concluidos=atend.filter(a=>normaliza(a.status)==='CONCLUIDO').length;
+    const emAnalise=atend.filter(a=>normaliza(a.status)==='EM ANALISE').length;
+    const cancelados=atend.filter(a=>normaliza(a.status)==='CANCELADO').length;
+    const transpConfirmados=transp.filter(t=>['SIM','CONFIRMADO','REALIZADO'].includes(normaliza(t.confirmado||t.status))).length;
+    const transpPendentes=Math.max(0,transp.length-transpConfirmados);
+    const equipEmUso=equip.filter(e=>normaliza(e.devolucao||e.status)==='USANDO').length;
+    const conta=(lista,campo)=>{const m={};lista.forEach(x=>{const k=String(x[campo]||'Sem informação').trim()||'Sem informação';m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
+    const tipos=conta(atend,'tipoAtendimento').slice(0,8), maxTipo=Math.max(...tipos.map(x=>x[1]),1), bairros=conta(atend,'bairro').slice(0,7), maxBairro=Math.max(...bairros.map(x=>x[1]),1);
+    const statusTotal=Math.max(atend.length,1), pc=concluidos/statusTotal*100, pa=emAnalise/statusTotal*100, px=cancelados/statusTotal*100;
+    const donut=`conic-gradient(#22C55E 0 ${pc}%,#F2B23A ${pc}% ${pc+pa}%,#E5272D ${pc+pa}% ${pc+pa+px}%,#324A66 ${pc+pa+px}% 100%)`;
+    const pendencias=atend.filter(a=>normaliza(a.status)==='EM ANALISE').map(a=>{const d=parseBR(a.data);return {...a,_dias:d?Math.max(0,Math.floor((hoje-d)/86400000)):0}}).sort((a,b)=>b._dias-a._dias).slice(0,5);
+    const hojeISO=`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+    const agendaProxima=agenda.filter(e=>e.data&&e.data>=hojeISO&&normaliza(e.status)!=='CANCELADO').sort((a,b)=>(a.data+(a.hora||'')).localeCompare(b.data+(b.hora||''))).slice(0,4);
+    const usoPorTipo={}; equip.filter(e=>normaliza(e.devolucao||e.status)==='USANDO').forEach(e=>{const k=normaliza(e.equipamento||e.tipo||e.tipoEquipamento);usoPorTipo[k]=(usoPorTipo[k]||0)+1});
+    const ordem=['MULETAS','CADEIRA DE RODAS','CADEIRA DE BANHO','COLCHAO','ANDADOR'];
+    const equipResumo=ordem.map(nome=>{const cfg=tiposEquip.find(t=>normaliza(t.nome)===nome);const estoque=Math.max(0,Number(cfg?.estoque||0));const uso=usoPorTipo[nome]||0;return {nome:cfg?.nome||nome,estoque,uso,disp:Math.max(0,estoque-uso)}});
+    const totalEstoque=equipResumo.reduce((s,x)=>s+x.estoque,0), totalDisp=equipResumo.reduce((s,x)=>s+x.disp,0);
+    const ultimos=[...atend].sort((a,b)=>(parseBR(b.data)?.getTime()||0)-(parseBR(a.data)?.getTime()||0)).slice(0,5);
+    const ciclos=atend.map(a=>{const ini=parseBR(a.data),fim=parseBR(a.finalizado||a.dataFinalizacao||a.finalizadoEm);return ini&&fim?Math.max(0,Math.round((fim-ini)/86400000)):null}).filter(Number.isFinite);
+    const mediaDias=ciclos.length?ciclos.reduce((s,v)=>s+v,0)/ciclos.length:0, atendMes=atend.filter(a=>{const d=parseBR(a.data);return d&&d>=inicioMes&&d<=hoje}).length, resolutividade=atend.length?Math.round(concluidos/atend.length*100):0;
+    c.innerHTML=`
+      <div class="dash-topo"><div><h2>Visão <span style="color:var(--acento)">Geral</span></h2><p>Resumo operacional do Gabinete Digital em tempo real.</p></div><div style="font-size:10px;color:var(--texto-fraco)">Pessoas cadastradas: <b style="color:#fff">${pessoasSnap.size}</b></div></div>
       <div class="dash-kpis">
         <div class="dash-kpi"><div class="icone">👥</div><div class="valor">${atend.length}</div><div class="label">Atendimentos Totais</div></div>
-        <div class="dash-kpi"><div class="icone">🚐</div><div class="valor">${transp.length}</div><div class="label">Transportes Solicitados</div></div>
-        <div class="dash-kpi"><div class="icone">✅</div><div class="valor">${transpConfirmados}</div><div class="label">Transportes Confirmados</div></div>
+        <div class="dash-kpi"><div class="icone">⏳</div><div class="valor" style="color:#F2B23A">${emAnalise}</div><div class="label">Atendimentos em Análise</div></div>
+        <div class="dash-kpi"><div class="icone">🚐</div><div class="valor">${transpPendentes}</div><div class="label">Transportes Pendentes</div></div>
         <div class="dash-kpi"><div class="icone">🏆</div><div class="valor">${equipEmUso}</div><div class="label">Equipamentos em Uso</div></div>
-        <div class="dash-kpi"><div class="icone">⏱️</div><div class="valor">${mediaDias.toFixed(1)}</div><div class="label">Dias Médios por Atendimento</div></div>
+        <div class="dash-kpi"><div class="icone">✓</div><div class="valor" style="color:#4ADE80">${totalDisp}</div><div class="label">Equipamentos Disponíveis</div></div>
       </div>
-
       <div class="dash-grid-2">
-        <div class="dash-card">
-          <h3>Atendimentos por Status</h3>
-          <div class="dash-sub">Distribuição atual dos registros.</div>
-          <div class="dash-status-wrap">
-            <div style="position:relative">
-              <div class="dash-donut" style="background:${donut}"></div>
-              <div class="dash-donut-centro"><b>${atend.length}</b><span>Total</span></div>
-            </div>
-            <div class="dash-legenda">
-              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#22C55E"></span><span>Concluídos</span><b>${concluidos}</b></div>
-              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#F2B23A"></span><span>Em análise</span><b>${emAnalise}</b></div>
-              <div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#E5272D"></span><span>Cancelados</span><b>${cancelados}</b></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-card">
-          <h3>Atendimentos por Tipo</h3>
-          <div class="dash-sub">Tipos mais registrados no sistema.</div>
-          ${tipos.length ? `<div class="dash-barras">${tipos.map(([nome,qtd])=>`
-            <div class="dash-barra-linha">
-              <div class="dash-barra-rot" title="${escapar(nome)}">${escapar(nome)}</div>
-              <div class="dash-barra-trilho"><div class="dash-barra-preench" style="width:${Math.max(4,(qtd/maxTipo)*100)}%"></div></div>
-              <div class="dash-barra-num">${qtd}</div>
-            </div>`).join('')}</div>` : '<div class="dash-vazio">Ainda não há tipos de atendimento para exibir.</div>'}
-        </div>
+        <div class="dash-card"><h3>Atendimentos por Status</h3><div class="dash-sub">Distribuição atual dos registros.</div><div class="dash-status-wrap"><div style="position:relative"><div class="dash-donut" style="background:${donut}"></div><div class="dash-donut-centro"><b>${atend.length}</b><span>Total</span></div></div><div class="dash-legenda"><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#22C55E"></span><span>Concluídos</span><b>${concluidos}</b></div><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#F2B23A"></span><span>Em análise</span><b>${emAnalise}</b></div><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#E5272D"></span><span>Cancelados</span><b>${cancelados}</b></div></div></div></div>
+        <div class="dash-card"><h3>Atendimentos por Tipo</h3><div class="dash-sub">Tipos mais registrados no sistema.</div>${tipos.length?`<div class="dash-barras">${tipos.map(([n,q])=>`<div class="dash-barra-linha"><div class="dash-barra-rot" title="${escapar(n)}">${escapar(n)}</div><div class="dash-barra-trilho"><div class="dash-barra-preench" style="width:${Math.max(4,q/maxTipo*100)}%"></div></div><div class="dash-barra-num">${q}</div></div>`).join('')}</div>`:'<div class="dash-vazio">Sem dados.</div>'}</div>
       </div>
-
       <div class="dash-grid-3">
-        <div class="dash-card">
-          <h3>Últimos Atendimentos</h3>
-          <div class="dash-sub">Registros mais recentes.</div>
-          ${ultimos.length ? `<div class="dash-lista">${ultimos.map(a=>`
-            <div class="dash-lista-item">
-              <b title="${escapar(a.nome||'-')}">${escapar(a.nome||'-')}</b>
-              <span title="${escapar(a.tipoAtendimento||'-')}">${escapar(a.tipoAtendimento||'-')}</span>
-              ${badgeStatus(a.status)}
-            </div>`).join('')}</div>` : '<div class="dash-vazio">Nenhum atendimento cadastrado.</div>'}
-        </div>
-
-        <div class="dash-card">
-          <h3>Atendimentos por Bairro</h3>
-          <div class="dash-sub">Bairros com maior volume de atendimentos.</div>
-          ${bairros.length ? `<div class="dash-bairros">${bairros.map(([nome,qtd])=>`
-            <div class="dash-bairro-linha">
-              <div class="nome" title="${escapar(nome)}">${escapar(nome)}</div>
-              <div class="trilho"><div class="fill" style="width:${Math.max(5,(qtd/maxBairro)*100)}%"></div></div>
-              <b>${qtd}</b>
-            </div>`).join('')}</div>` : '<div class="dash-vazio">Ainda não há bairros registrados.</div>'}
-        </div>
-
-        <div class="dash-card">
-          <h3>Ações Rápidas</h3>
-          <div class="dash-sub">Acesso direto aos módulos principais.</div>
-          <div class="acoes-rapidas">
-            <button class="acao-rapida" onclick="irPara('atendimentos')"><span>👥</span>Novo Atendimento</button>
-            <button class="acao-rapida" onclick="irPara('transportes')"><span>🚐</span>Solicitar Transporte</button>
-            <button class="acao-rapida" onclick="irPara('equipamentos')"><span>🏆</span>Equipamentos</button>
-            <button class="acao-rapida" onclick="irPara('agenda')"><span>📅</span>Ver Agenda</button>
-          </div>
-        </div>
+        <div class="dash-card"><h3>Pendências mais antigas</h3><div class="dash-sub">Atendimentos em análise que exigem atenção.</div>${pendencias.length?pendencias.map(a=>`<div class="dash-pendencia-item"><div><b>${escapar(a.nome||'-')}</b><span>${escapar(a.tipoAtendimento||'Atendimento')}</span></div><span class="dash-pendencia-dias">${a._dias} dias</span></div>`).join(''):'<div class="dash-vazio">Nenhuma pendência em análise.</div>'}</div>
+        <div class="dash-card"><h3>Próximos Compromissos</h3><div class="dash-sub">Agenda do gabinete.</div>${agendaProxima.length?`<div class="dash-agenda-lista">${agendaProxima.map(e=>{const [y,m,d]=e.data.split('-');return `<div class="dash-agenda-item"><div class="dash-agenda-data">${d}/${m}<br>${escapar(e.hora||'--:--')}</div><div class="dash-agenda-texto"><b>${escapar(e.titulo||'Compromisso')}</b><span>${escapar(e.tipo||'')}${e.local?' · '+escapar(e.local):''}</span></div></div>`}).join('')}</div>`:'<div class="dash-vazio">Nenhum compromisso futuro.</div>'}</div>
+        <div class="dash-card"><h3>Ações Rápidas</h3><div class="dash-sub">Acesso direto aos módulos.</div><div class="acoes-rapidas"><button class="acao-rapida" onclick="irPara('atendimentos')"><span>👥</span>Novo Atendimento</button><button class="acao-rapida" onclick="irPara('transportes')"><span>🚐</span>Solicitar Transporte</button><button class="acao-rapida" onclick="irPara('equipamentos')"><span>🏆</span>Novo Empréstimo</button><button class="acao-rapida" onclick="irPara('relatorios')"><span>📊</span>Ver Relatórios</button></div></div>
       </div>
-
-      <div class="dash-card" style="margin-bottom:14px">
-        <h3>Próximos Compromissos</h3>
-        <div class="dash-sub">Compromissos futuros cadastrados na Agenda.</div>
-        ${agendaProxima.length ? `<div class="dash-agenda-lista">${agendaProxima.map(e=>{
-          const [y,m,d]=e.data.split('-');
-          return `<div class="dash-agenda-item">
-            <div class="dash-agenda-data">${d}/${m}<br>${escapar(e.hora||'--:--')}</div>
-            <div class="dash-agenda-texto"><b>${escapar(e.titulo||'Compromisso')}</b><span>${escapar(e.tipo||'')}${e.local?' · '+escapar(e.local):''}</span></div>
-          </div>`;
-        }).join('')}</div>` : '<div class="dash-vazio">Nenhum compromisso futuro cadastrado.</div>'}
+      <div class="dash-card dash-equip-wrap"><h3>Equipamentos — Estoque e Disponibilidade</h3><div class="dash-sub">Estoque cadastrado em Configurações e disponibilidade calculada pelos empréstimos em uso.</div><div class="dash-equip-grid">${equipResumo.map(x=>`<div class="dash-equip-item"><h4>${escapar(x.nome)}</h4><div class="dash-equip-linha"><span>Estoque</span><b>${x.estoque}</b></div><div class="dash-equip-linha"><span>Em uso</span><b>${x.uso}</b></div><div class="dash-equip-disponivel ${x.disp===0?'zerado':''}"><span>Disponíveis</span><b>${x.disp}</b></div></div>`).join('')}</div><div class="dash-equip-resumo">Total físico em estoque: <b>${totalEstoque}</b> &nbsp; | &nbsp; Em uso: <b>${equipEmUso}</b> &nbsp; | &nbsp; Disponíveis: <b>${totalDisp}</b></div></div>
+      <div class="dash-grid-2">
+        <div class="dash-card"><h3>Últimos Atendimentos</h3><div class="dash-sub">Registros mais recentes.</div>${ultimos.length?`<div class="dash-lista">${ultimos.map(a=>`<div class="dash-lista-item"><b title="${escapar(a.nome||'-')}">${escapar(a.nome||'-')}</b><span>${escapar(a.tipoAtendimento||'-')}</span>${badgeStatus(a.status)}</div>`).join('')}</div>`:'<div class="dash-vazio">Nenhum atendimento.</div>'}</div>
+        <div class="dash-card"><h3>Bairros com mais Atendimentos</h3><div class="dash-sub">Bairros com maior volume.</div>${bairros.length?`<div class="dash-bairros">${bairros.map(([n,q])=>`<div class="dash-bairro-linha"><div class="nome">${escapar(n)}</div><div class="trilho"><div class="fill" style="width:${Math.max(5,q/maxBairro*100)}%"></div></div><b>${q}</b></div>`).join('')}</div>`:'<div class="dash-vazio">Sem bairros registrados.</div>'}</div>
       </div>
-
-      <div class="dash-rodape">
-        <div class="dash-indicador"><b>${atendMes}</b><span>Atendimentos no mês</span></div>
-        <div class="dash-indicador"><b>${mediaDias.toFixed(1)} dias</b><span>Tempo médio de resolução</span></div>
-        <div class="dash-indicador"><b>${resolutividade}%</b><span>Resolutividade</span></div>
-      </div>
-    `;
-  }catch(e){
-    console.error('Erro Dashboard:', e);
-    c.innerHTML = '<div class="painel-box">Não foi possível carregar o Dashboard. '+String(e.message||e)+'</div>';
-  }
+      <div class="dash-rodape"><div class="dash-indicador"><b>${atendMes}</b><span>Atendimentos no mês</span></div><div class="dash-indicador"><b>${mediaDias.toFixed(1)} dias</b><span>Tempo médio de resolução</span></div><div class="dash-indicador"><b>${resolutividade}%</b><span>Resolutividade</span></div></div>`;
+  }catch(e){console.error('Erro Dashboard:',e);c.innerHTML='<div class="painel-box">Não foi possível carregar o Dashboard. '+String(e.message||e)+'</div>'}
 };
 
 const norm = s => (s || '').toString().trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -3883,9 +3760,11 @@ function desenharConfiguracoesAdmin(){
         <div class="admin-lista">
           ${tiposEquipamentoCache.map(t => `
             <div class="admin-item">
-              <span>${escapar(t.nome || '')}</span>
-              <button class="btn-secundario" style="padding:5px 10px;font-size:11px;"
-                onclick="excluirTipoEquipamentoAdmin('${t._docId}')">Excluir</button>
+              <span style="flex:1">${escapar(t.nome || '')}</span>
+              <label style="font-size:10px;color:var(--texto-fraco);display:flex;align-items:center;gap:6px;">Estoque
+                <input type="number" min="0" step="1" value="${Number(t.estoque||0)}" style="width:72px;padding:6px 8px" onchange="salvarEstoqueTipoEquipamento('${t._docId}',this.value)">
+              </label>
+              <button class="btn-secundario" style="padding:5px 10px;font-size:11px;" onclick="excluirTipoEquipamentoAdmin('${t._docId}')">Excluir</button>
             </div>
           `).join('') || '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'}
         </div>
@@ -3951,6 +3830,7 @@ async function adicionarTipoEquipamentoAdmin(){
   try{
     await addDoc(collection(db,'tiposEquipamento'), {
       nome,
+      estoque: 0,
       criadoPor: USUARIO.nome || '',
       criadoEmTexto: new Date().toLocaleString('pt-BR')
     });
@@ -3962,6 +3842,16 @@ async function adicionarTipoEquipamentoAdmin(){
   }
 }
 window.adicionarTipoEquipamentoAdmin = adicionarTipoEquipamentoAdmin;
+
+async function salvarEstoqueTipoEquipamento(id, valor){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+  const estoque=Math.max(0,Math.floor(Number(valor)||0));
+  try{
+    await updateDoc(doc(db,'tiposEquipamento',id),{estoque});
+    const item=tiposEquipamentoCache.find(t=>t._docId===id); if(item) item.estoque=estoque;
+  }catch(e){ alert('Não foi possível salvar o estoque. ('+e.message+')'); }
+}
+window.salvarEstoqueTipoEquipamento=salvarEstoqueTipoEquipamento;
 
 async function excluirTipoEquipamentoAdmin(id){
   if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
