@@ -98,7 +98,7 @@
   .notificacao-topo{position:relative;width:38px;height:38px;border:none;background:transparent;color:#FFD166;font-size:18px;display:flex;align-items:center;justify-content:center;}
   .notificacao-badge{position:absolute;top:0;right:1px;min-width:16px;height:16px;border-radius:10px;background:var(--acento);color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;padding:0 4px;}
   .perfil-topo{display:flex;align-items:center;gap:9px;padding-left:14px;border-left:1px solid var(--borda);}
-  .avatar-topo{width:38px;height:38px;border-radius:50%;background:var(--superficie-sutil);border:1px solid var(--borda);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;overflow:hidden;}
+  .avatar-topo{width:42px;height:42px;border-radius:50%;background:var(--superficie-sutil);border:2px solid #28415D;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;overflow:hidden;flex:0 0 42px;box-shadow:0 0 0 2px rgba(255,255,255,.02);}
   .avatar-topo img{width:100%;height:100%;object-fit:cover;}
   .perfil-texto b{display:block;font-size:12.5px;}
   .perfil-texto span{font-size:10px;color:#7892B6;text-transform:uppercase;}
@@ -978,8 +978,10 @@
           <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
         </div>
         <div class="perfil-dropdown hidden" id="perfilDropdown">
+          <button type="button" onclick="fecharMenuPerfil();selecionarFotoPerfil()">📷 Alterar foto do perfil</button>
           <button type="button" onclick="fecharMenuPerfil();document.getElementById('btnSair').click()" class="perfil-dd-sair">↩ Sair</button>
         </div>
+        <input id="inputFotoPerfil" type="file" accept="image/jpeg,image/png,image/webp" class="hidden">
       </div>
       <button id="btnSair">↩ Sair</button>
     </div>
@@ -1277,6 +1279,77 @@ document.addEventListener('click', (e) => {
   if(!e.target.closest('#perfilMenuWrap')) fecharMenuPerfil();
 });
 
+function atualizarAvatarTopo(){
+  const avatar = document.getElementById('avatarTopo');
+  if(!avatar || !USUARIO) return;
+  avatar.innerHTML = USUARIO.foto
+    ? `<img src="${USUARIO.foto}" alt="${escapar(USUARIO.nome || 'Usuário')}">`
+    : iniciaisNome(USUARIO.nome || '');
+}
+
+function selecionarFotoPerfil(){
+  const input = document.getElementById('inputFotoPerfil');
+  if(input) input.click();
+}
+window.selecionarFotoPerfil = selecionarFotoPerfil;
+
+async function comprimirFotoPerfil(arquivo){
+  if(!arquivo || !arquivo.type.startsWith('image/')) throw new Error('Escolha uma imagem JPG, PNG ou WEBP.');
+  if(arquivo.size > 8 * 1024 * 1024) throw new Error('A imagem original deve ter no máximo 8 MB.');
+
+  const bitmap = await createImageBitmap(arquivo);
+  const lado = Math.min(bitmap.width, bitmap.height);
+  const sx = Math.max(0, (bitmap.width - lado) / 2);
+  const sy = Math.max(0, (bitmap.height - lado) / 2);
+  const canvas = document.createElement('canvas');
+  canvas.width = 320; canvas.height = 320;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, 320, 320);
+  bitmap.close?.();
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  if(!blob) throw new Error('Não foi possível preparar a foto.');
+  if(blob.size > 500 * 1024) {
+    const blob2 = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.68));
+    if(!blob2) throw new Error('Não foi possível comprimir a foto.');
+    return blob2;
+  }
+  return blob;
+}
+
+async function enviarFotoPerfil(arquivo){
+  if(!UID || !USUARIO) return;
+  const avatar = document.getElementById('avatarTopo');
+  const original = avatar ? avatar.innerHTML : '';
+  try{
+    if(avatar) avatar.innerHTML = '<span style="font-size:10px;color:#8EA3BF;">...</span>';
+    const blob = await comprimirFotoPerfil(arquivo);
+    const { getStorage, ref, uploadBytes, getDownloadURL } = await obterStorageMod();
+    const storage = getStorage(app);
+    const caminho = `perfis/${UID}/avatar.jpg`;
+    const refFoto = ref(storage, caminho);
+    await uploadBytes(refFoto, blob, { contentType:'image/jpeg', cacheControl:'public,max-age=3600' });
+    const url = await getDownloadURL(refFoto);
+    await setDoc(doc(db,'usuarios',UID), { foto:url, fotoCaminho:caminho, fotoAtualizadaEm:new Date().toISOString() }, { merge:true });
+  }catch(e){
+    console.error('Erro ao atualizar foto de perfil:', e);
+    if(avatar) avatar.innerHTML = original;
+    alert('Não foi possível atualizar a foto do perfil. ' + (e.message || e));
+  }finally{
+    const input = document.getElementById('inputFotoPerfil');
+    if(input) input.value = '';
+  }
+}
+window.enviarFotoPerfil = enviarFotoPerfil;
+
+const inputFotoPerfil = document.getElementById('inputFotoPerfil');
+if(inputFotoPerfil){
+  inputFotoPerfil.addEventListener('change', () => {
+    const arquivo = inputFotoPerfil.files && inputFotoPerfil.files[0];
+    if(arquivo) enviarFotoPerfil(arquivo);
+  });
+}
+
 function saudacaoHora() {
   const h = new Date().getHours();
   if (h < 12) return 'Bom dia';
@@ -1302,10 +1375,7 @@ function abrirApp() {
   document.getElementById('saudacaoTopo').innerText = `${saudacaoHora()}, ${USUARIO.nome.split(' ')[0]}! 👋`;
   document.getElementById('nomeTopo').innerText = USUARIO.nome;
   document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
-  const avatarTopo = document.getElementById('avatarTopo');
-  avatarTopo.innerHTML = USUARIO.foto
-    ? `<img src="${USUARIO.foto}" alt="${USUARIO.nome}">`
-    : iniciaisNome(USUARIO.nome);
+  atualizarAvatarTopo();
   atualizarDataTopo();
   montarMenu();
   carregarConfiguraveis().then(() => {
@@ -1356,6 +1426,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
       document.getElementById('nomeTopo').innerText = USUARIO.nome;
       document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
+      atualizarAvatarTopo();
       montarMenu();
       atualizarResumoAssinaturaTopo();
     }
