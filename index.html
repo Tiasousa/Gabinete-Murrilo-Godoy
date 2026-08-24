@@ -1041,7 +1041,7 @@ window.CONFIG_GERAL = CONFIG_GERAL;
 const CONFIG_ASSINATURA = {
   plano: 'Gabinete Digital — Profissional',
   mensalidade: 249.00,
-  limiteGB: 2,
+  limiteGB: 0.5,
   diaVencimento: 10,
   status: 'ATIVO',
   pixChave: '65.974.787/0001-38',
@@ -1458,11 +1458,11 @@ window.RENDERIZADORES.assinatura = async function () {
         </div>
 
         <div class="assinatura-card">
-          <h3>Precisa de mais espaço?</h3>
+          <h3>Aumente seu armazenamento</h3>
           <div class="assinatura-upgrades">
-            <div class="assinatura-upgrade"><b>+ 5 GB</b><span>Armazenamento adicional</span><strong>R$ 39,90/mês</strong><button type="button" onclick="abrirPagamentoPix(39.90,'Adicional de armazenamento +5 GB')">Contratar +5 GB</button></div>
-            <div class="assinatura-upgrade"><b>+ 10 GB</b><span>Armazenamento adicional</span><strong>R$ 69,90/mês</strong><button type="button" onclick="abrirPagamentoPix(69.90,'Adicional de armazenamento +10 GB')">Contratar +10 GB</button></div>
-            <div class="assinatura-upgrade"><b>+ 20 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong><button type="button" onclick="abrirPagamentoPix(99.90,'Adicional de armazenamento +20 GB')">Contratar +20 GB</button></div>
+            <div class="assinatura-upgrade"><b>+ 1 GB</b><span>Armazenamento adicional</span><strong>R$ 39,90/mês</strong><button type="button" onclick="abrirPagamentoPix(39.90,'Adicional de armazenamento +1 GB')">Contratar +1 GB</button></div>
+            <div class="assinatura-upgrade"><b>+ 5 GB</b><span>Armazenamento adicional</span><strong>R$ 69,90/mês</strong><button type="button" onclick="abrirPagamentoPix(69.90,'Adicional de armazenamento +5 GB')">Contratar +5 GB</button></div>
+            <div class="assinatura-upgrade"><b>+ 7 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong><button type="button" onclick="abrirPagamentoPix(99.90,'Adicional de armazenamento +7 GB')">Contratar +7 GB</button></div>
           </div>
         </div>
       </div>`;
