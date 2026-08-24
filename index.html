@@ -1043,13 +1043,21 @@ window.CONFIG_GERAL = CONFIG_GERAL;
 const CONFIG_ASSINATURA = {
   plano: 'Gabinete Digital — Profissional',
   mensalidade: 249.00,
-  limiteGB: 0.5,
+  limiteMB: 500,
   diaVencimento: 10,
   status: 'ATIVO',
   pixChave: '65.974.787/0001-38',
   pixTitular: 'TIAGO DE SOUSA COSTA',
   pixBanco: 'Nubank PJ'
 };
+
+function limiteArmazenamentoBytes(){
+  return Number(CONFIG_ASSINATURA.limiteMB || 500) * 1024 * 1024;
+}
+function limiteArmazenamentoTexto(){
+  const mb = Number(CONFIG_ASSINATURA.limiteMB || 500);
+  return mb >= 1024 ? `${(mb/1024).toFixed(mb % 1024 === 0 ? 0 : 1).replace('.',',')} GB` : `${mb.toLocaleString('pt-BR')} MB`;
+}
 
 
 function fecharPagamentoPix(){
@@ -1085,7 +1093,7 @@ function abrirPagamentoPix(valor, descricao){
         <button class="pix-copiar" type="button" onclick="copiarChavePix()">📋 Copiar chave PIX</button>
         <button class="pix-paguei" type="button" onclick="registrarAvisoPagamento(${Number(valor)}, '${String(descricao||'Pagamento').replace(/'/g,"\'")}')">✓ Já paguei</button>
       </div>
-      <div class="pix-nota">O pagamento é feito diretamente para a conta PJ. A confirmação automática ainda não está integrada; o botão “Já paguei” registra somente o aviso nesta etapa.</div>
+      <div class="pix-nota">O pagamento é feito diretamente para a conta PJ. A confirmação automática ainda não está integrada; o botão “Já paguei” envia um aviso ao administrador para conferência do PIX.</div>
     </div>`;
   document.body.appendChild(bg);
 }
@@ -1104,17 +1112,62 @@ async function copiarChavePix(){
 }
 window.copiarChavePix=copiarChavePix;
 
-function registrarAvisoPagamento(valor, descricao){
-  alert('Pagamento informado. Nesta versão, a confirmação ainda é manual. Confira o recebimento no Nubank PJ antes de liberar qualquer adicional.');
-  fecharPagamentoPix();
+async function registrarAvisoPagamento(valor, descricao){
+  if(!USUARIO || !UID){
+    alert('Sua sessão não está disponível. Entre novamente no sistema.');
+    return;
+  }
+  const btn = document.querySelector('#pixModalBg .pix-paguei');
+  if(btn){ btn.disabled=true; btn.textContent='Registrando...'; }
+  try{
+    await addDoc(collection(db,'pagamentosInformados'), {
+      tipo: 'PIX',
+      valor: Number(valor || 0),
+      descricao: String(descricao || 'Pagamento'),
+      status: 'PENDENTE',
+      informadoPorUid: UID,
+      informadoPorNome: USUARIO.nome || '',
+      informadoPorCargo: USUARIO.cargo || '',
+      informadoEm: new Date().toLocaleString('pt-BR'),
+      informadoEmISO: new Date().toISOString()
+    });
+    fecharPagamentoPix();
+    alert('Pagamento informado com sucesso. O administrador recebeu o aviso e fará a conferência do PIX.');
+    atualizarBadgeNotificacoes();
+    if(paginaAtual === 'assinatura') window.RENDERIZADORES.assinatura();
+  }catch(e){
+    console.error('Erro ao registrar pagamento informado:', e);
+    alert('Não foi possível registrar o pagamento informado. (' + (e.message || 'erro') + ')');
+    if(btn){ btn.disabled=false; btn.textContent='✓ Já paguei'; }
+  }
 }
 window.registrarAvisoPagamento=registrarAvisoPagamento;
 
+async function confirmarPagamentoInformado(id){
+  if(!USUARIO || USUARIO.cargo !== 'ADMIN') return;
+  if(!confirm('Confirmar que este PIX foi recebido?')) return;
+  try{
+    await updateDoc(doc(db,'pagamentosInformados',id), {
+      status: 'CONFIRMADO',
+      confirmadoPorUid: UID,
+      confirmadoPorNome: USUARIO.nome || '',
+      confirmadoEm: new Date().toLocaleString('pt-BR'),
+      confirmadoEmISO: new Date().toISOString()
+    });
+    alert('Pagamento confirmado.');
+    atualizarBadgeNotificacoes();
+    if(paginaAtual === 'assinatura') window.RENDERIZADORES.assinatura();
+  }catch(e){
+    alert('Não foi possível confirmar o pagamento. (' + (e.message || 'erro') + ')');
+  }
+}
+window.confirmarPagamentoInformado=confirmarPagamentoInformado;
+
 function formatarUsoTopo(bytesUsados) {
   const mb = bytesUsados / 1024 / 1024;
-  if (mb < 100) return `${mb.toFixed(1).replace('.',',')} MB / ${CONFIG_ASSINATURA.limiteGB} GB`;
+  if (mb < 100) return `${mb.toFixed(1).replace('.',',')} MB / ${limiteArmazenamentoTexto()}`;
   const gb = mb / 1024;
-  return `${gb.toFixed(2).replace('.',',')} GB / ${CONFIG_ASSINATURA.limiteGB} GB`;
+  return `${gb.toFixed(2).replace('.',',')} GB / ${limiteArmazenamentoTexto()}`;
 }
 
 async function atualizarResumoAssinaturaTopo() {
@@ -1135,7 +1188,7 @@ async function atualizarResumoAssinaturaTopo() {
     else if (pct >= 70) { badge.classList.add('alerta'); statusEl.textContent = '● ESPAÇO EM ALERTA'; }
   } catch (e) {
     console.error('Não foi possível atualizar o resumo de assinatura no topo:', e);
-    usoEl.textContent = `${CONFIG_ASSINATURA.limiteGB} GB contratados`;
+    usoEl.textContent = `${limiteArmazenamentoTexto()} contratados`;
   }
 }
 window.atualizarResumoAssinaturaTopo = atualizarResumoAssinaturaTopo;
@@ -1455,11 +1508,11 @@ window.RENDERIZADORES.assinatura = async function () {
       });
     }));
 
-    const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
+    const limiteBytes = limiteArmazenamentoBytes();
     const pctReal = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
     const pct = Math.min(100, pctReal);
     const gbUsados = bytesUsados / 1024 / 1024 / 1024;
-    const gbLivre = Math.max(0, CONFIG_ASSINATURA.limiteGB - gbUsados);
+    const bytesLivre = Math.max(0, limiteBytes - bytesUsados);
     const classeBarra = pctReal >= 90 ? 'critico' : pctReal >= 70 ? 'alerta' : '';
     const aviso = pctReal >= 100
       ? 'Seu armazenamento atingiu o limite contratado. Novos anexos devem ser bloqueados até ampliar o espaço.'
@@ -1476,6 +1529,19 @@ window.RENDERIZADORES.assinatura = async function () {
 
     const fmtBRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const usadoTexto = gbUsados >= 0.01 ? gbUsados.toFixed(2).replace('.',',') + ' GB' : (bytesUsados/1024/1024).toFixed(1).replace('.',',') + ' MB';
+
+    let pagamentosPendentes = [];
+    if(USUARIO && USUARIO.cargo === 'ADMIN'){
+      try{
+        const pagSnap = await getDocs(collection(db,'pagamentosInformados'));
+        pagamentosPendentes = pagSnap.docs
+          .map(d=>({_docId:d.id,...d.data()}))
+          .filter(p=>String(p.status||'').toUpperCase()==='PENDENTE')
+          .sort((a,b)=>String(b.informadoEmISO||'').localeCompare(String(a.informadoEmISO||'')));
+      }catch(e){
+        console.error('Não foi possível carregar pagamentos informados:', e);
+      }
+    }
 
     const topoBadge = document.getElementById('assinaturaTopoBadge');
     const topoStatus = document.getElementById('assinaturaTopoStatus');
@@ -1511,19 +1577,19 @@ window.RENDERIZADORES.assinatura = async function () {
 
           <div class="assinatura-card">
             <h3>Resumo da conta</h3>
-            <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${CONFIG_ASSINATURA.limiteGB} GB</b></div>
+            <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${limiteArmazenamentoTexto()}</b></div>
             <div class="assinatura-linha"><span>Documentos armazenados</span><b>${totalArquivos.toLocaleString('pt-BR')}</b></div>
-            <div class="assinatura-linha"><span>Espaço disponível</span><b>${gbLivre.toFixed(2).replace('.',',')} GB</b></div>
+            <div class="assinatura-linha"><span>Espaço disponível</span><b>${formatarEspacoDisponivel(bytesLivre)}</b></div>
           </div>
 
           <div class="assinatura-card assinatura-storage-card">
             <h3>Armazenamento de documentos</h3>
             <div class="assinatura-storage-head">
-              <div><div class="assinatura-storage-valor">${usadoTexto} de ${CONFIG_ASSINATURA.limiteGB} GB utilizados</div></div>
+              <div><div class="assinatura-storage-valor">${usadoTexto} de ${limiteArmazenamentoTexto()} utilizados</div></div>
               <div class="assinatura-storage-pct">${pctReal.toFixed(1).replace('.',',')}%</div>
             </div>
             <div class="assinatura-barra ${classeBarra}"><div style="width:${pct}%"></div></div>
-            <div class="assinatura-storage-rodape"><span>${usadoTexto} usados</span><span>${CONFIG_ASSINATURA.limiteGB},00 GB total</span></div>
+            <div class="assinatura-storage-rodape"><span>${usadoTexto} usados</span><span>${limiteArmazenamentoTexto()} total</span></div>
             <div class="assinatura-aviso">ℹ️ ${aviso}</div>
           </div>
         </div>
@@ -1536,6 +1602,21 @@ window.RENDERIZADORES.assinatura = async function () {
             <div class="assinatura-upgrade"><b>+ 7 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong><button type="button" onclick="abrirPagamentoPix(99.90,'Adicional de armazenamento +7 GB')">Contratar +7 GB</button></div>
           </div>
         </div>
+
+        ${USUARIO && USUARIO.cargo === 'ADMIN' ? `
+        <div class="assinatura-card">
+          <h3>Pagamentos informados ${pagamentosPendentes.length ? `<span class="notificacao-badge" style="position:static;display:inline-flex;margin-left:6px;vertical-align:middle;">${pagamentosPendentes.length}</span>` : ''}</h3>
+          <p style="color:var(--texto-fraco);font-size:11px;margin:4px 0 14px;">Avisos enviados pelo botão “Já paguei”. Confirme somente depois de conferir o recebimento no Nubank PJ.</p>
+          ${pagamentosPendentes.length ? pagamentosPendentes.map(p=>`
+            <div class="admin-item" style="margin-bottom:8px;gap:12px;">
+              <div style="min-width:0;flex:1;">
+                <b style="display:block;color:#fff;font-size:12px;">${escapar(p.descricao||'Pagamento')}</b>
+                <span style="display:block;color:var(--texto-fraco);font-size:10.5px;margin-top:3px;">${escapar(p.informadoPorNome||'Usuário')} • ${escapar(p.informadoEm||'')}</span>
+              </div>
+              <b style="white-space:nowrap;color:#4ADE80;">${fmtBRL(Number(p.valor||0))}</b>
+              <button class="btn-primario" style="padding:7px 11px;font-size:10.5px;" onclick="confirmarPagamentoInformado('${p._docId}')">Confirmar recebimento</button>
+            </div>`).join('') : '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum pagamento aguardando conferência.</div>'}
+        </div>` : ''}
       </div>`;
   } catch(e) {
     console.error('Erro ao calcular armazenamento:',e);
@@ -1858,10 +1939,10 @@ function ligarBuscaPessoa(prefixo, mapaCampos) {
   });
 }
 
-/* ===== ANEXOS — 2 GB incluídos no plano; espaço adicional é contratado à parte ===== */
+/* ===== ANEXOS — 500 MB incluídos no plano; espaço adicional é contratado à parte ===== */
 const LIMITE_ANEXO_MB = 5;
 const LIMITE_ANEXOS_POR_ENVIO = 5;
-const ARMAZENAMENTO_STATUS = { bytesUsados: 0, limiteBytes: CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024, pct: 0 };
+const ARMAZENAMENTO_STATUS = { bytesUsados: 0, limiteBytes: limiteArmazenamentoBytes(), pct: 0 };
 
 async function calcularUsoAnexos() {
   const colecoes = ['atendimentos','transportes','equipamentos'];
@@ -1871,7 +1952,7 @@ async function calcularUsoAnexos() {
     const anexos = Array.isArray(d.data().anexos) ? d.data().anexos : [];
     anexos.forEach(a => { bytesUsados += Number(a.tamanho || 0); });
   }));
-  const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
+  const limiteBytes = limiteArmazenamentoBytes();
   const pct = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
   Object.assign(ARMAZENAMENTO_STATUS, { bytesUsados, limiteBytes, pct });
   return ARMAZENAMENTO_STATUS;
@@ -1908,7 +1989,7 @@ async function validarSelecaoAnexos(prefixo) {
 
   ajuda.style.color = '';
   if (!arquivos.length) {
-    ajuda.textContent = `Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.`;
+    ajuda.textContent = `Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${limiteArmazenamentoTexto()}.`;
     return;
   }
 
@@ -1971,14 +2052,14 @@ function campoAnexosModal(prefixo, colecao, registro) {
     <div class="campo-modal span-4 campo-anexos ${limiteAtingido ? 'aviso-anexos-bloqueado' : ''}" onclick="event.stopPropagation()">
       <label>${limiteAtingido ? '🔒' : '📎'} Anexos / Documentação</label>
       <div class="anexos-obs">${limiteAtingido
-        ? `O limite de ${CONFIG_ASSINATURA.limiteGB} GB do plano foi atingido. Os documentos existentes continuam disponíveis, mas novos anexos precisam de espaço adicional.`
-        : `Seu plano inclui ${CONFIG_ASSINATURA.limiteGB} GB para documentos. Anexe RG, CPF, comprovantes, receitas, fotos e PDFs.`}</div>
+        ? `O limite de ${limiteArmazenamentoTexto()} do plano foi atingido. Os documentos existentes continuam disponíveis, mas novos anexos precisam de espaço adicional.`
+        : `Seu plano inclui ${limiteArmazenamentoTexto()} para documentos. Anexe RG, CPF, comprovantes, receitas, fotos e PDFs.`}</div>
       <div class="anexos-lista" id="${prefixo}_listaAnexos">
         ${anexos.map((a, i) => itemAnexoHtml(a, i, colecao, registro._docId || '', podeExcluir, prefixo)).join('') || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>'}
       </div>
       ${podeEditar && !limiteAtingido ? `
         <input type="file" id="${prefixo}_arquivosAnexo" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onchange="validarSelecaoAnexos('${prefixo}')">
-        <div class="anexos-ajuda" id="${prefixo}_ajudaAnexo">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.</div>
+        <div class="anexos-ajuda" id="${prefixo}_ajudaAnexo">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${limiteArmazenamentoTexto()}.</div>
         ${avisoUso}
       ` : ''}
       ${limiteAtingido ? `<button type="button" class="btn-primario" style="margin-top:10px;background:#22C55E;" onclick="abrirAssinaturaPorLimite()">Aumentar armazenamento</button>` : ''}
@@ -2004,7 +2085,7 @@ async function enviarAnexosSelecionados(prefixo, colecao, docId) {
   const bytesNovos = arquivos.reduce((total, f) => total + Number(f.size || 0), 0);
   if (uso.bytesUsados + bytesNovos > uso.limiteBytes) {
     const disponivel = Math.max(0, uso.limiteBytes - uso.bytesUsados);
-    throw new Error(`Este envio ultrapassa o limite de ${CONFIG_ASSINATURA.limiteGB} GB. Espaço disponível: ${formatarEspacoDisponivel(disponivel)}. Aumente o armazenamento para enviar novos documentos.`);
+    throw new Error(`Este envio ultrapassa o limite de ${limiteArmazenamentoTexto()}. Espaço disponível: ${formatarEspacoDisponivel(disponivel)}. Aumente o armazenamento para enviar novos documentos.`);
   }
 
   const { getStorage, ref, uploadBytes, getDownloadURL } = await obterStorageMod();
@@ -4027,11 +4108,30 @@ function verificarLembretesAgenda(){
   badge.style.display='flex';
 }
 
+let qtdPagamentosPendentesAviso = 0;
 async function atualizarBadgeNotificacoes(){
   try{
     const snap = await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache = snap.docs.map(d=>({_docId:d.id,...d.data()}));
-    verificarLembretesAgenda();
+    let qtdAgenda = 0;
+    const hoje=new Date();
+    const iso=dataISOlocal(hoje);
+    qtdAgenda = agendaEventosCache.filter(e=>e.data===iso && e.lembrete!==false && norm(e.status)!=='CANCELADO').length;
+
+    qtdPagamentosPendentesAviso = 0;
+    if(USUARIO && USUARIO.cargo === 'ADMIN'){
+      try{
+        const pagSnap = await getDocs(collection(db,'pagamentosInformados'));
+        qtdPagamentosPendentesAviso = pagSnap.docs.filter(d=>String(d.data().status||'').toUpperCase()==='PENDENTE').length;
+      }catch(e){ console.error('Não foi possível consultar pagamentos pendentes:', e); }
+    }
+
+    const badge=document.getElementById('notificacaoBadge');
+    if(!badge) return;
+    const total = qtdAgenda + qtdPagamentosPendentesAviso;
+    if(!total){ badge.style.display='none'; return; }
+    badge.textContent=String(total);
+    badge.style.display='flex';
   }catch(e){
     console.error('Não foi possível atualizar notificações:', e);
   }
@@ -4040,7 +4140,10 @@ async function atualizarBadgeNotificacoes(){
 const sinoNotificacoes = document.querySelector('.notificacao-topo');
 if (sinoNotificacoes) {
   sinoNotificacoes.style.cursor = 'pointer';
-  sinoNotificacoes.onclick = () => { irPara('agenda'); };
+  sinoNotificacoes.onclick = () => {
+    if(USUARIO && USUARIO.cargo === 'ADMIN' && qtdPagamentosPendentesAviso > 0) irPara('assinatura');
+    else irPara('agenda');
+  };
 }
 </script>
 
