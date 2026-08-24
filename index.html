@@ -87,6 +87,14 @@
   .data-topo{min-width:142px;padding:8px 12px;border:1px solid var(--borda);border-radius:12px;text-align:right;background:#09182A;}
   .data-topo b{display:block;font-size:11px;color:#fff;}
   .data-topo span{font-size:9.5px;color:#7892B6;}
+  .assinatura-topo-badge{min-width:138px;height:46px;padding:6px 12px;border:1px solid rgba(34,197,94,.42);border-radius:12px;background:linear-gradient(180deg,rgba(34,197,94,.18),rgba(10,33,31,.88));color:#D8FFE6;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 0 0 1px rgba(34,197,94,.04),0 8px 22px rgba(0,0,0,.18);transition:transform .15s,filter .15s,border-color .15s;}
+  .assinatura-topo-badge:hover{transform:translateY(-1px);filter:brightness(1.08);}
+  .assinatura-topo-badge .status{font-size:9px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap;}
+  .assinatura-topo-badge .uso{font-size:11px;font-weight:900;color:#fff;white-space:nowrap;}
+  .assinatura-topo-badge.alerta{border-color:rgba(242,178,58,.55);background:linear-gradient(180deg,rgba(242,178,58,.20),rgba(45,33,10,.88));color:#FFE6A8;}
+  .assinatura-topo-badge.critico{border-color:rgba(229,39,45,.64);background:linear-gradient(180deg,rgba(229,39,45,.22),rgba(50,12,18,.92));color:#FFD0D2;animation:pulsarAssinatura 1.8s ease-in-out infinite;}
+  @keyframes pulsarAssinatura{0%,100%{box-shadow:0 0 0 1px rgba(229,39,45,.08),0 8px 22px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 4px rgba(229,39,45,.08),0 8px 22px rgba(0,0,0,.18)}}
+  @media(max-width:900px){.assinatura-topo-badge{min-width:108px;padding:6px 9px}.assinatura-topo-badge .status{font-size:8px}.assinatura-topo-badge .uso{font-size:9.5px}}
   .notificacao-topo{position:relative;width:38px;height:38px;border:none;background:transparent;color:#FFD166;font-size:18px;display:flex;align-items:center;justify-content:center;}
   .notificacao-badge{position:absolute;top:0;right:1px;min-width:16px;height:16px;border-radius:10px;background:var(--acento);color:#fff;font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;padding:0 4px;}
   .perfil-topo{display:flex;align-items:center;gap:9px;padding-left:14px;border-left:1px solid var(--borda);}
@@ -935,6 +943,10 @@
     </div>
     <div class="topo-direita">
       <div class="data-topo"><b id="dataTopo">-</b><span id="diaSemanaTopo">-</span></div>
+      <button class="assinatura-topo-badge" id="assinaturaTopoBadge" type="button" title="Abrir assinatura e armazenamento" onclick="irPara('assinatura')">
+        <span class="status" id="assinaturaTopoStatus">● PLANO ATIVO</span>
+        <span class="uso" id="assinaturaTopoUso">Calculando espaço...</span>
+      </button>
       <button class="notificacao-topo" type="button" title="Notificações">🔔<span class="notificacao-badge" id="notificacaoBadge">0</span></button>
       <div class="perfil-menu-wrap" id="perfilMenuWrap">
         <div class="perfil-topo" id="perfilTopoBtn" role="button" tabindex="0" aria-haspopup="true" aria-expanded="false">
@@ -942,7 +954,6 @@
           <div class="perfil-texto"><b id="nomeTopo">-</b><span id="cargoTopo">-</span></div>
         </div>
         <div class="perfil-dropdown hidden" id="perfilDropdown">
-          <button type="button" onclick="irPara('assinatura');fecharMenuPerfil()" class="perfil-dd-destaque">💳 Assinatura e armazenamento</button>
           <button type="button" onclick="fecharMenuPerfil();document.getElementById('btnSair').click()" class="perfil-dd-sair">↩ Sair</button>
         </div>
       </div>
@@ -1011,6 +1022,42 @@ const CONFIG_ASSINATURA = {
   diaVencimento: 10,
   status: 'ATIVO'
 };
+
+function formatarUsoTopo(bytesUsados) {
+  const mb = bytesUsados / 1024 / 1024;
+  if (mb < 100) return `${mb.toFixed(1).replace('.',',')} MB / ${CONFIG_ASSINATURA.limiteGB} GB`;
+  const gb = mb / 1024;
+  return `${gb.toFixed(2).replace('.',',')} GB / ${CONFIG_ASSINATURA.limiteGB} GB`;
+}
+
+async function atualizarResumoAssinaturaTopo() {
+  const badge = document.getElementById('assinaturaTopoBadge');
+  const statusEl = document.getElementById('assinaturaTopoStatus');
+  const usoEl = document.getElementById('assinaturaTopoUso');
+  if (!badge || !statusEl || !usoEl || !USUARIO) return;
+  statusEl.textContent = '● PLANO ATIVO';
+  usoEl.textContent = 'Calculando espaço...';
+  badge.classList.remove('alerta','critico');
+  try {
+    const colecoes = ['atendimentos','transportes','equipamentos'];
+    const snaps = await Promise.all(colecoes.map(nome => getDocs(collection(db,nome))));
+    let bytesUsados = 0;
+    snaps.forEach(snap => snap.docs.forEach(d => {
+      const anexos = Array.isArray(d.data().anexos) ? d.data().anexos : [];
+      anexos.forEach(a => { bytesUsados += Number(a.tamanho || 0); });
+    }));
+    const limiteBytes = CONFIG_ASSINATURA.limiteGB * 1024 * 1024 * 1024;
+    const pct = limiteBytes ? (bytesUsados / limiteBytes) * 100 : 0;
+    usoEl.textContent = formatarUsoTopo(bytesUsados);
+    if (pct >= 100) { badge.classList.add('critico'); statusEl.textContent = '● LIMITE ATINGIDO'; }
+    else if (pct >= 90) { badge.classList.add('critico'); statusEl.textContent = '● ESPAÇO CRÍTICO'; }
+    else if (pct >= 70) { badge.classList.add('alerta'); statusEl.textContent = '● ESPAÇO EM ALERTA'; }
+  } catch (e) {
+    console.error('Não foi possível atualizar o resumo de assinatura no topo:', e);
+    usoEl.textContent = `${CONFIG_ASSINATURA.limiteGB} GB contratados`;
+  }
+}
+window.atualizarResumoAssinaturaTopo = atualizarResumoAssinaturaTopo;
 
 const telaSplash = document.getElementById('telaSplash');
 const telaLogin = document.getElementById('telaLogin');
@@ -1246,6 +1293,7 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById('nomeTopo').innerText = USUARIO.nome;
       document.getElementById('cargoTopo').innerText = rotuloCargo(USUARIO.cargo);
       montarMenu();
+      atualizarResumoAssinaturaTopo();
     }
   }, (erro) => {
     console.error('Erro ao ouvir perfil:', erro);
@@ -1293,6 +1341,18 @@ window.RENDERIZADORES.assinatura = async function () {
 
     const fmtBRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const usadoTexto = gbUsados >= 0.01 ? gbUsados.toFixed(2).replace('.',',') + ' GB' : (bytesUsados/1024/1024).toFixed(1).replace('.',',') + ' MB';
+
+    const topoBadge = document.getElementById('assinaturaTopoBadge');
+    const topoStatus = document.getElementById('assinaturaTopoStatus');
+    const topoUso = document.getElementById('assinaturaTopoUso');
+    if (topoBadge && topoStatus && topoUso) {
+      topoBadge.classList.remove('alerta','critico');
+      topoUso.textContent = formatarUsoTopo(bytesUsados);
+      topoStatus.textContent = '● PLANO ATIVO';
+      if (pctReal >= 100) { topoBadge.classList.add('critico'); topoStatus.textContent = '● LIMITE ATINGIDO'; }
+      else if (pctReal >= 90) { topoBadge.classList.add('critico'); topoStatus.textContent = '● ESPAÇO CRÍTICO'; }
+      else if (pctReal >= 70) { topoBadge.classList.add('alerta'); topoStatus.textContent = '● ESPAÇO EM ALERTA'; }
+    }
 
     c.innerHTML = `
       <div class="assinatura-wrap">
