@@ -852,11 +852,11 @@
   .perfil-dropdown button:hover{background:#10243C;}
   .perfil-dropdown .perfil-dd-destaque{color:#8CC5FF;border:1px solid rgba(37,99,235,.25);background:rgba(37,99,235,.07);}
   .perfil-dropdown .perfil-dd-sair{color:#FF7479;}
-  .assinatura-wrap{max-width:1120px;margin:0 auto;}
+  .assinatura-wrap{width:100%;max-width:none;margin:0;}
   .assinatura-topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
   .assinatura-topo h2{margin:0;font-size:23px;font-weight:900;}
   .assinatura-topo p{margin:5px 0 0;color:var(--texto-fraco);font-size:11.5px;}
-  .assinatura-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .assinatura-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px;width:100%;}
   .assinatura-card{background:linear-gradient(180deg,#0B1B2F,#091626);border:1px solid var(--borda);border-radius:14px;padding:18px;min-width:0;}
   .assinatura-card h3{margin:0 0 14px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#8EA3BF;}
   .assinatura-plano{font-size:20px;font-weight:900;color:#fff;margin-bottom:12px;}
@@ -876,7 +876,7 @@
   .assinatura-barra.critico>div{background:linear-gradient(90deg,#E5272D,#FF5A5F);}
   .assinatura-storage-rodape{display:flex;justify-content:space-between;gap:12px;color:#7F91AA;font-size:10.5px;}
   .assinatura-aviso{margin-top:14px;padding:11px 13px;border:1px solid #1D3E60;border-radius:10px;background:#0A2037;color:#A9C4E4;font-size:11.5px;}
-  .assinatura-upgrades{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .assinatura-upgrades{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:100%;}
   .assinatura-upgrade{border:1px solid #28415D;border-radius:12px;background:#0A1728;padding:15px;}
   .assinatura-upgrade b{display:block;font-size:17px;color:#fff;margin-bottom:4px;}
   .assinatura-upgrade span{font-size:12px;color:#8EA3BF;}
