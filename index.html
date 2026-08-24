@@ -2408,9 +2408,30 @@ window.RENDERIZADORES.transportes = async function () {
   desenharTransportes();
 };
 let filtroTranspTexto = '';
+let filtroTranspTextoOriginal = '';
 function aplicarFiltroTransp() {
-  filtroTranspTexto = norm(document.getElementById('fTextoTransp').value);
+  const textoEl = document.getElementById('fTextoTransp');
+
+  // Mantém o foco e a posição do cursor durante a pesquisa.
+  // A tela de Transportes é redesenhada a cada alteração do filtro,
+  // então precisamos devolver o foco ao novo input após o redesenho.
+  const pesquisandoTexto = document.activeElement === textoEl;
+  const posCursor = pesquisandoTexto && typeof textoEl.selectionStart === 'number'
+    ? textoEl.selectionStart
+    : null;
+
+  filtroTranspTextoOriginal = textoEl ? textoEl.value : filtroTranspTextoOriginal;
+  filtroTranspTexto = norm(filtroTranspTextoOriginal);
   desenharTransportes();
+
+  if (pesquisandoTexto) {
+    const novoCampo = document.getElementById('fTextoTransp');
+    if (novoCampo) {
+      novoCampo.focus();
+      const p = posCursor === null ? novoCampo.value.length : Math.min(posCursor, novoCampo.value.length);
+      try { novoCampo.setSelectionRange(p, p); } catch (_) {}
+    }
+  }
 }
 window.aplicarFiltroTransp = aplicarFiltroTransp;
 function desenharTransportes() {
@@ -2432,7 +2453,7 @@ function desenharTransportes() {
       ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalTransporte()">+ Nova Solicitação</button>' : ''}
     </div>
     <div class="barra-acoes" style="grid-template-columns:minmax(240px,1fr) 110px;">
-      <input id="fTextoTransp" placeholder="Buscar nome, hospital ou telefone..." oninput="aplicarFiltroTransp()" value="${String(filtroTranspTexto||'').replace(/"/g,'&quot;')}">
+      <input id="fTextoTransp" placeholder="Buscar nome, hospital ou telefone..." oninput="aplicarFiltroTransp()" value="${String(filtroTranspTextoOriginal||'').replace(/"/g,'&quot;')}">
       <button class="btn-secundario" onclick="window.RENDERIZADORES.transportes()">↻ Atualizar</button>
     </div>
     <div class="tabela-box"><table>
