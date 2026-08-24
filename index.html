@@ -908,6 +908,9 @@
   .assinatura-upgrade button{margin-top:12px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#22A95A;color:#fff;font-weight:900;}
   @media(max-width:560px){.pix-acoes{grid-template-columns:1fr}.pix-modal{padding:18px}.pix-valor strong{font-size:26px}}
 
+
+/* UX calendário: qualquer clique no campo de data abre o seletor */
+input[type="date"] { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -4233,5 +4236,16 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+
+<script>
+// Abre o calendário ao clicar em qualquer parte de um campo de data.
+document.addEventListener('click', function (event) {
+  const campo = event.target.closest('input[type="date"]');
+  if (!campo || campo.disabled || campo.readOnly) return;
+  if (typeof campo.showPicker === 'function') {
+    try { campo.showPicker(); } catch (e) {}
+  }
+});
+</script>
 </body>
 </html>
