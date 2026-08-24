@@ -1823,6 +1823,58 @@ function sanitizarNomeArquivo(nome) {
   return String(nome || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.\-_]/g, '_');
 }
 
+function formatarEspacoDisponivel(bytes) {
+  const mb = Math.max(0, bytes) / 1024 / 1024;
+  if (mb < 1024) return mb.toFixed(1).replace('.', ',') + ' MB';
+  return (mb / 1024).toFixed(2).replace('.', ',') + ' GB';
+}
+
+async function validarSelecaoAnexos(prefixo) {
+  const input = document.getElementById(prefixo + '_arquivosAnexo');
+  const ajuda = document.getElementById(prefixo + '_ajudaAnexo');
+  const arquivos = input && input.files ? Array.from(input.files) : [];
+  if (!input || !ajuda) return;
+
+  ajuda.style.color = '';
+  if (!arquivos.length) {
+    ajuda.textContent = `Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.`;
+    return;
+  }
+
+  if (arquivos.length > LIMITE_ANEXOS_POR_ENVIO) {
+    ajuda.style.color = '#F26D6D';
+    ajuda.textContent = `Selecione no máximo ${LIMITE_ANEXOS_POR_ENVIO} arquivos por vez.`;
+    input.value = '';
+    return;
+  }
+
+  const grandeDemais = arquivos.find(f => f.size > LIMITE_ANEXO_MB * 1024 * 1024);
+  if (grandeDemais) {
+    ajuda.style.color = '#F26D6D';
+    ajuda.textContent = `O arquivo “${grandeDemais.name}” ultrapassa ${LIMITE_ANEXO_MB} MB.`;
+    input.value = '';
+    return;
+  }
+
+  try {
+    const uso = await calcularUsoAnexos();
+    const bytesNovos = arquivos.reduce((total, f) => total + Number(f.size || 0), 0);
+    const disponivel = Math.max(0, uso.limiteBytes - uso.bytesUsados);
+    if (bytesNovos > disponivel) {
+      ajuda.style.color = '#F26D6D';
+      ajuda.textContent = `Esses arquivos excedem o limite do plano. Espaço disponível: ${formatarEspacoDisponivel(disponivel)}.`;
+      input.value = '';
+      return;
+    }
+    ajuda.style.color = '#4ADE80';
+    ajuda.textContent = `${arquivos.length} arquivo(s) selecionado(s) • ${formatarEspacoDisponivel(bytesNovos)} • restarão ${formatarEspacoDisponivel(disponivel - bytesNovos)}.`;
+  } catch (e) {
+    ajuda.style.color = '#F2B23A';
+    ajuda.textContent = 'Não foi possível conferir o espaço agora. O limite será validado novamente ao salvar.';
+  }
+}
+window.validarSelecaoAnexos = validarSelecaoAnexos;
+
 function itemAnexoHtml(anexo, indice, colecao, docId, podeExcluir, prefixo) {
   return `
     <div class="anexo-item">
@@ -1854,8 +1906,8 @@ function campoAnexosModal(prefixo, colecao, registro) {
         ${anexos.map((a, i) => itemAnexoHtml(a, i, colecao, registro._docId || '', podeExcluir, prefixo)).join('') || '<div class="anexos-vazio">Nenhum anexo enviado ainda.</div>'}
       </div>
       ${podeEditar && !limiteAtingido ? `
-        <input type="file" id="${prefixo}_arquivosAnexo" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-        <div class="anexos-ajuda">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.</div>
+        <input type="file" id="${prefixo}_arquivosAnexo" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onchange="validarSelecaoAnexos('${prefixo}')">
+        <div class="anexos-ajuda" id="${prefixo}_ajudaAnexo">Até ${LIMITE_ANEXOS_POR_ENVIO} arquivos por envio, ${LIMITE_ANEXO_MB}MB cada. Armazenamento incluído no plano: ${CONFIG_ASSINATURA.limiteGB} GB.</div>
         ${avisoUso}
       ` : ''}
       ${limiteAtingido ? `<button type="button" class="btn-primario" style="margin-top:10px;background:#22C55E;" onclick="abrirAssinaturaPorLimite()">Aumentar armazenamento</button>` : ''}
@@ -1880,7 +1932,8 @@ async function enviarAnexosSelecionados(prefixo, colecao, docId) {
   const uso = await calcularUsoAnexos();
   const bytesNovos = arquivos.reduce((total, f) => total + Number(f.size || 0), 0);
   if (uso.bytesUsados + bytesNovos > uso.limiteBytes) {
-    throw new Error(`Limite de ${CONFIG_ASSINATURA.limiteGB} GB atingido. Aumente o armazenamento para enviar novos documentos.`);
+    const disponivel = Math.max(0, uso.limiteBytes - uso.bytesUsados);
+    throw new Error(`Este envio ultrapassa o limite de ${CONFIG_ASSINATURA.limiteGB} GB. Espaço disponível: ${formatarEspacoDisponivel(disponivel)}. Aumente o armazenamento para enviar novos documentos.`);
   }
 
   const { getStorage, ref, uploadBytes, getDownloadURL } = await obterStorageMod();
@@ -1890,7 +1943,18 @@ async function enviarAnexosSelecionados(prefixo, colecao, docId) {
   for (const arquivo of arquivos) {
     const caminho = `anexos/${colecao}/${docId}/${Date.now()}_${sanitizarNomeArquivo(arquivo.name)}`;
     const refArquivo = ref(storage, caminho);
-    await uploadBytes(refArquivo, arquivo);
+    try {
+      await uploadBytes(refArquivo, arquivo);
+    } catch (e) {
+      const codigo = String(e?.code || '');
+      if (codigo.includes('storage/unauthorized')) {
+        throw new Error('O Firebase Storage ainda não está liberado para este usuário ou as regras do Storage bloquearam o envio.');
+      }
+      if (codigo.includes('storage/bucket-not-found') || codigo.includes('storage/unknown')) {
+        throw new Error('O Firebase Storage deste projeto ainda não está ativo/configurado. Ative o Storage no projeto e tente novamente.');
+      }
+      throw e;
+    }
     const url = await getDownloadURL(refArquivo);
     enviados.push({
       nome: arquivo.name,
