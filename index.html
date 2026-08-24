@@ -884,6 +884,30 @@
   .assinatura-acao{margin-top:14px;display:flex;justify-content:flex-end;}
   .assinatura-acao button{background:#22A95A;color:white;border:0;border-radius:9px;padding:11px 17px;font-weight:900;}
   @media(max-width:760px){.assinatura-grid{grid-template-columns:1fr}.assinatura-storage-card{grid-column:auto}.assinatura-upgrades{grid-template-columns:1fr}.perfil-dropdown{right:-50px;width:240px}}
+  /* ===== PAGAMENTO PIX ===== */
+  .pix-modal-bg{position:fixed;inset:0;z-index:5000;background:rgba(3,7,14,.76);display:flex;align-items:center;justify-content:center;padding:18px;}
+  .pix-modal{width:min(560px,calc(100vw - 36px));background:#0A1728;border:1px solid #28415D;border-radius:20px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.52);}
+  .pix-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+  .pix-modal-head h3{margin:0;font-size:20px;color:#fff;}
+  .pix-modal-head p{margin:5px 0 0;color:#7F91AA;font-size:12px;}
+  .pix-fechar{width:34px;height:34px;border:0;border-radius:50%;background:#12253B;color:#fff;font-size:20px;}
+  .pix-valor{background:linear-gradient(180deg,rgba(34,197,94,.14),rgba(10,33,31,.55));border:1px solid rgba(34,197,94,.35);border-radius:14px;padding:16px;margin-bottom:14px;}
+  .pix-valor span{display:block;color:#8EA3BF;font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.5px;}
+  .pix-valor strong{display:block;color:#fff;font-size:30px;margin-top:4px;}
+  .pix-dados{display:grid;gap:9px;margin:14px 0;}
+  .pix-linha{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px;border:1px solid #1C2C41;border-radius:10px;background:#09182A;font-size:12px;}
+  .pix-linha span{color:#7F91AA;}.pix-linha b{color:#fff;text-align:right;overflow-wrap:anywhere;}
+  .pix-chave-box{margin-top:14px;padding:14px;border-radius:12px;background:#071425;border:1px dashed #426B9B;}
+  .pix-chave-box small{display:block;color:#7892B6;text-transform:uppercase;font-weight:800;margin-bottom:6px;}
+  .pix-chave{font-size:18px;font-weight:900;color:#fff;letter-spacing:.3px;overflow-wrap:anywhere;}
+  .pix-acoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  .pix-acoes button{padding:12px 14px;border-radius:10px;font-weight:900;border:0;}
+  .pix-copiar{background:#2563EB;color:#fff;}.pix-paguei{background:#22A95A;color:#fff;}
+  .pix-nota{margin-top:13px;color:#7F91AA;font-size:11px;line-height:1.45;}
+  .assinatura-pagar{margin-top:14px;width:100%;background:#2563EB!important;color:#fff!important;}
+  .assinatura-upgrade button{margin-top:12px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#22A95A;color:#fff;font-weight:900;}
+  @media(max-width:560px){.pix-acoes{grid-template-columns:1fr}.pix-modal{padding:18px}.pix-valor strong{font-size:26px}}
+
 </style>
 </head>
 <body>
@@ -1020,8 +1044,70 @@ const CONFIG_ASSINATURA = {
   mensalidade: 249.00,
   limiteGB: 2,
   diaVencimento: 10,
-  status: 'ATIVO'
+  status: 'ATIVO',
+  pixChave: '65.974.787/0001-38',
+  pixTitular: 'TIAGO DE SOUSA COSTA',
+  pixBanco: 'Nubank PJ'
 };
+
+
+function fecharPagamentoPix(){
+  const el=document.getElementById('pixModalBg');
+  if(el) el.remove();
+}
+window.fecharPagamentoPix=fecharPagamentoPix;
+
+function abrirPagamentoPix(valor, descricao){
+  fecharPagamentoPix();
+  const fmt=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const bg=document.createElement('div');
+  bg.className='pix-modal-bg';
+  bg.id='pixModalBg';
+  bg.onclick=(ev)=>{if(ev.target===bg) fecharPagamentoPix();};
+  bg.innerHTML=`
+    <div class="pix-modal" role="dialog" aria-modal="true" aria-label="Pagamento via PIX">
+      <div class="pix-modal-head">
+        <div><h3>Pagamento via PIX</h3><p>${escapar(descricao||'Cobrança do Gabinete Digital')}</p></div>
+        <button class="pix-fechar" type="button" onclick="fecharPagamentoPix()">×</button>
+      </div>
+      <div class="pix-valor"><span>Valor a pagar</span><strong>${fmt(valor)}</strong></div>
+      <div class="pix-dados">
+        <div class="pix-linha"><span>Recebedor</span><b>${CONFIG_ASSINATURA.pixTitular}</b></div>
+        <div class="pix-linha"><span>Banco</span><b>${CONFIG_ASSINATURA.pixBanco}</b></div>
+        <div class="pix-linha"><span>Tipo da chave</span><b>CNPJ</b></div>
+      </div>
+      <div class="pix-chave-box">
+        <small>Chave PIX</small>
+        <div class="pix-chave" id="pixChaveTexto">${CONFIG_ASSINATURA.pixChave}</div>
+      </div>
+      <div class="pix-acoes">
+        <button class="pix-copiar" type="button" onclick="copiarChavePix()">📋 Copiar chave PIX</button>
+        <button class="pix-paguei" type="button" onclick="registrarAvisoPagamento(${Number(valor)}, '${String(descricao||'Pagamento').replace(/'/g,"\'")}')">✓ Já paguei</button>
+      </div>
+      <div class="pix-nota">O pagamento é feito diretamente para a conta PJ. A confirmação automática ainda não está integrada; o botão “Já paguei” registra somente o aviso nesta etapa.</div>
+    </div>`;
+  document.body.appendChild(bg);
+}
+window.abrirPagamentoPix=abrirPagamentoPix;
+
+async function copiarChavePix(){
+  try{
+    await navigator.clipboard.writeText(CONFIG_ASSINATURA.pixChave.replace(/\D/g,''));
+    alert('Chave PIX copiada.');
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=CONFIG_ASSINATURA.pixChave.replace(/\D/g,'');
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    alert('Chave PIX copiada.');
+  }
+}
+window.copiarChavePix=copiarChavePix;
+
+function registrarAvisoPagamento(valor, descricao){
+  alert('Pagamento informado. Nesta versão, a confirmação ainda é manual. Confira o recebimento no Nubank PJ antes de liberar qualquer adicional.');
+  fecharPagamentoPix();
+}
+window.registrarAvisoPagamento=registrarAvisoPagamento;
 
 function formatarUsoTopo(bytesUsados) {
   const mb = bytesUsados / 1024 / 1024;
@@ -1371,6 +1457,7 @@ window.RENDERIZADORES.assinatura = async function () {
             <div class="assinatura-linha"><span>Status</span><b><span class="assinatura-status ativo">● ${CONFIG_ASSINATURA.status}</span></b></div>
             <div class="assinatura-linha"><span>Manutenção mensal</span><b>${fmtBRL(CONFIG_ASSINATURA.mensalidade)}</b></div>
             <div class="assinatura-linha"><span>Próximo vencimento</span><b>${vencimento}</b></div>
+            <button type="button" class="assinatura-acao assinatura-pagar" onclick="abrirPagamentoPix(CONFIG_ASSINATURA.mensalidade,'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
           </div>
 
           <div class="assinatura-card">
@@ -1395,11 +1482,10 @@ window.RENDERIZADORES.assinatura = async function () {
         <div class="assinatura-card">
           <h3>Precisa de mais espaço?</h3>
           <div class="assinatura-upgrades">
-            <div class="assinatura-upgrade"><b>+ 5 GB</b><span>Armazenamento adicional</span><strong>R$ 39,90/mês</strong></div>
-            <div class="assinatura-upgrade"><b>+ 10 GB</b><span>Armazenamento adicional</span><strong>R$ 69,90/mês</strong></div>
-            <div class="assinatura-upgrade"><b>+ 20 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong></div>
+            <div class="assinatura-upgrade"><b>+ 5 GB</b><span>Armazenamento adicional</span><strong>R$ 39,90/mês</strong><button type="button" onclick="abrirPagamentoPix(39.90,'Adicional de armazenamento +5 GB')">Contratar +5 GB</button></div>
+            <div class="assinatura-upgrade"><b>+ 10 GB</b><span>Armazenamento adicional</span><strong>R$ 69,90/mês</strong><button type="button" onclick="abrirPagamentoPix(69.90,'Adicional de armazenamento +10 GB')">Contratar +10 GB</button></div>
+            <div class="assinatura-upgrade"><b>+ 20 GB</b><span>Armazenamento adicional</span><strong>R$ 99,90/mês</strong><button type="button" onclick="abrirPagamentoPix(99.90,'Adicional de armazenamento +20 GB')">Contratar +20 GB</button></div>
           </div>
-          <div class="assinatura-acao"><button type="button" onclick="alert('Solicitação de aumento registrada para demonstração. A integração de cobrança será feita na próxima etapa.')">Aumentar armazenamento</button></div>
         </div>
       </div>`;
   } catch(e) {
