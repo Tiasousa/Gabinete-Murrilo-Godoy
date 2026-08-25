@@ -941,7 +941,6 @@ input[type="date"] { cursor: pointer; }
   <div class="splash-titulo">GABINETE <span>DIGITAL</span></div>
   <div class="splash-sub">Vereador Murillo Godoy</div>
   <div class="splash-spin"></div>
-  <button id="pularSplash">Não abriu? Toque aqui</button>
 </div>
 
 <div id="telaLogin" class="hidden">
@@ -972,8 +971,6 @@ input[type="date"] { cursor: pointer; }
       splash.classList.add('hidden');
       if (login) login.classList.remove('hidden');
     }
-    var botaoPular = document.getElementById('pularSplash');
-    if (botaoPular) botaoPular.onclick = esconderSplashCedo;
     setTimeout(esconderSplashCedo, 1200);
   })();
 </script>
@@ -1226,7 +1223,8 @@ function esconderSplash() {
   telaSplash.classList.add('hidden');
   telaLogin.classList.remove('hidden');
 }
-document.getElementById('pularSplash').onclick = esconderSplash;
+const pularSplash = document.getElementById('pularSplash');
+if (pularSplash) pularSplash.onclick = esconderSplash;
 setTimeout(esconderSplash, 1200);
 const inputEmail = document.getElementById('inputEmail');
 const inputSenha = document.getElementById('inputSenha');
