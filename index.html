@@ -394,6 +394,20 @@
     .dash-barra-linha{grid-template-columns:95px 1fr 28px;}
   }
 
+
+  /* ===== CADASTRO GERAL — prontuário completo da pessoa ===== */
+  .modal-fundo.modal-cadastro-geral-fundo{align-items:center;justify-content:center;padding:16px;}
+  .modal.modal-cadastro-geral{width:min(1240px,calc(100vw - 32px));max-width:1240px;max-height:92vh;overflow-y:auto;padding:22px 24px 20px;}
+  .cadastro-geral-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;}
+  .cadastro-geral-cabecalho h2{margin:0 0 4px;font-size:21px}.cadastro-geral-cabecalho p{margin:0;color:var(--texto-fraco);font-size:11px}
+  .cadastro-geral-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 14px;align-items:end}.cadastro-geral-grid .campo-modal{margin:0;min-width:0}.cadastro-geral-grid .span-2{grid-column:span 2}.cadastro-geral-grid .span-4{grid-column:1/-1}
+  .cadastro-geral-secao{margin-top:18px;border-top:1px solid var(--borda);padding-top:16px}.cadastro-geral-secao-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.cadastro-geral-secao h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#DDE6F2}
+  .cadastro-geral-resumo{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}.cadastro-geral-kpi{background:#09182A;border:1px solid #17304C;border-radius:10px;padding:10px}.cadastro-geral-kpi b{display:block;font-size:19px;color:#fff}.cadastro-geral-kpi span{font-size:8.5px;color:#8198B7;text-transform:uppercase;font-weight:800}
+  .historico-geral{display:flex;flex-direction:column;gap:7px}.historico-item{display:grid;grid-template-columns:110px 125px minmax(180px,1fr) 130px;gap:10px;align-items:center;background:#09182A;border:1px solid #17304C;border-radius:10px;padding:9px 11px;font-size:10.5px;cursor:pointer}.historico-item:hover{border-color:#456FAD;background:#0D2239}.historico-item .h-data{color:#9DB0C8}.historico-item .h-tipo{font-weight:900;color:#fff;text-transform:uppercase}.historico-item .h-desc{color:#DDE6F2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.historico-item .h-status{text-align:right;color:#8EA3BF;font-weight:800}.historico-vazio{padding:22px;text-align:center;color:var(--texto-fraco);font-size:11px;border:1px dashed var(--borda);border-radius:10px}
+  .pessoa-linha{cursor:pointer}.pessoa-linha:hover{background:#0D2239}
+  @media(max-width:900px){.cadastro-geral-grid{grid-template-columns:1fr 1fr}.cadastro-geral-grid .span-4{grid-column:1/-1}.cadastro-geral-resumo{grid-template-columns:repeat(2,1fr)}.historico-item{grid-template-columns:90px 100px 1fr}.historico-item .h-status{display:none}}
+  @media(max-width:560px){.modal-fundo.modal-cadastro-geral-fundo{align-items:flex-start;overflow-y:auto;padding:8px}.modal.modal-cadastro-geral{width:100%;padding:18px 14px}.cadastro-geral-grid{grid-template-columns:1fr}.cadastro-geral-grid .span-2,.cadastro-geral-grid .span-4{grid-column:1}.cadastro-geral-resumo{grid-template-columns:1fr 1fr}.historico-item{grid-template-columns:78px 1fr}.historico-item .h-tipo{grid-column:2}.historico-item .h-desc{grid-column:1/-1}}
+
   /* ===== AGENDA — estilo Google Calendar adaptado ao Gabinete ===== */
   main.modo-agenda{
     height:calc(100vh - 122px);
@@ -1290,7 +1304,7 @@ window.getUid = () => UID;
 const MODULOS = [
   { id: 'dashboard', label: '🏠 Dashboard', admin: false },
   { id: 'eventos', label: '🎉 Eventos', admin: false },
-  { id: 'pessoas', label: '📇 Pessoas', admin: false },
+  { id: 'pessoas', label: '📇 Cadastro Geral', admin: false },
   { id: 'atendimentos', label: '👥 Atendimentos', admin: false },
   { id: 'transportes', label: '🚐 Transportes', admin: false },
   { id: 'equipamentos', label: '🏆 Equipamentos', admin: false },
@@ -1809,7 +1823,8 @@ async function carregarConfiguraveis() {
 function campoBuscaPessoa(prefixo) {
   return `
     <div class="campo-modal busca-pessoa-wrap" style="position:relative;grid-column:1/-1;">
-      <label>Buscar pessoa já cadastrada (nome, CPF, RG, título ou telefone)</label>
+      <label>Buscar no Cadastro Geral (nome, CPF, RG, título ou telefone)</label>
+      <input type="hidden" id="${prefixo}_pessoaId" value="">
       <input id="${prefixo}_buscaPessoa" placeholder="Comece a digitar..." autocomplete="off">
       <div id="${prefixo}_resultadosPessoa" class="resultados-busca-pessoa hidden"></div>
     </div>`;
@@ -1844,6 +1859,8 @@ function ligarBuscaPessoa(prefixo, mapaCampos) {
       el.onclick = () => {
         const pessoa = pessoasCache.find(p => p._docId === el.dataset.id);
         if (!pessoa) return;
+        const pessoaIdInput = document.getElementById(prefixo + '_pessoaId');
+        if (pessoaIdInput) pessoaIdInput.value = pessoa._docId || '';
         Object.keys(mapaCampos).forEach(campoPessoa => {
           const alvo = document.getElementById(mapaCampos[campoPessoa]);
           if (alvo && pessoa[campoPessoa]) {
@@ -1858,6 +1875,15 @@ function ligarBuscaPessoa(prefixo, mapaCampos) {
   document.addEventListener('click', (ev) => {
     if (!ev.target.closest('.busca-pessoa-wrap')) resultados.classList.add('hidden');
   });
+}
+
+function definirPessoaIdNoModal(prefixo, registro){
+  const alvo=document.getElementById(prefixo+'_pessoaId');
+  if(alvo) alvo.value=registro?.pessoaId||'';
+}
+
+function pessoaIdDoModal(prefixo){
+  return document.getElementById(prefixo+'_pessoaId')?.value||'';
 }
 
 /* ===== ANEXOS — 500 MB incluídos no plano; espaço adicional é contratado à parte ===== */
@@ -2285,7 +2311,7 @@ function maiusculo(valor) {
 
 
 document.addEventListener('input', (ev) => {
-  const idsMaiusculos = new Set(['m_nome','m_bairro','m_responsavel','m_indicador','t_nome','t_hospital','t_cidade','e_nome','e_responsavel','p_nome','p_bairro']);
+  const idsMaiusculos = new Set(['m_nome','m_bairro','m_responsavel','m_indicador','t_nome','t_hospital','t_cidade','e_nome','e_responsavel','p_nome','p_bairro','p_cidade','p_profissao','p_conjuge','p_contatoAlt']);
   if (idsMaiusculos.has(ev.target?.id)) {
     const ini = ev.target.selectionStart;
     const fim = ev.target.selectionEnd;
@@ -2324,6 +2350,7 @@ function abrirModalAtendimento(registro) {
     </div>`;
   document.body.appendChild(fundo);
   ligarBuscaPessoa('m', { nome: 'm_nome', telefone: 'm_telefone', endereco: 'm_endereco', bairro: 'm_bairro' });
+  definirPessoaIdNoModal('m', registro);
 }
 window.abrirModalAtendimento = abrirModalAtendimento;
 
@@ -2333,6 +2360,7 @@ async function salvarAtendimento(docId) {
   botao.disabled = true; botao.innerText = 'Salvando...';
 
   const dados = {
+    pessoaId: pessoaIdDoModal('m'),
     nome: maiusculo(document.getElementById('m_nome').value),
     telefone: formatarTelefoneBR(document.getElementById('m_telefone').value),
     endereco: document.getElementById('m_endereco').value.trim(),
@@ -2481,6 +2509,7 @@ function abrirModalTransporte(registro) {
     </div>`;
   document.body.appendChild(fundo);
   ligarBuscaPessoa('t', { nome: 't_nome', telefone: 't_contato' });
+  definirPessoaIdNoModal('t', registro);
 }
 window.abrirModalTransporte = abrirModalTransporte;
 async function salvarTransporte(docId) {
@@ -2488,6 +2517,7 @@ async function salvarTransporte(docId) {
   if (botao.disabled) return;
   botao.disabled = true; botao.innerText = 'Salvando...';
   const dados = {
+    pessoaId: pessoaIdDoModal('t'),
     nome: maiusculo(document.getElementById('t_nome').value),
     contato: formatarTelefoneBR(document.getElementById('t_contato').value),
     data: dataISOparaBR(document.getElementById('t_data').value),
@@ -2595,6 +2625,7 @@ function abrirModalEquip(registro) {
     </div>`;
   document.body.appendChild(fundo);
   ligarBuscaPessoa('e', { nome: 'e_nome', telefone: 'e_contato' });
+  definirPessoaIdNoModal('e', registro);
 }
 window.abrirModalEquip = abrirModalEquip;
 async function salvarEquip(docId) {
@@ -2602,6 +2633,7 @@ async function salvarEquip(docId) {
   if (botao.disabled) return;
   botao.disabled = true; botao.innerText = 'Salvando...';
   const dados = {
+    pessoaId: pessoaIdDoModal('e'),
     nome: maiusculo(document.getElementById('e_nome').value),
     contato: formatarTelefoneBR(document.getElementById('e_contato').value),
     equipamento: document.getElementById('e_equipamento').value,
@@ -3598,14 +3630,14 @@ window.excluirEvtMurillo = excluirEvtMurillo;
 
 window.RENDERIZADORES.pessoas = async function(){
   const c=document.getElementById('conteudo');
-  c.innerHTML='<div class="carregando-tela">Carregando pessoas...</div>';
+  c.innerHTML='<div class="carregando-tela">Carregando Cadastro Geral...</div>';
   try{
     const snap=await getDocs(collection(db,'pessoas'));
     pessoasCache=snap.docs.map(d=>({_docId:d.id,...d.data()}))
       .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
     desenharPessoasMurillo('');
   }catch(e){
-    c.innerHTML='<div class="painel-box">Não foi possível carregar Pessoas. '+escapar(e.message||e)+'</div>';
+    c.innerHTML='<div class="painel-box">Não foi possível carregar o Cadastro Geral. '+escapar(e.message||e)+'</div>';
   }
 };
 
@@ -3619,43 +3651,34 @@ function desenharPessoasMurillo(filtro=''){
   const comBairro=pessoasCache.filter(p=>String(p.bairro||'').trim()).length;
   const f=norm(filtro);
   const lista=!f?pessoasCache:pessoasCache.filter(p=>
-    norm(p.nome).includes(f)||norm(p.bairro).includes(f)||norm(p.cpf).includes(f)||norm(p.rg).includes(f)||norm(p.tituloEleitor).includes(f)||norm(p.telefone).includes(f)
+    norm(p.nome).includes(f)||norm(p.bairro).includes(f)||norm(p.cpf).includes(f)||norm(p.rg).includes(f)||norm(p.tituloEleitor).includes(f)||norm(p.telefone).includes(f)||norm(p.email).includes(f)
   );
 
   c.innerHTML=`
     <div class="topo-pagina-atend">
-      <h2>Cadastro de <span style="color:var(--acento);">Pessoas</span></h2>
+      <h2><span style="color:var(--acento);">Cadastro Geral</span></h2>
       <div class="kpis-faixa">
-        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Cadastros</div></div>
         <div class="kpi-faixa-item"><div class="num">${niverHoje}</div><div class="rot">Aniversário hoje</div></div>
         <div class="kpi-faixa-item"><div class="num">${niverMes}</div><div class="rot">Aniversários mês</div></div>
         <div class="kpi-faixa-item"><div class="num">${comBairro}</div><div class="rot">Com bairro</div></div>
       </div>
-      ${podeEditar?'<button class="btn-primario" onclick="abrirModalPessoaMurillo()">+ Nova Pessoa</button>':''}
+      ${podeEditar?'<button class="btn-primario" onclick="abrirModalPessoaMurillo()">+ Novo Cadastro</button>':''}
     </div>
-    ${somenteLeitura()?'<div class="aviso-perfil">Seu perfil possui acesso para visualização.</div>':''}
     <div class="barra-acoes" style="grid-template-columns:minmax(220px,1fr) 120px;">
-      <input id="fPessoaMurillo" placeholder="Buscar nome, telefone, bairro, CPF, RG ou título..." value="${escapar(filtro)}" oninput="filtrarPessoasMurillo()">
-      <button class="btn-secundario" onclick="window.irPara('pessoas')">↻ Atualizar</button>
+      <input id="fPessoaMurillo" placeholder="Buscar nome, telefone, bairro, CPF, RG, título ou e-mail..." value="${escapar(filtro)}" oninput="filtrarPessoasMurillo()">
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.pessoas()">↻ Atualizar</button>
     </div>
-    <div class="modulo-table-box">
-      <table class="modulo-table">
-        <thead><tr><th>Nome</th><th>Telefone</th><th>CPF</th><th>RG</th><th>Título</th><th>Bairro</th><th>Nascimento</th>${podeEditar?'<th>Ação</th>':''}</tr></thead>
-        <tbody>
-          ${lista.map(p=>`
-            <tr>
-              <td>${escapar(p.nome||'')}</td><td>${linkWhatsapp(p.telefone)}</td><td>${escapar(p.cpf||'-')}</td>
-              <td>${escapar(p.rg||'-')}</td><td>${escapar(p.tituloEleitor||'-')}</td><td>${escapar(p.bairro||'')}</td><td>${escapar(p.dataNascimento||'-')}</td>
-              ${podeEditar?`<td><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="abrirModalPessoaMurilloPorId('${p._docId}')">Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirPessoaMurillo('${p._docId}')">Excluir</button></div></td>`:''}
-            </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma pessoa encontrada.</td></tr>`}
-        </tbody>
-      </table>
-    </div>`;
+    <div class="tabela-box"><table style="min-width:1100px">
+      <thead><tr><th>Nome</th><th>Telefone</th><th>Nascimento</th><th>CPF</th><th>RG</th><th>Bairro</th><th>E-mail</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
+      <tbody>${lista.map(p=>`<tr class="pessoa-linha" ondblclick="abrirModalPessoaMurilloPorId('${p._docId}')" title="Clique duas vezes para abrir o cadastro completo">
+        <td class="td-esquerda"><b>${escapar(p.nome||'-')}</b></td><td>${linkWhatsapp(p.telefone)}</td><td>${escapar(p.dataNascimento||'-')}</td><td>${escapar(p.cpf||'-')}</td><td>${escapar(p.rg||'-')}</td><td>${escapar(p.bairro||'-')}</td><td>${escapar(p.email||'-')}</td>
+        ${podeEditar?`<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="event.stopPropagation();abrirModalPessoaMurilloPorId('${p._docId}')">Abrir</button></div></td>`:''}
+      </tr>`).join('')||`<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px">Nenhum cadastro encontrado.</td></tr>`}</tbody>
+    </table></div>`;
 }
 
-function filtrarPessoasMurillo(){
-  desenharPessoasMurillo(document.getElementById('fPessoaMurillo')?.value||'');
-}
+function filtrarPessoasMurillo(){desenharPessoasMurillo(document.getElementById('fPessoaMurillo')?.value||'')}
 window.filtrarPessoasMurillo=filtrarPessoasMurillo;
 
 function abrirModalPessoaMurilloPorId(id){
@@ -3663,30 +3686,94 @@ function abrirModalPessoaMurilloPorId(id){
 }
 window.abrirModalPessoaMurilloPorId=abrirModalPessoaMurilloPorId;
 
+function valorPessoaCampo(v){return escapar(v||'')}
+
+async function carregarHistoricoPessoa(pessoa){
+  if(!pessoa?._docId) return {itens:[],contagens:{atendimentos:0,transportes:0,equipamentos:0,agenda:0,eventos:0},anexos:0};
+  const nomes=['atendimentos','transportes','equipamentos','agendaEventos','eventos'];
+  const snaps=await Promise.all(nomes.map(n=>getDocs(collection(db,n)).catch(()=>null)));
+  const nomeRef=norm(pessoa.nome||'');
+  const casa=(r)=>{
+    if(String(r.pessoaId||'')===String(pessoa._docId)) return true;
+    if(!nomeRef) return false;
+    return ['nome','pessoa','beneficiario','solicitante','cidadao','participante'].some(k=>norm(r[k]||'')===nomeRef);
+  };
+  const itens=[]; const contagens={atendimentos:0,transportes:0,equipamentos:0,agenda:0,eventos:0}; let anexos=0;
+  snaps.forEach((snap,i)=>{
+    if(!snap) return;
+    const colecao=nomes[i];
+    snap.docs.forEach(d=>{
+      const r={_docId:d.id,...d.data()};
+      if(!casa(r)) return;
+      if(Array.isArray(r.anexos)) anexos+=r.anexos.length;
+      let tipo='',data='',desc='',status='';
+      if(colecao==='atendimentos'){contagens.atendimentos++;tipo='Atendimento';data=r.data||'';desc=r.tipoAtendimento||r.observacoes||'Atendimento';status=r.status||'';}
+      if(colecao==='transportes'){contagens.transportes++;tipo='Transporte';data=r.data||'';desc=[r.hospital,r.cidade].filter(Boolean).join(' • ')||r.observacoes||'Transporte';status=r.confirmado==='SIM'?'CONFIRMADO':r.espera==='SIM'?'LISTA DE ESPERA':'PENDENTE';}
+      if(colecao==='equipamentos'){contagens.equipamentos++;tipo='Equipamento';data=r.entrega||'';desc=r.equipamento||'Empréstimo';status=r.devolucao||'';}
+      if(colecao==='agendaEventos'){contagens.agenda++;tipo='Agenda';data=r.data||'';desc=r.titulo||r.tipo||'Compromisso';status=r.status||'';}
+      if(colecao==='eventos'){contagens.eventos++;tipo='Evento';data=r.data||'';desc=r.titulo||r.descricao||'Evento';status=r.status||'';}
+      itens.push({colecao,tipo,data,desc,status,registro:r});
+    });
+  });
+  const valorData=(v)=>{const iso=dataBRparaISO(v||'');return iso||'0000-00-00'};
+  itens.sort((a,b)=>valorData(b.data).localeCompare(valorData(a.data)));
+  return {itens,contagens,anexos};
+}
+
+function abrirRegistroHistoricoPessoa(colecao,id){
+  document.querySelector('.modal-cadastro-geral-fundo')?.remove();
+  irPara(colecao==='agendaEventos'?'agenda':colecao);
+}
+window.abrirRegistroHistoricoPessoa=abrirRegistroHistoricoPessoa;
+
+async function atualizarHistoricoPessoaModal(pessoa){
+  const area=document.getElementById('historicoPessoaConteudo');
+  if(!area||!pessoa?._docId) return;
+  try{
+    const h=await carregarHistoricoPessoa(pessoa);
+    const total=h.itens.length;
+    document.getElementById('histResumoPessoa').innerHTML=`
+      <div class="cadastro-geral-kpi"><b>${h.contagens.atendimentos}</b><span>Atendimentos</span></div>
+      <div class="cadastro-geral-kpi"><b>${h.contagens.transportes}</b><span>Transportes</span></div>
+      <div class="cadastro-geral-kpi"><b>${h.contagens.equipamentos}</b><span>Equipamentos</span></div>
+      <div class="cadastro-geral-kpi"><b>${h.contagens.agenda+h.contagens.eventos}</b><span>Agenda / Eventos</span></div>
+      <div class="cadastro-geral-kpi"><b>${h.anexos}</b><span>Documentos</span></div>`;
+    area.innerHTML=h.itens.length?`<div class="historico-geral">${h.itens.map(x=>`<div class="historico-item" onclick="abrirRegistroHistoricoPessoa('${x.colecao}','${x.registro._docId}')" title="Abrir módulo relacionado"><div class="h-data">${escapar(x.data||'-')}</div><div class="h-tipo">${escapar(x.tipo)}</div><div class="h-desc">${escapar(x.desc||'-')}</div><div class="h-status">${escapar(x.status||'-')}</div></div>`).join('')}</div>`:`<div class="historico-vazio">Nenhum histórico relacionado encontrado para esta pessoa.</div>`;
+    const totalEl=document.getElementById('histTotalPessoa'); if(totalEl) totalEl.textContent=total+' registro'+(total===1?'':'s');
+  }catch(e){area.innerHTML='<div class="historico-vazio">Não foi possível carregar o histórico: '+escapar(e.message||e)+'</div>'}
+}
+
 function abrirModalPessoaMurillo(registro={}){
-  if(somenteLeitura()) return;
+  if(somenteLeitura() && !registro._docId) return;
   const fundo=document.createElement('div');
-  fundo.className='modal-fundo';
+  fundo.className='modal-fundo modal-cadastro-geral-fundo';
   fundo.onclick=e=>{if(e.target===fundo)fundo.remove()};
-  fundo.innerHTML=`
-    <div class="modal" onclick="event.stopPropagation()">
-      <h2>${registro._docId?'Editar':'Nova'} Pessoa</h2>
-      <div class="campo-modal"><label>Nome</label><input id="p_nome" value="${escapar(registro.nome||'')}"></div>
-      <div class="grid-2">
-        <div class="campo-modal"><label>Telefone</label><input id="p_tel" value="${escapar(formatarTelefoneBR(registro.telefone||''))}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
-        <div class="campo-modal"><label>Data de nascimento</label><input id="p_nasc" type="date" value="${dataBRparaISO(registro.dataNascimento||'')}"></div>
-        <div class="campo-modal"><label>RG</label><input id="p_rg" value="${escapar(registro.rg||'')}"></div>
-        <div class="campo-modal"><label>CPF</label><input id="p_cpf" value="${escapar(registro.cpf||'')}"></div>
-      </div>
-      <div class="campo-modal"><label>Título de Eleitor</label><input id="p_titulo" value="${escapar(registro.tituloEleitor||'')}"></div>
-      <div class="grid-2">
-        <div class="campo-modal"><label>Bairro</label><input id="p_bairro" value="${escapar(registro.bairro||'')}"></div>
-        <div class="campo-modal"><label>Endereço</label><input id="p_endereco" value="${escapar(registro.endereco||'')}"></div>
-      </div>
-      <div class="campo-modal"><label>Observações</label><textarea id="p_obs">${escapar(registro.observacoes||'')}</textarea></div>
-      <div class="modal-acoes"><span></span><div style="display:flex;gap:8px"><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button><button class="btn-primario" id="btnSalvarPessoa" onclick="salvarPessoaMurillo('${registro._docId||''}')">Salvar</button></div></div>
-    </div>`;
+  const somente=somenteLeitura();
+  fundo.innerHTML=`<div class="modal modal-cadastro-geral" onclick="event.stopPropagation()">
+    <div class="cadastro-geral-cabecalho"><div><h2>${registro._docId?'Cadastro Completo':'Novo Cadastro'}</h2><p>${registro._docId?'Dados pessoais e histórico geral do relacionamento com o gabinete.':'Cadastre a pessoa uma única vez para reutilizar nos demais módulos.'}</p></div><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">✕</button></div>
+    <div class="cadastro-geral-grid">
+      <div class="campo-modal span-2"><label>Nome completo</label><input id="p_nome" ${somente?'disabled':''} value="${valorPessoaCampo(registro.nome)}"></div>
+      <div class="campo-modal"><label>Telefone / WhatsApp</label><input id="p_tel" ${somente?'disabled':''} value="${valorPessoaCampo(formatarTelefoneBR(registro.telefone))}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
+      <div class="campo-modal"><label>Data de nascimento</label><input id="p_nasc" ${somente?'disabled':''} type="date" value="${dataBRparaISO(registro.dataNascimento||'')}"></div>
+      <div class="campo-modal"><label>CPF</label><input id="p_cpf" ${somente?'disabled':''} value="${valorPessoaCampo(registro.cpf)}"></div>
+      <div class="campo-modal"><label>RG</label><input id="p_rg" ${somente?'disabled':''} value="${valorPessoaCampo(registro.rg)}"></div>
+      <div class="campo-modal"><label>Título de Eleitor</label><input id="p_titulo" ${somente?'disabled':''} value="${valorPessoaCampo(registro.tituloEleitor)}"></div>
+      <div class="campo-modal"><label>E-mail</label><input id="p_email" ${somente?'disabled':''} type="email" value="${valorPessoaCampo(registro.email)}"></div>
+      <div class="campo-modal span-2"><label>Endereço</label><input id="p_endereco" ${somente?'disabled':''} value="${valorPessoaCampo(registro.endereco)}"></div>
+      <div class="campo-modal"><label>Bairro</label><input id="p_bairro" ${somente?'disabled':''} value="${valorPessoaCampo(registro.bairro)}"></div>
+      <div class="campo-modal"><label>Cidade</label><input id="p_cidade" ${somente?'disabled':''} value="${valorPessoaCampo(registro.cidade)}"></div>
+      <div class="campo-modal"><label>CEP</label><input id="p_cep" ${somente?'disabled':''} value="${valorPessoaCampo(registro.cep)}"></div>
+      <div class="campo-modal"><label>Profissão</label><input id="p_profissao" ${somente?'disabled':''} value="${valorPessoaCampo(registro.profissao)}"></div>
+      <div class="campo-modal"><label>Cônjuge</label><input id="p_conjuge" ${somente?'disabled':''} value="${valorPessoaCampo(registro.conjuge)}"></div>
+      <div class="campo-modal"><label>Contato alternativo</label><input id="p_contatoAlt" ${somente?'disabled':''} value="${valorPessoaCampo(registro.contatoAlternativo)}"></div>
+      <div class="campo-modal"><label>Telefone alternativo</label><input id="p_telAlt" ${somente?'disabled':''} value="${valorPessoaCampo(formatarTelefoneBR(registro.telefoneAlternativo))}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
+      <div class="campo-modal span-4"><label>Observações gerais</label><textarea id="p_obs" ${somente?'disabled':''}>${valorPessoaCampo(registro.observacoes)}</textarea></div>
+    </div>
+    ${registro._docId?`<div class="cadastro-geral-secao"><div class="cadastro-geral-secao-topo"><h3>Histórico Geral</h3><span id="histTotalPessoa" style="font-size:10px;color:var(--texto-fraco)">Carregando...</span></div><div class="cadastro-geral-resumo" id="histResumoPessoa"></div><div id="historicoPessoaConteudo"><div class="historico-vazio">Carregando histórico...</div></div></div>`:''}
+    <div class="modal-acoes"><span></span><div style="display:flex;gap:8px"><button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Fechar</button>${!somente?`<button class="btn-primario" id="btnSalvarPessoa" onclick="salvarPessoaMurillo('${registro._docId||''}')">Salvar</button>`:''}</div></div>
+  </div>`;
   document.body.appendChild(fundo);
+  if(registro._docId) atualizarHistoricoPessoaModal(registro);
 }
 window.abrirModalPessoaMurillo=abrirModalPessoaMurillo;
 
@@ -3699,19 +3786,29 @@ async function salvarPessoaMurillo(id){
     rg:document.getElementById('p_rg').value.trim(),
     cpf:document.getElementById('p_cpf').value.trim(),
     tituloEleitor:document.getElementById('p_titulo').value.trim(),
+    email:document.getElementById('p_email').value.trim().toLowerCase(),
     bairro:maiusculo(document.getElementById('p_bairro').value),
     endereco:document.getElementById('p_endereco').value.trim(),
-    observacoes:document.getElementById('p_obs').value.trim()
+    cidade:maiusculo(document.getElementById('p_cidade').value),
+    cep:document.getElementById('p_cep').value.trim(),
+    profissao:maiusculo(document.getElementById('p_profissao').value),
+    conjuge:maiusculo(document.getElementById('p_conjuge').value),
+    contatoAlternativo:maiusculo(document.getElementById('p_contatoAlt').value),
+    telefoneAlternativo:formatarTelefoneBR(document.getElementById('p_telAlt').value),
+    observacoes:document.getElementById('p_obs').value.trim(),
+    ultimaEdicaoPor:USUARIO.nome,
+    ultimaEdicaoData:new Date().toLocaleString('pt-BR')
   };
   if(!dados.nome){alert('Preencha o nome.');return;}
   b.disabled=true;b.innerText='Salvando...';
   try{
     if(id) await updateDoc(doc(db,'pessoas',id),dados);
-    else await addDoc(collection(db,'pessoas'),dados);
-    document.querySelector('.modal-fundo')?.remove();
+    else {dados.criadoPor=USUARIO.nome;dados.criadoEm=new Date().toISOString();await addDoc(collection(db,'pessoas'),dados)}
+    document.querySelector('.modal-cadastro-geral-fundo')?.remove();
+    await carregarConfiguraveis();
     await window.RENDERIZADORES.pessoas();
   }catch(e){
-    alert('Não foi possível salvar a pessoa. ('+e.message+')');
+    alert('Não foi possível salvar o cadastro. ('+e.message+')');
     b.disabled=false;b.innerText='Salvar';
   }
 }
@@ -3719,7 +3816,7 @@ window.salvarPessoaMurillo=salvarPessoaMurillo;
 
 async function excluirPessoaMurillo(id){
   if(somenteLeitura()) return;
-  if(!confirm('Excluir esta pessoa do cadastro? Atendimentos/transportes/equipamentos já registrados não são apagados.')) return;
+  if(!confirm('Excluir este cadastro? O histórico operacional já registrado não será apagado.')) return;
   try{
     await deleteDoc(doc(db,'pessoas',id));
     await window.RENDERIZADORES.pessoas();
