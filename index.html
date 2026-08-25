@@ -374,6 +374,54 @@
   .dash-indicador span{font-size:8.5px;text-transform:uppercase;color:#7F91AA;font-weight:900;letter-spacing:.5px;}
   .dash-vazio{padding:28px 10px;text-align:center;color:var(--texto-fraco);font-size:11px;}
 
+
+  /* ===== DASHBOARD / CADASTRO GERAL — SEM BARRA DE ROLAGEM DA PÁGINA ===== */
+  main.modo-dashboard{overflow:hidden;padding:12px 12px 10px;display:block;}
+  main.modo-dashboard .dash-topo{margin-bottom:8px;}
+  main.modo-dashboard .dash-topo h2{font-size:22px;}
+  main.modo-dashboard .dash-topo p{margin-top:3px;font-size:10.5px;}
+  main.modo-dashboard .dash-kpis{gap:10px;margin-bottom:10px;}
+  main.modo-dashboard .dash-kpi{min-height:76px;padding:12px 14px 10px;}
+  main.modo-dashboard .dash-kpi .icone{width:30px;height:30px;right:11px;top:10px;font-size:13px;}
+  main.modo-dashboard .dash-kpi .valor{font-size:26px;}
+  main.modo-dashboard .dash-kpi .label{font-size:8px;margin-top:6px;}
+  main.modo-dashboard .dash-grid-2{gap:10px;margin-bottom:10px;}
+  main.modo-dashboard .dash-grid-3{gap:10px;margin-bottom:0;}
+  main.modo-dashboard .dash-card{padding:12px;}
+  main.modo-dashboard .dash-card h3{font-size:11px;}
+  main.modo-dashboard .dash-sub{font-size:9px;margin-top:2px;}
+  main.modo-dashboard .dash-status-wrap{min-height:160px;gap:18px;}
+  main.modo-dashboard .dash-donut{width:118px;height:118px;flex-basis:118px;}
+  main.modo-dashboard .dash-donut::after{inset:24px;}
+  main.modo-dashboard .dash-donut-centro b{font-size:21px;}
+  main.modo-dashboard .dash-legenda{gap:7px;}
+  main.modo-dashboard .dash-legenda-item{font-size:10px;}
+  main.modo-dashboard .dash-barras{gap:7px;margin-top:10px;}
+  main.modo-dashboard .dash-barra-linha{grid-template-columns:minmax(90px,150px) 1fr 30px;gap:8px;}
+  main.modo-dashboard .dash-barra-rot,main.modo-dashboard .dash-barra-num{font-size:9px;}
+  main.modo-dashboard .dash-pendencia-item{padding:7px 0;}
+  main.modo-dashboard .dash-pendencia-item b{font-size:10px;}
+  main.modo-dashboard .dash-pendencia-item span{font-size:8.5px;margin-top:2px;}
+  main.modo-dashboard .dash-pendencia-dias{font-size:10px!important;}
+  main.modo-dashboard .dash-agenda-lista{margin-top:8px;gap:5px;}
+  main.modo-dashboard .dash-agenda-item{padding:6px;}
+  main.modo-dashboard .acoes-rapidas{gap:6px;margin-top:8px;}
+  main.modo-dashboard .acao-rapida{padding:8px 7px;font-size:9.5px;}
+  main.modo-dashboard .acao-rapida span{font-size:13px;margin-bottom:3px;}
+
+  main.modo-pessoas{overflow:hidden;display:flex;flex-direction:column;padding:14px 14px 10px;}
+  main.modo-pessoas .topo-pagina-atend{flex:0 0 auto;margin-bottom:10px;}
+  main.modo-pessoas .barra-acoes{flex:0 0 auto;margin-bottom:10px;}
+  main.modo-pessoas .tabela-box{flex:1 1 auto;min-height:0;max-height:none;overflow:hidden;background:transparent;}
+  main.modo-pessoas .tabela-box table{min-width:0!important;width:100%;table-layout:fixed;background:var(--superficie);}
+  main.modo-pessoas .tabela-box thead th{padding:9px 7px;font-size:8px;}
+  main.modo-pessoas .tabela-box tbody td{padding:9px 7px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  main.modo-pessoas .tabela-box tbody tr{height:44px;}
+  .cadastro-paginacao{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0 0;}
+  .cadastro-paginacao .info{font-size:10px;color:var(--texto-fraco);min-width:150px;text-align:center;}
+  .cadastro-paginacao button{padding:7px 12px;font-size:10px;}
+  .cadastro-paginacao button:disabled{opacity:.35;cursor:default;}
+
   @media(max-width:1150px){
     .dash-kpis{grid-template-columns:repeat(3,1fr);}
     .dash-grid-3{grid-template-columns:1fr 1fr;}
@@ -1332,6 +1380,8 @@ function irPara(pagina) {
   paginaAtual = pagina;
   montarMenu();
   const conteudo = document.getElementById('conteudo');
+  conteudo.classList.toggle('modo-dashboard', pagina === 'dashboard');
+  conteudo.classList.toggle('modo-pessoas', pagina === 'pessoas');
   conteudo.classList.toggle('modo-agenda', pagina === 'agenda');
   conteudo.classList.toggle('modo-atendimentos', pagina === 'atendimentos');
   conteudo.classList.toggle('modo-transportes', pagina === 'transportes');
@@ -1720,13 +1770,7 @@ window.RENDERIZADORES.dashboard = async function () {
         <div class="dash-card"><h3>Pendências mais antigas</h3><div class="dash-sub">Atendimentos em análise que exigem atenção.</div>${pendencias.length?pendencias.map(a=>`<div class="dash-pendencia-item"><div><b>${escapar(a.nome||'-')}</b><span>${escapar(a.tipoAtendimento||'Atendimento')}</span></div><span class="dash-pendencia-dias">${a._dias} dias</span></div>`).join(''):'<div class="dash-vazio">Nenhuma pendência em análise.</div>'}</div>
         <div class="dash-card"><h3>Próximos Compromissos</h3><div class="dash-sub">Agenda do gabinete.</div>${agendaProxima.length?`<div class="dash-agenda-lista">${agendaProxima.map(e=>{const [y,m,d]=e.data.split('-');return `<div class="dash-agenda-item"><div class="dash-agenda-data">${d}/${m}<br>${escapar(e.hora||'--:--')}</div><div class="dash-agenda-texto"><b>${escapar(e.titulo||'Compromisso')}</b><span>${escapar(e.tipo||'')}${e.local?' · '+escapar(e.local):''}</span></div></div>`}).join('')}</div>`:'<div class="dash-vazio">Nenhum compromisso futuro.</div>'}</div>
         <div class="dash-card"><h3>Ações Rápidas</h3><div class="dash-sub">Acesso direto aos módulos.</div><div class="acoes-rapidas"><button class="acao-rapida" onclick="irPara('atendimentos')"><span>👥</span>Novo Atendimento</button><button class="acao-rapida" onclick="irPara('transportes')"><span>🚐</span>Solicitar Transporte</button><button class="acao-rapida" onclick="irPara('equipamentos')"><span>🏆</span>Novo Empréstimo</button><button class="acao-rapida" onclick="irPara('relatorios')"><span>📊</span>Ver Relatórios</button></div></div>
-      </div>
-      <div class="dash-card dash-equip-wrap"><h3>Equipamentos — Estoque e Disponibilidade</h3><div class="dash-sub">Estoque cadastrado em Configurações e disponibilidade calculada pelos empréstimos em uso.</div><div class="dash-equip-grid">${equipResumo.map(x=>`<div class="dash-equip-item"><h4>${escapar(x.nome)}</h4><div class="dash-equip-linha"><span>Estoque</span><b>${x.estoque}</b></div><div class="dash-equip-linha"><span>Em uso</span><b>${x.uso}</b></div><div class="dash-equip-disponivel ${x.disp===0?'zerado':''}"><span>Disponíveis</span><b>${x.disp}</b></div></div>`).join('')}</div><div class="dash-equip-resumo">Total físico em estoque: <b>${totalEstoque}</b> &nbsp; | &nbsp; Em uso: <b>${equipEmUso}</b> &nbsp; | &nbsp; Disponíveis: <b>${totalDisp}</b></div></div>
-      <div class="dash-grid-2">
-        <div class="dash-card"><h3>Últimos Atendimentos</h3><div class="dash-sub">Registros mais recentes.</div>${ultimos.length?`<div class="dash-lista">${ultimos.map(a=>`<div class="dash-lista-item"><b title="${escapar(a.nome||'-')}">${escapar(a.nome||'-')}</b><span>${escapar(a.tipoAtendimento||'-')}</span>${badgeStatus(a.status)}</div>`).join('')}</div>`:'<div class="dash-vazio">Nenhum atendimento.</div>'}</div>
-        <div class="dash-card"><h3>Bairros com mais Atendimentos</h3><div class="dash-sub">Bairros com maior volume.</div>${bairros.length?`<div class="dash-bairros">${bairros.map(([n,q])=>`<div class="dash-bairro-linha"><div class="nome">${escapar(n)}</div><div class="trilho"><div class="fill" style="width:${Math.max(5,q/maxBairro*100)}%"></div></div><b>${q}</b></div>`).join('')}</div>`:'<div class="dash-vazio">Sem bairros registrados.</div>'}</div>
-      </div>
-      <div class="dash-rodape"><div class="dash-indicador"><b>${atendMes}</b><span>Atendimentos no mês</span></div><div class="dash-indicador"><b>${mediaDias.toFixed(1)} dias</b><span>Tempo médio de resolução</span></div><div class="dash-indicador"><b>${resolutividade}%</b><span>Resolutividade</span></div></div>`;
+      </div>`;
   }catch(e){console.error('Erro Dashboard:',e);c.innerHTML='<div class="painel-box">Não foi possível carregar o Dashboard. '+String(e.message||e)+'</div>'}
 };
 
@@ -3630,6 +3674,10 @@ async function excluirEvtMurillo(id){
 }
 window.excluirEvtMurillo = excluirEvtMurillo;
 
+let paginaCadastroGeral = 1;
+const ITENS_POR_PAGINA_CADASTRO = 10;
+let filtroCadastroGeralAtual = '';
+
 window.RENDERIZADORES.pessoas = async function(){
   const c=document.getElementById('conteudo');
   c.innerHTML='<div class="carregando-tela">Carregando Cadastro Geral...</div>';
@@ -3637,6 +3685,8 @@ window.RENDERIZADORES.pessoas = async function(){
     const snap=await getDocs(collection(db,'pessoas'));
     pessoasCache=snap.docs.map(d=>({_docId:d.id,...d.data()}))
       .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
+    paginaCadastroGeral=1;
+    filtroCadastroGeralAtual='';
     desenharPessoasMurillo('');
   }catch(e){
     c.innerHTML='<div class="painel-box">Não foi possível carregar o Cadastro Geral. '+escapar(e.message||e)+'</div>';
@@ -3655,6 +3705,12 @@ function desenharPessoasMurillo(filtro=''){
   const lista=!f?pessoasCache:pessoasCache.filter(p=>
     norm(p.nome).includes(f)||norm(p.bairro).includes(f)||norm(p.cpf).includes(f)||norm(p.rg).includes(f)||norm(p.tituloEleitor).includes(f)||norm(p.telefone).includes(f)||norm(p.email).includes(f)
   );
+  filtroCadastroGeralAtual=filtro;
+  const totalPaginas=Math.max(1,Math.ceil(lista.length/ITENS_POR_PAGINA_CADASTRO));
+  if(paginaCadastroGeral>totalPaginas) paginaCadastroGeral=totalPaginas;
+  if(paginaCadastroGeral<1) paginaCadastroGeral=1;
+  const inicioPagina=(paginaCadastroGeral-1)*ITENS_POR_PAGINA_CADASTRO;
+  const listaPagina=lista.slice(inicioPagina,inicioPagina+ITENS_POR_PAGINA_CADASTRO);
 
   c.innerHTML=`
     <div class="topo-pagina-atend">
@@ -3673,15 +3729,29 @@ function desenharPessoasMurillo(filtro=''){
     </div>
     <div class="tabela-box"><table style="min-width:1100px">
       <thead><tr><th>Nome</th><th>Telefone</th><th>Nascimento</th><th>CPF</th><th>RG</th><th>Bairro</th><th>E-mail</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
-      <tbody>${lista.map(p=>`<tr class="pessoa-linha" ondblclick="abrirModalPessoaMurilloPorId('${p._docId}')" title="Clique duas vezes para abrir o cadastro completo">
+      <tbody>${listaPagina.map(p=>`<tr class="pessoa-linha" ondblclick="abrirModalPessoaMurilloPorId('${p._docId}')" title="Clique duas vezes para abrir o cadastro completo">
         <td class="td-esquerda"><b>${escapar(p.nome||'-')}</b></td><td>${linkWhatsapp(p.telefone)}</td><td>${escapar(p.dataNascimento||'-')}</td><td>${escapar(p.cpf||'-')}</td><td>${escapar(p.rg||'-')}</td><td>${escapar(p.bairro||'-')}</td><td>${escapar(p.email||'-')}</td>
         ${podeEditar?`<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="event.stopPropagation();abrirModalPessoaMurilloPorId('${p._docId}')">Abrir</button></div></td>`:''}
       </tr>`).join('')||`<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px">Nenhum cadastro encontrado.</td></tr>`}</tbody>
-    </table></div>`;
+    </table></div>
+    <div class="cadastro-paginacao">
+      <button class="btn-secundario" ${paginaCadastroGeral<=1?'disabled':''} onclick="mudarPaginaCadastroGeral(-1)">← Anterior</button>
+      <div class="info">Página <b style="color:#fff">${paginaCadastroGeral}</b> de <b style="color:#fff">${totalPaginas}</b> · ${lista.length} cadastro(s)</div>
+      <button class="btn-secundario" ${paginaCadastroGeral>=totalPaginas?'disabled':''} onclick="mudarPaginaCadastroGeral(1)">Próxima →</button>
+    </div>`;
 }
 
-function filtrarPessoasMurillo(){desenharPessoasMurillo(document.getElementById('fPessoaMurillo')?.value||'')}
+function filtrarPessoasMurillo(){
+  paginaCadastroGeral=1;
+  desenharPessoasMurillo(document.getElementById('fPessoaMurillo')?.value||'');
+}
 window.filtrarPessoasMurillo=filtrarPessoasMurillo;
+
+function mudarPaginaCadastroGeral(delta){
+  paginaCadastroGeral+=Number(delta)||0;
+  desenharPessoasMurillo(filtroCadastroGeralAtual||'');
+}
+window.mudarPaginaCadastroGeral=mudarPaginaCadastroGeral;
 
 function abrirModalPessoaMurilloPorId(id){
   abrirModalPessoaMurillo(pessoasCache.find(p=>p._docId===id)||{});
