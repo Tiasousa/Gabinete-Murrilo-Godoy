@@ -170,7 +170,10 @@
   main.modo-atendimentos tbody td{padding:8px 6px;line-height:1.22;border-bottom:1px solid rgba(49,81,113,.42);white-space:normal;overflow-wrap:anywhere;word-break:normal;}
   main.modo-atendimentos tbody tr:last-child td{border-bottom:none;}
   main.modo-atendimentos .td-wrap{min-width:0;white-space:normal;}
-  main.modo-atendimentos .td-obs{min-width:0;max-width:none;white-space:normal;overflow:hidden;text-overflow:ellipsis;display:table-cell;}
+  main.modo-atendimentos .td-obs{min-width:0;max-width:none;white-space:normal;overflow:hidden;vertical-align:middle;}
+  main.modo-atendimentos .obs-resumo{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;max-height:2.45em;line-height:1.22;cursor:pointer;color:inherit;}
+  main.modo-atendimentos .td-obs:hover .obs-resumo{color:#DCE8F8;}
+  main.modo-atendimentos tbody tr{height:58px;}
   main.modo-atendimentos .acoes-linha{gap:4px;justify-content:center;flex-wrap:wrap;white-space:normal;}
   main.modo-atendimentos .btn-tabela{padding:5px 7px;font-size:9px;}
   main.modo-atendimentos .badge{padding:3px 6px;font-size:9px;gap:4px;white-space:nowrap;}
@@ -2143,6 +2146,33 @@ function aplicarFiltroAtend() {
 }
 window.aplicarFiltroAtend = aplicarFiltroAtend;
 
+function resumirObservacaoAtendimento(texto, limite=58) {
+  const valor = String(texto || '').replace(/\s+/g, ' ').trim();
+  if (!valor) return '—';
+  return valor.length > limite ? valor.slice(0, limite).trimEnd() + '…' : valor;
+}
+
+function abrirModalObservacaoAtendimento(observacao, nome='') {
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo';
+  fundo.onclick = e => { if (e.target === fundo) fundo.remove(); };
+
+  const tituloNome = nome ? ` — ${escapar(nome)}` : '';
+  const texto = String(observacao || '').trim();
+  fundo.innerHTML = `
+    <div class="modal" style="max-width:760px;" onclick="event.stopPropagation()">
+      <h2 style="margin-bottom:8px;">Observação completa${tituloNome}</h2>
+      <div style="font-size:10px;color:var(--texto-fraco);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:14px;">Atendimento</div>
+      <div style="background:var(--superficie-sutil);border:1px solid var(--borda);border-radius:12px;padding:18px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55;font-size:13.5px;max-height:55vh;overflow-y:auto;">${texto ? escapar(texto) : 'Sem observação registrada.'}</div>
+      <div class="modal-acoes" style="justify-content:flex-end;">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Fechar</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(fundo);
+}
+window.abrirModalObservacaoAtendimento = abrirModalObservacaoAtendimento;
+
 function desenharAtendimentos() {
   const c = document.getElementById('conteudo');
   const lista = atendimentosCache.filter(a => {
@@ -2214,7 +2244,13 @@ function desenharAtendimentos() {
               <td>${valorSeguro(a.finalizado || a.dataFinalizacao || a.finalizadoEm)}</td>
               <td style="text-align:center;">${cicloDiasAtendimento(a)}</td>
               <td style="text-align:center;">${a.qtdAnexos ? '📎 '+a.qtdAnexos : (Array.isArray(a.anexos) && a.anexos.length ? '📎 '+a.anexos.length : '—')}</td>
-              <td class="td-obs td-esquerda" title="${String(a.observacoes||'').replace(/"/g,'&quot;')}">${valorSeguro(a.observacoes)}</td>
+              <td class="td-obs td-esquerda"
+                  data-obs="${escapar(a.observacoes||'')}"
+                  data-nome="${escapar(a.nome||'')}"
+                  title="Dois cliques para ver a observação completa"
+                  ondblclick="event.stopPropagation();abrirModalObservacaoAtendimento(this.dataset.obs,this.dataset.nome)">
+                <div class="obs-resumo">${escapar(resumirObservacaoAtendimento(a.observacoes))}</div>
+              </td>
               ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirAtendimento('${a._docId}')">Excluir</button></div></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${podeEditar ? 14 : 13}" style="text-align:center;color:var(--texto-fraco);padding:24px;">${filtroAtendTexto || filtroAtendTipo || filtroAtendStatus ? 'Nenhum resultado.' : 'Nenhum atendimento cadastrado ainda.'}</td></tr>`}
