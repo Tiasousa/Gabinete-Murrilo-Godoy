@@ -868,6 +868,89 @@
     table{font-size:11px;}
   }
 
+
+  /* ===== RESPONSIVIDADE COMPLETA — DESKTOP + CELULAR ===== */
+  html,body,#app{max-width:100%;overflow-x:hidden;}
+  main{scrollbar-width:none;-ms-overflow-style:none;}
+  main::-webkit-scrollbar,.tabela-box::-webkit-scrollbar,.modal::-webkit-scrollbar{display:none;width:0;height:0;}
+
+  /* Cadastro Geral: todos os registros ficam disponíveis; busca filtra a base completa. */
+  main.modo-pessoas{min-width:0;}
+  main.modo-pessoas .tabela-box{max-height:none;overflow:visible;background:transparent;}
+  main.modo-pessoas table{min-width:0!important;width:100%;table-layout:fixed;}
+  main.modo-pessoas th,main.modo-pessoas td{overflow:hidden;text-overflow:ellipsis;}
+
+  @media(max-width:820px){
+    /* Cabeçalho compacto */
+    #app{height:100dvh;}
+    .cabecalho-fixo{position:sticky;top:0;z-index:1000;}
+    header.topo-app{min-height:58px;padding:7px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;}
+    .logo-topo{grid-column:1}.saudacao-bloco{grid-column:2;min-width:0}.topo-direita{grid-column:3;margin:0;gap:5px;}
+    .logo-topo img{height:34px;max-width:68px}.saudacao-bloco h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .assinatura-topo-badge{display:none}.perfil-topo{padding-left:6px;border-left:0}.avatar-topo{width:34px;height:34px;flex-basis:34px}.data-topo{display:none}#btnSair{padding:7px 9px;font-size:10px;}
+
+    /* Menu móvel: uma única faixa, rola suavemente sem barra cinza. */
+    nav.menu-nav-topo{padding:0 6px;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none;}
+    nav.menu-nav-topo::-webkit-scrollbar{display:none;width:0;height:0;}
+    nav.menu-nav-topo button{padding:10px 11px;font-size:11px;scroll-snap-align:start;}
+
+    main{padding:12px 10px 28px;overflow-y:auto;overflow-x:hidden;}
+    .topo-pagina,.topo-pagina-atend{display:flex;flex-direction:column;align-items:stretch;gap:9px;margin-bottom:10px;}
+    .topo-pagina-atend .btn-primario,.topo-pagina .btn-primario{width:100%;justify-self:auto;}
+    .kpis-faixa{display:grid;grid-template-columns:1fr 1fr;width:100%;}
+    .kpi-faixa-item{padding:7px 10px}.kpi-faixa-item .num{font-size:20px}.kpi-faixa-item .rot{font-size:7.8px}
+    .barra-acoes,.barra-acoes[style]{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;margin-bottom:10px;}
+
+    /* Dashboard responsivo sem largura fixa nem barra lateral. */
+    main.modo-dashboard{padding:12px 10px 30px!important;overflow-y:auto!important;overflow-x:hidden!important;}
+    main.modo-dashboard .dash-topo{align-items:flex-start;margin-bottom:10px;}
+    main.modo-dashboard .dash-topo h2{font-size:20px;}
+    main.modo-dashboard .dash-kpis{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+    main.modo-dashboard .dash-kpi{min-height:78px;padding:12px 12px 10px}.dash-kpi .valor{font-size:24px}.dash-kpi .icone{width:29px;height:29px;right:9px;top:9px}.dash-kpi .label{font-size:7.8px;margin-top:6px;}
+    main.modo-dashboard .dash-grid-2,main.modo-dashboard .dash-grid-3,main.modo-dashboard .dash-rodape{grid-template-columns:1fr!important;gap:9px;margin-bottom:9px;}
+    main.modo-dashboard .dash-card{padding:12px;}
+    main.modo-dashboard .dash-status-wrap{min-height:0;gap:12px;flex-direction:row;align-items:center;}
+    main.modo-dashboard .dash-donut{width:112px;height:112px;flex-basis:112px}.dash-donut::after{inset:23px}.dash-donut-centro b{font-size:20px}
+    main.modo-dashboard .dash-equip-grid{grid-template-columns:1fr 1fr;gap:7px;}
+
+    /* Tabelas operacionais viram cards no celular: sem rolagem horizontal. */
+    main.modo-atendimentos,main.modo-transportes,main.modo-equipamentos,main.modo-pessoas{display:block!important;overflow-y:auto!important;overflow-x:hidden!important;padding:12px 10px 28px!important;}
+    main.modo-atendimentos .tabela-box,main.modo-transportes .tabela-box,main.modo-equipamentos .tabela-box,main.modo-pessoas .tabela-box{overflow:visible!important;max-height:none!important;width:100%!important;}
+    main.modo-atendimentos table,main.modo-transportes table,main.modo-equipamentos table,main.modo-pessoas table{display:block!important;min-width:0!important;width:100%!important;background:transparent!important;table-layout:auto!important;}
+    main.modo-atendimentos thead,main.modo-transportes thead,main.modo-equipamentos thead,main.modo-pessoas thead{display:none!important;}
+    main.modo-atendimentos tbody,main.modo-transportes tbody,main.modo-equipamentos tbody,main.modo-pessoas tbody{display:block!important;width:100%!important;}
+    main.modo-atendimentos tbody tr,main.modo-transportes tbody tr,main.modo-equipamentos tbody tr,main.modo-pessoas tbody tr{display:grid!important;grid-template-columns:1fr 1fr!important;gap:0 12px!important;height:auto!important;margin:0 0 9px!important;padding:10px 11px!important;background:var(--superficie)!important;border:1px solid var(--borda)!important;border-radius:12px!important;box-shadow:0 5px 16px rgba(0,0,0,.12);}
+    main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{display:block!important;width:auto!important;min-width:0!important;padding:6px 0!important;border-bottom:1px solid rgba(255,255,255,.055)!important;text-align:left!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;}
+    main.modo-atendimentos tbody td::before,main.modo-transportes tbody td::before,main.modo-equipamentos tbody td::before,main.modo-pessoas tbody td::before{content:attr(data-label);display:block;margin-bottom:2px;font-size:7.5px;line-height:1.1;color:#7892B6;font-weight:900;text-transform:uppercase;letter-spacing:.45px;}
+    main.modo-atendimentos tbody td:last-child,main.modo-transportes tbody td:last-child,main.modo-equipamentos tbody td:last-child,main.modo-pessoas tbody td:last-child{border-bottom:0;}
+    main.modo-atendimentos tbody td[data-label="Nome"],main.modo-transportes tbody td[data-label="Nome"],main.modo-equipamentos tbody td[data-label="Nome"],main.modo-pessoas tbody td[data-label="Nome"]{grid-column:1/-1;font-size:13px;padding-top:2px!important;}
+    main.modo-atendimentos tbody td[data-label="OBS."],main.modo-atendimentos tbody td[data-label="Obs."],main.modo-transportes tbody td[data-label="Observações"],main.modo-transportes tbody td[data-label="OBS."],main.modo-equipamentos tbody td[data-label="Observações"],main.modo-equipamentos tbody td[data-label="OBS."],main.modo-pessoas tbody td[data-label="E-mail"]{grid-column:1/-1;}
+    main.modo-atendimentos .acoes-linha,main.modo-transportes .acoes-linha,main.modo-equipamentos .acoes-linha,main.modo-pessoas .acoes-linha{justify-content:flex-start!important;flex-wrap:wrap!important;}
+    main.modo-atendimentos tbody td[data-label="Ações"],main.modo-transportes tbody td[data-label="Ações"],main.modo-equipamentos tbody td[data-label="Ações"],main.modo-pessoas tbody td[data-label="Ações"]{grid-column:1/-1;border-bottom:0!important;}
+
+    /* Modais: desktop horizontal; celular ocupa a tela e reorganiza em uma coluna. A rolagem permanece funcional, mas invisível. */
+    .modal-fundo{padding:7px!important;align-items:flex-start!important;overflow:hidden!important;}
+    .modal,.modal.modal-operacao,.modal.modal-atendimento,.modal.modal-cadastro-geral,.gcal-modal{width:100%!important;max-width:none!important;height:calc(100dvh - 14px)!important;max-height:none!important;border-radius:15px!important;padding:14px 12px 12px!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important;}
+    .modal::-webkit-scrollbar,.gcal-modal::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+    .modal-operacao-grid,.modal-atendimento-grid,.cadastro-geral-grid{grid-template-columns:1fr!important;gap:8px!important;}
+    .modal-operacao-grid .span-2,.modal-operacao-grid .span-4,.modal-atendimento-grid .span-2,.modal-atendimento-grid .span-4,.cadastro-geral-grid .span-2,.cadastro-geral-grid .span-4{grid-column:1!important;}
+    .cadastro-geral-cabecalho{position:sticky;top:-14px;z-index:5;background:var(--superficie);padding:4px 0 9px;margin-bottom:7px;}
+    .cadastro-geral-secao{flex:0 0 auto;min-height:auto;}
+    .modal.modal-cadastro-geral #historicoPessoaConteudo{overflow:visible!important;flex:none!important;}
+    .cadastro-geral-resumo{grid-template-columns:1fr 1fr!important;}
+    .historico-item{grid-template-columns:72px 1fr!important;gap:5px!important;}
+    .historico-item .h-tipo{grid-column:2}.historico-item .h-desc{grid-column:1/-1}.historico-item .h-status{display:none;}
+    .modal-acoes{position:sticky;bottom:-12px;background:var(--superficie);padding:9px 0 2px;margin-top:10px!important;z-index:5;}
+  }
+
+  @media(max-width:520px){
+    main.modo-dashboard .dash-kpis{grid-template-columns:1fr 1fr;}
+    main.modo-dashboard .dash-status-wrap{flex-direction:column;align-items:flex-start;}
+    main.modo-atendimentos tbody tr,main.modo-transportes tbody tr,main.modo-equipamentos tbody tr,main.modo-pessoas tbody tr{grid-template-columns:1fr!important;}
+    main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{grid-column:1!important;}
+    .cadastro-geral-resumo{grid-template-columns:1fr 1fr!important;}
+  }
+
   /* ===== ADMIN — USUÁRIOS E CONFIGURAÇÕES ===== */
   .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
   .admin-card{background:var(--superficie);border:1px solid var(--borda);border-radius:var(--raio-m);padding:18px;min-width:0;}
@@ -1395,6 +1478,21 @@ function irPara(pagina) {
   }
 }
 window.irPara = irPara;
+
+function aplicarRotulosResponsivosTabelas(raiz=document){
+  raiz.querySelectorAll('table').forEach(tabela=>{
+    const cabecalhos=[...tabela.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    tabela.querySelectorAll('tbody tr').forEach(tr=>{
+      [...tr.children].forEach((td,i)=>{
+        if(td.tagName==='TD' && !td.dataset.label) td.dataset.label=cabecalhos[i]||'';
+      });
+    });
+  });
+}
+window.aplicarRotulosResponsivosTabelas=aplicarRotulosResponsivosTabelas;
+const observadorTabelasResponsivas=new MutationObserver(()=>aplicarRotulosResponsivosTabelas(document));
+observadorTabelasResponsivas.observe(document.getElementById('conteudo'),{childList:true,subtree:true});
+
 
 
 function fecharMenuPerfil(){
@@ -3674,8 +3772,6 @@ async function excluirEvtMurillo(id){
 }
 window.excluirEvtMurillo = excluirEvtMurillo;
 
-let paginaCadastroGeral = 1;
-const ITENS_POR_PAGINA_CADASTRO = 10;
 let filtroCadastroGeralAtual = '';
 
 window.RENDERIZADORES.pessoas = async function(){
@@ -3685,7 +3781,6 @@ window.RENDERIZADORES.pessoas = async function(){
     const snap=await getDocs(collection(db,'pessoas'));
     pessoasCache=snap.docs.map(d=>({_docId:d.id,...d.data()}))
       .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||'')));
-    paginaCadastroGeral=1;
     filtroCadastroGeralAtual='';
     desenharPessoasMurillo('');
   }catch(e){
@@ -3706,11 +3801,6 @@ function desenharPessoasMurillo(filtro=''){
     norm(p.nome).includes(f)||norm(p.bairro).includes(f)||norm(p.cpf).includes(f)||norm(p.rg).includes(f)||norm(p.tituloEleitor).includes(f)||norm(p.telefone).includes(f)||norm(p.email).includes(f)
   );
   filtroCadastroGeralAtual=filtro;
-  const totalPaginas=Math.max(1,Math.ceil(lista.length/ITENS_POR_PAGINA_CADASTRO));
-  if(paginaCadastroGeral>totalPaginas) paginaCadastroGeral=totalPaginas;
-  if(paginaCadastroGeral<1) paginaCadastroGeral=1;
-  const inicioPagina=(paginaCadastroGeral-1)*ITENS_POR_PAGINA_CADASTRO;
-  const listaPagina=lista.slice(inicioPagina,inicioPagina+ITENS_POR_PAGINA_CADASTRO);
 
   c.innerHTML=`
     <div class="topo-pagina-atend">
@@ -3729,29 +3819,18 @@ function desenharPessoasMurillo(filtro=''){
     </div>
     <div class="tabela-box"><table style="min-width:1100px">
       <thead><tr><th>Nome</th><th>Telefone</th><th>Nascimento</th><th>CPF</th><th>RG</th><th>Bairro</th><th>E-mail</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
-      <tbody>${listaPagina.map(p=>`<tr class="pessoa-linha" ondblclick="abrirModalPessoaMurilloPorId('${p._docId}')" title="Clique duas vezes para abrir o cadastro completo">
+      <tbody>${lista.map(p=>`<tr class="pessoa-linha" ondblclick="abrirModalPessoaMurilloPorId('${p._docId}')" title="Clique duas vezes para abrir o cadastro completo">
         <td class="td-esquerda"><b>${escapar(p.nome||'-')}</b></td><td>${linkWhatsapp(p.telefone)}</td><td>${escapar(p.dataNascimento||'-')}</td><td>${escapar(p.cpf||'-')}</td><td>${escapar(p.rg||'-')}</td><td>${escapar(p.bairro||'-')}</td><td>${escapar(p.email||'-')}</td>
         ${podeEditar?`<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="event.stopPropagation();abrirModalPessoaMurilloPorId('${p._docId}')">Abrir</button></div></td>`:''}
       </tr>`).join('')||`<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px">Nenhum cadastro encontrado.</td></tr>`}</tbody>
-    </table></div>
-    <div class="cadastro-paginacao">
-      <button class="btn-secundario" ${paginaCadastroGeral<=1?'disabled':''} onclick="mudarPaginaCadastroGeral(-1)">← Anterior</button>
-      <div class="info">Página <b style="color:#fff">${paginaCadastroGeral}</b> de <b style="color:#fff">${totalPaginas}</b> · ${lista.length} cadastro(s)</div>
-      <button class="btn-secundario" ${paginaCadastroGeral>=totalPaginas?'disabled':''} onclick="mudarPaginaCadastroGeral(1)">Próxima →</button>
-    </div>`;
+    </table></div>`;
 }
 
 function filtrarPessoasMurillo(){
-  paginaCadastroGeral=1;
   desenharPessoasMurillo(document.getElementById('fPessoaMurillo')?.value||'');
 }
 window.filtrarPessoasMurillo=filtrarPessoasMurillo;
 
-function mudarPaginaCadastroGeral(delta){
-  paginaCadastroGeral+=Number(delta)||0;
-  desenharPessoasMurillo(filtroCadastroGeralAtual||'');
-}
-window.mudarPaginaCadastroGeral=mudarPaginaCadastroGeral;
 
 function abrirModalPessoaMurilloPorId(id){
   abrirModalPessoaMurillo(pessoasCache.find(p=>p._docId===id)||{});
