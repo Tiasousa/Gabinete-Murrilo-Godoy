@@ -409,18 +409,15 @@
   main.modo-dashboard .acao-rapida{padding:8px 7px;font-size:9.5px;}
   main.modo-dashboard .acao-rapida span{font-size:13px;margin-bottom:3px;}
 
-  main.modo-pessoas{overflow:hidden;display:flex;flex-direction:column;padding:14px 14px 10px;}
+  main.modo-pessoas{overflow:hidden;display:flex;flex-direction:column;padding:14px 14px 10px;min-width:0;}
   main.modo-pessoas .topo-pagina-atend{flex:0 0 auto;margin-bottom:10px;}
   main.modo-pessoas .barra-acoes{flex:0 0 auto;margin-bottom:10px;}
-  main.modo-pessoas .tabela-box{flex:1 1 auto;min-height:0;max-height:none;overflow:hidden;background:transparent;}
-  main.modo-pessoas .tabela-box table{min-width:0!important;width:100%;table-layout:fixed;background:var(--superficie);}
-  main.modo-pessoas .tabela-box thead th{padding:9px 7px;font-size:8px;}
+  main.modo-pessoas .tabela-box{flex:1 1 0;min-height:0;max-height:none;width:100%;overflow:auto;background:transparent;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-width:none;-ms-overflow-style:none;}
+  main.modo-pessoas .tabela-box::-webkit-scrollbar{display:none;width:0;height:0;}
+  main.modo-pessoas .tabela-box table{min-width:1100px!important;width:100%;table-layout:fixed;background:var(--superficie);}
+  main.modo-pessoas .tabela-box thead th{position:sticky;top:0;z-index:8;padding:9px 7px;font-size:8px;background:#09192B;}
   main.modo-pessoas .tabela-box tbody td{padding:9px 7px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   main.modo-pessoas .tabela-box tbody tr{height:44px;}
-  .cadastro-paginacao{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0 0;}
-  .cadastro-paginacao .info{font-size:10px;color:var(--texto-fraco);min-width:150px;text-align:center;}
-  .cadastro-paginacao button{padding:7px 12px;font-size:10px;}
-  .cadastro-paginacao button:disabled{opacity:.35;cursor:default;}
 
   @media(max-width:1150px){
     .dash-kpis{grid-template-columns:repeat(3,1fr);}
@@ -869,40 +866,81 @@
   }
 
 
-  /* ===== RESPONSIVIDADE COMPLETA — DESKTOP + CELULAR ===== */
-  html,body,#app{max-width:100%;overflow-x:hidden;}
-  main{scrollbar-width:none;-ms-overflow-style:none;}
-  main::-webkit-scrollbar,.tabela-box::-webkit-scrollbar,.modal::-webkit-scrollbar{display:none;width:0;height:0;}
+  /* ===== RESPONSIVIDADE REAL — TV, DESKTOP, NOTEBOOK, TABLET E CELULAR ===== */
+  html,body{width:100%;max-width:100%;height:100%;margin:0;}
+  body{overflow:hidden;}
+  #app{width:100%;max-width:100%;height:100dvh;min-height:100vh;overflow:hidden;}
 
-  /* Cadastro Geral: todos os registros ficam disponíveis; busca filtra a base completa. */
-  main.modo-pessoas{min-width:0;}
-  main.modo-pessoas .tabela-box{max-height:none;overflow:visible;background:transparent;}
-  main.modo-pessoas table{min-width:0!important;width:100%;table-layout:fixed;}
-  main.modo-pessoas th,main.modo-pessoas td{overflow:hidden;text-overflow:ellipsis;}
+  /* Rolagem funcional em qualquer direção, sem barras visíveis. */
+  main,.tabela-box,nav.menu-nav-topo,.modal,.admin-table-box,.admin-lista,.gcal-shell,.gcal-toolbar{scrollbar-width:none;-ms-overflow-style:none;}
+  main::-webkit-scrollbar,.tabela-box::-webkit-scrollbar,nav.menu-nav-topo::-webkit-scrollbar,.modal::-webkit-scrollbar,.admin-table-box::-webkit-scrollbar,.admin-lista::-webkit-scrollbar,.gcal-shell::-webkit-scrollbar,.gcal-toolbar::-webkit-scrollbar{display:none;width:0;height:0;}
 
+  /* As quatro telas de operação ocupam toda a área útil. A tabela é a área de rolagem. */
+  main.modo-atendimentos,main.modo-transportes,main.modo-equipamentos,main.modo-pessoas{flex:1;min-height:0;min-width:0;overflow:hidden;display:flex;flex-direction:column;}
+  main.modo-atendimentos .topo-pagina-atend,main.modo-transportes .topo-pagina-atend,main.modo-equipamentos .topo-pagina-atend,main.modo-pessoas .topo-pagina-atend,
+  main.modo-atendimentos .barra-acoes,main.modo-transportes .barra-acoes,main.modo-equipamentos .barra-acoes,main.modo-pessoas .barra-acoes{flex:0 0 auto;}
+  main.modo-atendimentos .tabela-box,main.modo-transportes .tabela-box,main.modo-equipamentos .tabela-box,main.modo-pessoas .tabela-box{flex:1 1 0;min-height:0;max-height:none;width:100%;overflow:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;background:transparent;}
+
+  /* Em telas largas a tabela aproveita 100%. Se faltar espaço, mantém largura legível e rola lateralmente. */
+  main.modo-atendimentos table{width:100%;min-width:1180px;table-layout:fixed;}
+  main.modo-transportes table{width:100%;min-width:1050px;table-layout:fixed;}
+  main.modo-equipamentos table{width:100%;min-width:820px;table-layout:fixed;}
+  main.modo-pessoas table{width:100%;min-width:1100px!important;table-layout:fixed;}
+  main.modo-atendimentos thead th,main.modo-transportes thead th,main.modo-equipamentos thead th,main.modo-pessoas thead th{position:sticky;top:0;z-index:8;background:#09192B;}
+
+  /* Cadastro Geral: todos os registros ficam em sequência. Não existe paginação visual. */
+  .cadastro-paginacao{display:none!important;}
+
+  /* TV e monitores grandes */
+  @media(min-width:1800px){
+    header.topo-app{padding-left:32px;padding-right:32px;}
+    nav.menu-nav-topo{padding-left:28px;padding-right:28px;}
+    main{padding-left:clamp(24px,1.6vw,42px);padding-right:clamp(24px,1.6vw,42px);}
+    main.modo-dashboard{padding-left:clamp(18px,1.3vw,34px)!important;padding-right:clamp(18px,1.3vw,34px)!important;}
+    .dash-kpi .valor{font-size:clamp(27px,1.6vw,34px);}
+    main.modo-atendimentos table,main.modo-transportes table,main.modo-equipamentos table,main.modo-pessoas table{min-width:100%;}
+  }
+
+  /* Notebook e tablet horizontal */
+  @media(max-width:1180px){
+    .topo-pagina-atend{grid-template-columns:1fr;}
+    .topo-pagina-atend .btn-primario{justify-self:start;}
+    .kpis-faixa{width:100%;}
+    .data-topo{display:none;}
+    header.topo-app{padding-left:14px;padding-right:14px;}
+    nav.menu-nav-topo{padding:0 10px;overflow-x:auto;}
+    main{padding-left:14px;padding-right:14px;}
+  }
+
+  /* Tablet e celular: mantém tabela de verdade, com rolagem lateral invisível. */
   @media(max-width:820px){
-    /* Cabeçalho compacto */
-    #app{height:100dvh;}
     .cabecalho-fixo{position:sticky;top:0;z-index:1000;}
-    header.topo-app{min-height:58px;padding:7px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;}
+    header.topo-app{min-height:58px;padding:7px 10px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;}
     .logo-topo{grid-column:1}.saudacao-bloco{grid-column:2;min-width:0}.topo-direita{grid-column:3;margin:0;gap:5px;}
-    .logo-topo img{height:34px;max-width:68px}.saudacao-bloco h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .assinatura-topo-badge{display:none}.perfil-topo{padding-left:6px;border-left:0}.avatar-topo{width:34px;height:34px;flex-basis:34px}.data-topo{display:none}#btnSair{padding:7px 9px;font-size:10px;}
+    .logo-topo img{height:34px;max-width:68px}.marca-topo{display:none}.saudacao-bloco h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.saudacao-bloco .sub{display:none;}
+    .assinatura-topo-badge{display:none}.perfil-topo{padding-left:6px;border-left:0}.avatar-topo{width:34px;height:34px;flex-basis:34px}.perfil-texto{display:none}.data-topo{display:none}.notificacao-topo{display:none}#btnSair{padding:7px 9px;font-size:10px;}
 
-    /* Menu móvel: uma única faixa, rola suavemente sem barra cinza. */
-    nav.menu-nav-topo{padding:0 6px;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none;}
-    nav.menu-nav-topo::-webkit-scrollbar{display:none;width:0;height:0;}
+    nav.menu-nav-topo{padding:0 6px;gap:0;overflow-x:auto;scroll-snap-type:x proximity;}
     nav.menu-nav-topo button{padding:10px 11px;font-size:11px;scroll-snap-align:start;}
 
-    main{padding:12px 10px 28px;overflow-y:auto;overflow-x:hidden;}
-    .topo-pagina,.topo-pagina-atend{display:flex;flex-direction:column;align-items:stretch;gap:9px;margin-bottom:10px;}
-    .topo-pagina-atend .btn-primario,.topo-pagina .btn-primario{width:100%;justify-self:auto;}
-    .kpis-faixa{display:grid;grid-template-columns:1fr 1fr;width:100%;}
+    main{padding:12px 10px 16px;}
+    main.modo-atendimentos,main.modo-transportes,main.modo-equipamentos,main.modo-pessoas{padding:12px 10px 10px!important;}
+    .topo-pagina,.topo-pagina-atend{gap:9px;margin-bottom:10px;}
+    .topo-pagina-atend{display:grid;grid-template-columns:1fr;}
+    .topo-pagina-atend .btn-primario,.topo-pagina .btn-primario{width:100%;}
+    .kpis-faixa{grid-template-columns:1fr 1fr;}
     .kpi-faixa-item{padding:7px 10px}.kpi-faixa-item .num{font-size:20px}.kpi-faixa-item .rot{font-size:7.8px}
-    .barra-acoes,.barra-acoes[style]{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;margin-bottom:10px;}
+    .barra-acoes,.barra-acoes[style]{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important;margin-bottom:10px;}
 
-    /* Dashboard responsivo sem largura fixa nem barra lateral. */
-    main.modo-dashboard{padding:12px 10px 30px!important;overflow-y:auto!important;overflow-x:hidden!important;}
+    main.modo-atendimentos table{min-width:1120px;table-layout:auto;}
+    main.modo-transportes table{min-width:980px;table-layout:auto;}
+    main.modo-equipamentos table{min-width:760px;table-layout:auto;}
+    main.modo-pessoas table{min-width:1000px!important;table-layout:auto;}
+    main.modo-atendimentos thead th,main.modo-transportes thead th,main.modo-equipamentos thead th,main.modo-pessoas thead th,
+    main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{white-space:nowrap;}
+
+    /* Dashboard se reorganiza, sem deixar área desperdiçada. */
+    main.modo-dashboard{padding:12px 10px 22px!important;overflow-y:auto!important;overflow-x:hidden!important;}
     main.modo-dashboard .dash-topo{align-items:flex-start;margin-bottom:10px;}
     main.modo-dashboard .dash-topo h2{font-size:20px;}
     main.modo-dashboard .dash-kpis{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
@@ -913,41 +951,23 @@
     main.modo-dashboard .dash-donut{width:112px;height:112px;flex-basis:112px}.dash-donut::after{inset:23px}.dash-donut-centro b{font-size:20px}
     main.modo-dashboard .dash-equip-grid{grid-template-columns:1fr 1fr;gap:7px;}
 
-    /* Tabelas operacionais viram cards no celular: sem rolagem horizontal. */
-    main.modo-atendimentos,main.modo-transportes,main.modo-equipamentos,main.modo-pessoas{display:block!important;overflow-y:auto!important;overflow-x:hidden!important;padding:12px 10px 28px!important;}
-    main.modo-atendimentos .tabela-box,main.modo-transportes .tabela-box,main.modo-equipamentos .tabela-box,main.modo-pessoas .tabela-box{overflow:visible!important;max-height:none!important;width:100%!important;}
-    main.modo-atendimentos table,main.modo-transportes table,main.modo-equipamentos table,main.modo-pessoas table{display:block!important;min-width:0!important;width:100%!important;background:transparent!important;table-layout:auto!important;}
-    main.modo-atendimentos thead,main.modo-transportes thead,main.modo-equipamentos thead,main.modo-pessoas thead{display:none!important;}
-    main.modo-atendimentos tbody,main.modo-transportes tbody,main.modo-equipamentos tbody,main.modo-pessoas tbody{display:block!important;width:100%!important;}
-    main.modo-atendimentos tbody tr,main.modo-transportes tbody tr,main.modo-equipamentos tbody tr,main.modo-pessoas tbody tr{display:grid!important;grid-template-columns:1fr 1fr!important;gap:0 12px!important;height:auto!important;margin:0 0 9px!important;padding:10px 11px!important;background:var(--superficie)!important;border:1px solid var(--borda)!important;border-radius:12px!important;box-shadow:0 5px 16px rgba(0,0,0,.12);}
-    main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{display:block!important;width:auto!important;min-width:0!important;padding:6px 0!important;border-bottom:1px solid rgba(255,255,255,.055)!important;text-align:left!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;}
-    main.modo-atendimentos tbody td::before,main.modo-transportes tbody td::before,main.modo-equipamentos tbody td::before,main.modo-pessoas tbody td::before{content:attr(data-label);display:block;margin-bottom:2px;font-size:7.5px;line-height:1.1;color:#7892B6;font-weight:900;text-transform:uppercase;letter-spacing:.45px;}
-    main.modo-atendimentos tbody td:last-child,main.modo-transportes tbody td:last-child,main.modo-equipamentos tbody td:last-child,main.modo-pessoas tbody td:last-child{border-bottom:0;}
-    main.modo-atendimentos tbody td[data-label="Nome"],main.modo-transportes tbody td[data-label="Nome"],main.modo-equipamentos tbody td[data-label="Nome"],main.modo-pessoas tbody td[data-label="Nome"]{grid-column:1/-1;font-size:13px;padding-top:2px!important;}
-    main.modo-atendimentos tbody td[data-label="OBS."],main.modo-atendimentos tbody td[data-label="Obs."],main.modo-transportes tbody td[data-label="Observações"],main.modo-transportes tbody td[data-label="OBS."],main.modo-equipamentos tbody td[data-label="Observações"],main.modo-equipamentos tbody td[data-label="OBS."],main.modo-pessoas tbody td[data-label="E-mail"]{grid-column:1/-1;}
-    main.modo-atendimentos .acoes-linha,main.modo-transportes .acoes-linha,main.modo-equipamentos .acoes-linha,main.modo-pessoas .acoes-linha{justify-content:flex-start!important;flex-wrap:wrap!important;}
-    main.modo-atendimentos tbody td[data-label="Ações"],main.modo-transportes tbody td[data-label="Ações"],main.modo-equipamentos tbody td[data-label="Ações"],main.modo-pessoas tbody td[data-label="Ações"]{grid-column:1/-1;border-bottom:0!important;}
-
-    /* Modais: desktop horizontal; celular ocupa a tela e reorganiza em uma coluna. A rolagem permanece funcional, mas invisível. */
+    /* Modais usam a tela disponível e continuam rolando sem barra aparente. */
     .modal-fundo{padding:7px!important;align-items:flex-start!important;overflow:hidden!important;}
-    .modal,.modal.modal-operacao,.modal.modal-atendimento,.modal.modal-cadastro-geral,.gcal-modal{width:100%!important;max-width:none!important;height:calc(100dvh - 14px)!important;max-height:none!important;border-radius:15px!important;padding:14px 12px 12px!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important;}
-    .modal::-webkit-scrollbar,.gcal-modal::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+    .modal,.modal.modal-operacao,.modal.modal-atendimento,.modal.modal-cadastro-geral,.gcal-modal{width:100%!important;max-width:none!important;height:calc(100dvh - 14px)!important;max-height:none!important;border-radius:15px!important;padding:14px 12px 12px!important;overflow:auto!important;scrollbar-width:none!important;-ms-overflow-style:none!important;}
     .modal-operacao-grid,.modal-atendimento-grid,.cadastro-geral-grid{grid-template-columns:1fr!important;gap:8px!important;}
     .modal-operacao-grid .span-2,.modal-operacao-grid .span-4,.modal-atendimento-grid .span-2,.modal-atendimento-grid .span-4,.cadastro-geral-grid .span-2,.cadastro-geral-grid .span-4{grid-column:1!important;}
-    .cadastro-geral-cabecalho{position:sticky;top:-14px;z-index:5;background:var(--superficie);padding:4px 0 9px;margin-bottom:7px;}
     .cadastro-geral-secao{flex:0 0 auto;min-height:auto;}
     .modal.modal-cadastro-geral #historicoPessoaConteudo{overflow:visible!important;flex:none!important;}
     .cadastro-geral-resumo{grid-template-columns:1fr 1fr!important;}
-    .historico-item{grid-template-columns:72px 1fr!important;gap:5px!important;}
-    .historico-item .h-tipo{grid-column:2}.historico-item .h-desc{grid-column:1/-1}.historico-item .h-status{display:none;}
-    .modal-acoes{position:sticky;bottom:-12px;background:var(--superficie);padding:9px 0 2px;margin-top:10px!important;z-index:5;}
   }
 
   @media(max-width:520px){
+    .saudacao-bloco{min-width:0;}
+    .topo-pagina h2,.topo-pagina-atend h2{font-size:18px;}
+    .kpis-faixa-item .num{font-size:19px;}
     main.modo-dashboard .dash-kpis{grid-template-columns:1fr 1fr;}
     main.modo-dashboard .dash-status-wrap{flex-direction:column;align-items:flex-start;}
-    main.modo-atendimentos tbody tr,main.modo-transportes tbody tr,main.modo-equipamentos tbody tr,main.modo-pessoas tbody tr{grid-template-columns:1fr!important;}
-    main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{grid-column:1!important;}
+    main.modo-pessoas table{min-width:940px!important;}
     .cadastro-geral-resumo{grid-template-columns:1fr 1fr!important;}
   }
 
