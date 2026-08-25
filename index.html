@@ -179,8 +179,8 @@
   main.modo-atendimentos .badge{padding:3px 6px;font-size:9px;gap:4px;white-space:nowrap;}
   main.modo-atendimentos .link-wa{white-space:normal;}
 
-  main.modo-atendimentos th:nth-child(1),main.modo-atendimentos td:nth-child(1){width:5.5%;}
-  main.modo-atendimentos th:nth-child(2),main.modo-atendimentos td:nth-child(2){width:10.5%;}
+  main.modo-atendimentos th:nth-child(1),main.modo-atendimentos td:nth-child(1){width:10.5%;}
+  main.modo-atendimentos th:nth-child(2),main.modo-atendimentos td:nth-child(2){width:5.5%;}
   main.modo-atendimentos th:nth-child(3),main.modo-atendimentos td:nth-child(3){width:8%;}
   main.modo-atendimentos th:nth-child(4),main.modo-atendimentos td:nth-child(4){width:10%;}
   main.modo-atendimentos th:nth-child(5),main.modo-atendimentos td:nth-child(5){width:7%;}
@@ -2225,15 +2225,15 @@ function desenharAtendimentos() {
     <div class="tabela-box">
       <table>
         <thead><tr>
-          <th>Data</th><th>Nome</th><th>Telefone</th><th>Endereço</th><th>Bairro</th><th>Tipo</th><th>Status</th>
+          <th>Nome</th><th>Data</th><th>Telefone</th><th>Endereço</th><th>Bairro</th><th>Tipo</th><th>Status</th>
           <th>Indicador</th><th>Responsável</th><th>Finalizado</th><th>Ciclo (dias)</th><th>Anexos</th><th>Obs.</th>
           ${podeEditar ? '<th>Ações</th>' : ''}
         </tr></thead>
         <tbody>
           ${lista.map(a => `
             <tr ${podeEditar ? `ondblclick='abrirModalAtendimento(${JSON.stringify(a).replace(/'/g, "&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-              <td>${valorSeguro(a.data)}</td>
               <td class="td-wrap td-esquerda">${valorSeguro(a.nome)}</td>
+              <td>${valorSeguro(a.data)}</td>
               <td>${a.telefone ? linkWhatsapp(a.telefone) : '—'}</td>
               <td class="td-wrap td-esquerda">${valorSeguro(a.endereco)}</td>
               <td class="td-wrap">${valorSeguro(a.bairro)}</td>
