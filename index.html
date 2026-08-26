@@ -2704,6 +2704,16 @@ function desenharAtendimentos() {
     const bateTipo = !filtroAtendTipo || norm(a.tipoAtendimento) === norm(filtroAtendTipo);
     const bateStatus = !filtroAtendStatus || norm(a.status) === norm(filtroAtendStatus);
     return bateTexto && bateTipo && bateStatus;
+  }).sort((a,b) => {
+    // Ordem cronológica do atendimento: mais recente primeiro.
+    // Registros sem data válida ficam no fim da lista.
+    const dataA = parseDataBR(a.data);
+    const dataB = parseDataBR(b.data);
+    const tempoA = dataA ? dataA.getTime() : -Infinity;
+    const tempoB = dataB ? dataB.getTime() : -Infinity;
+    if (tempoB !== tempoA) return tempoB - tempoA;
+    // Em caso de mesma data, mantém uma ordem estável por nome.
+    return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
   });
   const podeEditar = !somenteLeitura();
 
