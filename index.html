@@ -1498,7 +1498,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  onSnapshot, collection, query, orderBy, limit
+  onSnapshot, collection, query, orderBy, limit, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 // Firebase Storage (usado só pelo recurso pago de anexos) é carregado sob demanda,
 // não no boot do app — assim quem não usa anexos não espera esse download extra
@@ -3332,7 +3332,13 @@ function atualizarEstadoGoogleAgenda(){
         ? 'A agenda oficial já está compartilhada. Clique somente se precisar reconectar a conta Google oficial.'
         : 'Conectar a conta Google oficial do gabinete.';
   }
-  if(sync) sync.disabled=!googleTokenValido() || googleCarregando;
+  if(sync){
+    sync.disabled=!googleTokenValido() || googleCarregando;
+    sync.innerHTML=googleCarregando ? '⏳' : '↻';
+    sync.title=googleCarregando
+      ? 'Sincronizando com o Google Agenda — aguarde terminar antes de conferir os compromissos.'
+      : 'Atualizar Google Agenda';
+  }
 }
 
 function esperarGIS(timeout=10000){
@@ -3416,17 +3422,27 @@ async function garantirCalendarioOficial(){
 }
 
 async function aplicarRespostaGoogleNoFirestore(itens){
-  for(const ev of itens||[]){
-    if(!ev?.id) continue;
-    if(ev.status==='cancelled'){
-      await deleteDoc(doc(db,'agendaGoogleSync',ev.id)).catch(()=>{});
-      continue;
+  if(!itens || !itens.length) return;
+  const TAMANHO_LOTE=450; // Firestore permite até 500 operações por lote — 450 dá margem de segurança
+  for(let i=0;i<itens.length;i+=TAMANHO_LOTE){
+    const fatia=itens.slice(i,i+TAMANHO_LOTE);
+    const lote=writeBatch(db);
+    let temAlgumaOperacao=false;
+    for(const ev of fatia){
+      if(!ev?.id) continue;
+      if(ev.status==='cancelled'){
+        lote.delete(doc(db,'agendaGoogleSync',ev.id));
+        temAlgumaOperacao=true;
+        continue;
+      }
+      const convertido=dataHoraGoogleParaCampos(ev);
+      if(!convertido.data) continue;
+      lote.set(doc(db,'agendaGoogleSync',ev.id),{
+        ...convertido,sincronizadoPor:USUARIO?.nome||'',sincronizadoEm:new Date().toISOString()
+      },{merge:true});
+      temAlgumaOperacao=true;
     }
-    const convertido=dataHoraGoogleParaCampos(ev);
-    if(!convertido.data) continue;
-    await setDoc(doc(db,'agendaGoogleSync',ev.id),{
-      ...convertido,sincronizadoPor:USUARIO?.nome||'',sincronizadoEm:new Date().toISOString()
-    },{merge:true});
+    if(temAlgumaOperacao) await lote.commit();
   }
 }
 
@@ -3491,10 +3507,25 @@ async function processarFilaAgendaLocalNoGoogle(){
   }
 }
 
+function mostrarBannerSincronizandoGoogle(mostrar){
+  let banner=document.getElementById('bannerSyncGoogle');
+  if(mostrar){
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='bannerSyncGoogle';
+      banner.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#1F6FD1;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;box-shadow:0 8px 20px rgba(0,0,0,.35);';
+      banner.textContent='⏳ Sincronizando com o Google Agenda... não feche nem recarregue a página.';
+      document.body.appendChild(banner);
+    }
+  }else if(banner){
+    banner.remove();
+  }
+}
+
 async function carregarEventosGoogleMes(forcar=false){
   if(!googleTokenValido()) return;
   if(googleCarregando && !forcar) return;
-  googleCarregando=true;atualizarEstadoGoogleAgenda();
+  googleCarregando=true;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(true);
   try{
     await garantirCalendarioOficial();
     await processarFilaAgendaLocalNoGoogle();
@@ -3512,7 +3543,7 @@ async function carregarEventosGoogleMes(forcar=false){
     const snapLocal=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snapLocal.docs.map(d=>({_docId:d.id,...d.data()}));
     desenharAgenda();
-  }finally{googleCarregando=false;atualizarEstadoGoogleAgenda();}
+  }finally{googleCarregando=false;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(false);}
 }
 window.carregarEventosGoogleMes=carregarEventosGoogleMes;
 
