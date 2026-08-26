@@ -3223,7 +3223,10 @@ let googleCalendarIdAtual = 'primary';
 let googleSilenciosoEmAndamento = false;
 
 const GOOGLE_CALENDAR_CLIENT_ID = '1039162247732-09p5akmko66785vljicdmna9shgpo2eo.apps.googleusercontent.com';
-const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+const GOOGLE_CALENDAR_SCOPE = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.calendars.readonly'
+].join(' ');
 const GOOGLE_CALENDAR_ID = 'primary';
 const GOOGLE_SYNC_META_DOC = '__meta__';
 
@@ -3519,7 +3522,7 @@ async function conectarGoogleAgenda(){
       catch(e){googleAccessToken='';googleTokenExpiraEm=0;atualizarEstadoGoogleAgenda();console.error(e);alert(e.message||'Não foi possível sincronizar a Agenda Google.');}
     });
     if(googleTokenValido()){await carregarEventosGoogleMes(true);return;}
-    googleTokenClient.requestAccessToken({prompt:'select_account'});
+    googleTokenClient.requestAccessToken({prompt:'consent select_account'});
   }catch(e){console.error(e);alert('Não foi possível iniciar a conexão com o Google Agenda: '+e.message);}
 }
 window.conectarGoogleAgenda=conectarGoogleAgenda;
