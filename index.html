@@ -3455,10 +3455,16 @@ async function recarregarCacheGoogleCompartilhado(){
 async function sincronizacaoCompletaGoogle(){
   let paginaToken=null,nextSyncToken='',totalRecebidos=0;
   do{
-    const params=new URLSearchParams({singleEvents:'true',showDeleted:'true',maxResults:'2500',timeZone:'America/Sao_Paulo'});
+    // showDeleted removido daqui: numa sincronização do ZERO não faz
+    // sentido pedir eventos cancelados de anos atrás — isso só inflava
+    // o volume de páginas, deixando o processo mais lento e mais
+    // sujeito a travar no meio (na incremental, showDeleted continua
+    // fazendo sentido, porque aí sim precisamos saber o que sumiu).
+    const params=new URLSearchParams({singleEvents:'true',maxResults:'2500',timeZone:'America/Sao_Paulo'});
     if(paginaToken) params.set('pageToken',paginaToken);
     const dados=await googleApi(`/calendars/${encodeURIComponent(googleCalendarIdAtual)}/events?${params.toString()}`);
     const itens=dados.items||[];totalRecebidos+=itens.length;
+    mostrarBannerSincronizandoGoogle(true,`${totalRecebidos} compromissos processados até agora`);
     await aplicarRespostaGoogleNoFirestore(itens);
     paginaToken=dados.nextPageToken||null;
     if(dados.nextSyncToken) nextSyncToken=dados.nextSyncToken;
@@ -3507,16 +3513,16 @@ async function processarFilaAgendaLocalNoGoogle(){
   }
 }
 
-function mostrarBannerSincronizandoGoogle(mostrar){
+function mostrarBannerSincronizandoGoogle(mostrar,textoProgresso){
   let banner=document.getElementById('bannerSyncGoogle');
   if(mostrar){
     if(!banner){
       banner=document.createElement('div');
       banner.id='bannerSyncGoogle';
       banner.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#1F6FD1;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;box-shadow:0 8px 20px rgba(0,0,0,.35);';
-      banner.textContent='⏳ Sincronizando com o Google Agenda... não feche nem recarregue a página.';
       document.body.appendChild(banner);
     }
+    banner.textContent='⏳ Sincronizando com o Google Agenda'+(textoProgresso?' — '+textoProgresso:'...')+' — não feche nem recarregue a página.';
   }else if(banner){
     banner.remove();
   }
@@ -3543,6 +3549,12 @@ async function carregarEventosGoogleMes(forcar=false){
     const snapLocal=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snapLocal.docs.map(d=>({_docId:d.id,...d.data()}));
     desenharAgenda();
+  }catch(erroSincronizacao){
+    // Antes esse erro sumia em silêncio (a faixa azul só desaparecia,
+    // dando a impressão de que tinha terminado normal). Agora aparece
+    // de verdade, pra sabermos exatamente onde travou.
+    console.error('Erro na sincronização do Google Agenda:',erroSincronizacao);
+    alert('A sincronização parou no meio do caminho: '+(erroSincronizacao.message||erroSincronizacao)+'\n\nOs compromissos que já tinham sido processados até aqui foram salvos — clique em sincronizar de novo pra continuar de onde parou.');
   }finally{googleCarregando=false;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(false);}
 }
 window.carregarEventosGoogleMes=carregarEventosGoogleMes;
