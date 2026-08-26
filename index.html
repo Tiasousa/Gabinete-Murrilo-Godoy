@@ -3357,11 +3357,16 @@ function criarTokenClientGoogle(callback){
 function dataHoraGoogleParaCampos(ev){
   const start=ev.start||{};
   const end=ev.end||{};
-  const data=start.date || (start.dateTime ? start.dateTime.slice(0,10) : '');
-  let hora='', horaFim='';
+  let hora='', horaFim='', data='';
   if(start.dateTime){
+    // Antes usava start.dateTime.slice(0,10), que pega a data em UTC —
+    // eventos à noite (ou de madrugada) ficavam um dia deslocados na
+    // grade. Agora usa a data LOCAL (mesmo fuso já usado pra hora).
     const ds=new Date(start.dateTime);
+    data=dataISOlocal(ds);
     hora=String(ds.getHours()).padStart(2,'0')+':'+String(ds.getMinutes()).padStart(2,'0');
+  } else if(start.date){
+    data=start.date; // evento de dia inteiro, sem hora — já vem como YYYY-MM-DD puro, sem fuso
   }
   if(end.dateTime){
     const de=new Date(end.dateTime);
