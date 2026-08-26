@@ -1304,6 +1304,28 @@ input[type="date"] { cursor: pointer; }
   .dropdown-app-opcao{width:100%;border:0;background:transparent;color:#F5F8FC;text-align:left;padding:10px 11px;border-radius:7px;font-size:13px;line-height:1.2;}
   .dropdown-app-opcao:hover,.dropdown-app-opcao.ativo{background:#17304C;color:#fff;}
   @media(max-width:820px){.dropdown-app-lista{position:fixed;left:12px;right:12px;top:auto;bottom:14px;max-height:52dvh;border-radius:14px;padding:7px;z-index:3000}.dropdown-app-opcao{padding:12px 11px;font-size:14px;}}
+
+
+  /* ===== AJUSTE FINAL DASHBOARD DESKTOP — 1 TELA, SEM ROLAGEM EXTERNA ===== */
+  @media(min-width:821px){
+    main.modo-dashboard{
+      overflow:hidden!important;
+      overscroll-behavior:none!important;
+      scrollbar-width:none!important;
+      -ms-overflow-style:none!important;
+    }
+    main.modo-dashboard::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+    /* Somente a lista de pendências pode rolar internamente. */
+    main.modo-dashboard .dash-pendencias-scroll{
+      overflow-y:auto!important;
+      overflow-x:hidden!important;
+      overscroll-behavior:contain!important;
+      scrollbar-width:none!important;
+      -ms-overflow-style:none!important;
+    }
+    main.modo-dashboard .dash-pendencias-scroll::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+  }
+
 </style>
 </head>
 <body>
@@ -1694,6 +1716,7 @@ function irPara(pagina) {
   paginaAtual = pagina;
   montarMenu();
   const conteudo = document.getElementById('conteudo');
+  if (pagina === 'dashboard') conteudo.scrollTop = 0;
   conteudo.classList.toggle('modo-dashboard', pagina === 'dashboard');
   conteudo.classList.toggle('modo-pessoas', pagina === 'pessoas');
   conteudo.classList.toggle('modo-agenda', pagina === 'agenda');
