@@ -3311,6 +3311,16 @@ async function carregarMetaGoogleSync(){
   }
 }
 
+// Lista TODOS os calendários visíveis da conta conectada — antes só
+// buscávamos do calendário "primary", e por isso eventos que estavam
+// em outros calendários dentro da mesma conta (cada um com uma cor
+// diferente na tela do Google) nunca eram sincronizados.
+async function listarTodosCalendariosDaConta(){
+  const dados=await googleApi('/users/me/calendarList?minAccessRole=reader&showHidden=false');
+  const itens=dados.items||[];
+  return itens.filter(c=>!c.deleted).map(c=>c.id);
+}
+
 async function salvarMetaGoogleSync(patch){
   await setDoc(doc(db,'agendaGoogleSync',GOOGLE_SYNC_META_DOC),{
     ...patch,
@@ -3453,23 +3463,23 @@ async function recarregarCacheGoogleCompartilhado(){
 }
 
 async function sincronizacaoCompletaGoogle(){
-  let paginaToken=null,nextSyncToken='',totalRecebidos=0;
-  do{
-    // showDeleted removido daqui: numa sincronização do ZERO não faz
-    // sentido pedir eventos cancelados de anos atrás — isso só inflava
-    // o volume de páginas, deixando o processo mais lento e mais
-    // sujeito a travar no meio (na incremental, showDeleted continua
-    // fazendo sentido, porque aí sim precisamos saber o que sumiu).
-    const params=new URLSearchParams({singleEvents:'true',maxResults:'2500',timeZone:'America/Sao_Paulo'});
-    if(paginaToken) params.set('pageToken',paginaToken);
-    const dados=await googleApi(`/calendars/${encodeURIComponent(googleCalendarIdAtual)}/events?${params.toString()}`);
-    const itens=dados.items||[];totalRecebidos+=itens.length;
-    mostrarBannerSincronizandoGoogle(true,`${totalRecebidos} compromissos processados até agora`);
-    await aplicarRespostaGoogleNoFirestore(itens);
-    paginaToken=dados.nextPageToken||null;
-    if(dados.nextSyncToken) nextSyncToken=dados.nextSyncToken;
-  }while(paginaToken);
-  if(nextSyncToken) await salvarMetaGoogleSync({nextSyncToken,ultimaSincronizacao:new Date().toISOString(),tipoUltimaSincronizacao:'COMPLETA',totalRecebidos});
+  const calendarios=await listarTodosCalendariosDaConta();
+  let totalRecebidos=0;
+  for(const idCalendario of calendarios){
+    let paginaToken=null;
+    do{
+      // showDeleted removido: numa sincronização do ZERO não faz sentido
+      // pedir eventos cancelados de anos atrás — só inflava o volume.
+      const params=new URLSearchParams({singleEvents:'true',maxResults:'2500',timeZone:'America/Sao_Paulo'});
+      if(paginaToken) params.set('pageToken',paginaToken);
+      const dados=await googleApi(`/calendars/${encodeURIComponent(idCalendario)}/events?${params.toString()}`);
+      const itens=dados.items||[];totalRecebidos+=itens.length;
+      mostrarBannerSincronizandoGoogle(true,`${totalRecebidos} compromissos processados até agora (${calendarios.length} calendários no total)`);
+      await aplicarRespostaGoogleNoFirestore(itens);
+      paginaToken=dados.nextPageToken||null;
+    }while(paginaToken);
+  }
+  await salvarMetaGoogleSync({ultimaSincronizacao:new Date().toISOString(),tipoUltimaSincronizacao:'COMPLETA',totalRecebidos,totalCalendarios:calendarios.length});
   return totalRecebidos;
 }
 
@@ -3536,25 +3546,11 @@ async function carregarEventosGoogleMes(forcar=false){
   if(googleCarregando && !forcar) return;
   googleCarregando=true;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(true);
   let totalProcessadoNestaRodada=0;
-  let tipoRodada='';
+  const tipoRodada='completa (todos os calendários da conta)';
   try{
     await garantirCalendarioOficial();
     await processarFilaAgendaLocalNoGoogle();
-    const meta=await carregarMetaGoogleSync();
-    if(meta.nextSyncToken){
-      tipoRodada='atualização (incremental)';
-      try{totalProcessadoNestaRodada=await sincronizacaoIncrementalGoogle(meta.nextSyncToken);}
-      catch(e){
-        if(e.status===410){
-          await salvarMetaGoogleSync({nextSyncToken:'',syncTokenExpiradoEm:new Date().toISOString()});
-          tipoRodada='completa (o marcador anterior expirou)';
-          totalProcessadoNestaRodada=await sincronizacaoCompletaGoogle();
-        }else throw e;
-      }
-    }else{
-      tipoRodada='completa (do zero)';
-      totalProcessadoNestaRodada=await sincronizacaoCompletaGoogle();
-    }
+    totalProcessadoNestaRodada=await sincronizacaoCompletaGoogle();
     await recarregarCacheGoogleCompartilhado();
     const snapLocal=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snapLocal.docs.map(d=>({_docId:d.id,...d.data()}));
