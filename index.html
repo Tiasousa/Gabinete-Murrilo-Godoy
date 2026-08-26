@@ -2560,7 +2560,7 @@ document.addEventListener('input', (ev) => {
 
 function abrirModalAtendimento(registro) {
   registro = registro || {};
-  const opcoesTipo = tiposAtendimentoCache.length ? tiposAtendimentoCache.map(t => t.nome) : TIPOS_ATENDIMENTO;
+  const opcoesTipo = [...new Set([...TIPOS_ATENDIMENTO, ...tiposAtendimentoCache.map(t => String(t.nome || '').trim()).filter(Boolean)])].sort((a,b) => a.localeCompare(b, 'pt-BR'));
   const fundo = document.createElement('div');
   fundo.className = 'modal-fundo modal-atendimento-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
@@ -4185,13 +4185,21 @@ function desenharConfiguracoesAdmin(){
         </div>
 
         <div class="admin-lista">
-          ${tiposAtendimentoCache.map(t => `
+          ${[...TIPOS_ATENDIMENTO].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(nome => `
+            <div class="admin-item">
+              <span>${escapar(nome)}</span>
+              <span style="font-size:10px;color:#7892B6;font-weight:800;text-transform:uppercase;">Padrão</span>
+            </div>
+          `).join('')}
+          ${tiposAtendimentoCache
+            .filter(t => t && String(t.nome || '').trim() && !TIPOS_ATENDIMENTO.some(p => norm(p) === norm(t.nome)))
+            .map(t => `
             <div class="admin-item">
               <span>${escapar(t.nome || '')}</span>
               <button class="btn-secundario" style="padding:5px 10px;font-size:11px;"
                 onclick="excluirTipoAtendimentoAdmin('${t._docId}')">Excluir</button>
             </div>
-          `).join('') || '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum tipo cadastrado ainda.</div>'}
+          `).join('')}
         </div>
       </div>
 
