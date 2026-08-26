@@ -887,7 +887,7 @@
     header.topo-app{min-height:58px;padding:7px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;}
     .logo-topo{grid-column:1}.saudacao-bloco{grid-column:2;min-width:0}.topo-direita{grid-column:3;margin:0;gap:5px;}
     .logo-topo img{height:34px;max-width:68px}.saudacao-bloco h2{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .assinatura-topo-badge{display:none}.perfil-topo{padding-left:6px;border-left:0}.avatar-topo{width:34px;height:34px;flex-basis:34px}.data-topo{display:none}#btnSair{padding:7px 9px;font-size:10px;}
+    .assinatura-topo-badge{display:flex;min-width:88px;height:38px;padding:4px 7px;border-radius:9px;gap:1px}.assinatura-topo-badge .status{font-size:7px;letter-spacing:.25px}.assinatura-topo-badge .uso{font-size:8px}.perfil-topo{padding-left:4px;border-left:0}.avatar-topo{width:34px;height:34px;flex-basis:34px}.data-topo{display:none}#btnSair{padding:7px 9px;font-size:10px;}
 
     /* Menu móvel: uma única faixa, rola suavemente sem barra cinza. */
     nav.menu-nav-topo{padding:0 6px;gap:0;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none;}
@@ -1124,6 +1124,38 @@ input[type="date"] { cursor: pointer; }
     main.modo-pessoas tbody td[data-label="Ações"]{padding-top:8px!important;}
     main.modo-pessoas .barra-acoes,
     main.modo-pessoas .barra-acoes[style]{grid-template-columns:minmax(0,1fr) 94px!important;}
+  }
+
+
+
+  /* ===== CORREÇÃO DESKTOP — CADASTRO GERAL COM TODOS OS REGISTROS ===== */
+  @media(min-width:821px){
+    main.modo-pessoas{
+      overflow-y:auto!important;
+      overflow-x:auto!important;
+      min-height:0!important;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none!important;
+      -ms-overflow-style:none!important;
+    }
+    main.modo-pessoas::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+    main.modo-pessoas .tabela-box{
+      flex:none!important;
+      min-height:0!important;
+      max-height:none!important;
+      overflow:visible!important;
+      width:100%!important;
+    }
+    main.modo-pessoas .tabela-box table{
+      width:100%!important;
+      min-width:1100px!important;
+      table-layout:fixed!important;
+    }
+    main.modo-pessoas .tabela-box thead th{
+      position:sticky!important;
+      top:0!important;
+      z-index:8!important;
+    }
   }
 
 </style>
