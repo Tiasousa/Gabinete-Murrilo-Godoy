@@ -3228,7 +3228,7 @@ const GOOGLE_CALENDAR_SCOPE = [
   'https://www.googleapis.com/auth/calendar.calendars.readonly'
 ].join(' ');
 const GOOGLE_CALENDAR_ID = 'primary';
-const GOOGLE_SYNC_META_DOC = '__meta__';
+const GOOGLE_SYNC_META_DOC = 'meta_sincronizacao';
 
 
 function dataISOlocal(d){
@@ -3257,11 +3257,11 @@ window.RENDERIZADORES.agenda = async function(){
           getDoc(doc(db,'config','agendaGoogleSync'))
         ]);
         agendaGoogleCache = snapGoogle.docs
-          .filter(d=>d.id!=='__meta__')
+          .filter(d=>d.id!=='meta_sincronizacao')
           .map(d=>({_docId:d.id,...d.data()}));
         window.__ultimaSincGoogle = snapConfigGoogle.exists() ? snapConfigGoogle.data() : null;
         try{
-          const metaSnap=await getDoc(doc(db,'agendaGoogleSync','__meta__'));
+          const metaSnap=await getDoc(doc(db,'agendaGoogleSync','meta_sincronizacao'));
           googleCompartilhadaAtiva=metaSnap.exists() && !!metaSnap.data().calendarIdOficial;
         }catch(_){ googleCompartilhadaAtiva=false; }
       }catch(erroGoogle){
