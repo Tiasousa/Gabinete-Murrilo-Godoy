@@ -1159,6 +1159,19 @@ input[type="date"] { cursor: pointer; }
     }
   }
 
+
+
+  /* ===== DROPDOWN PERSONALIZADO — TIPO DE ATENDIMENTO ===== */
+  .dropdown-app{position:relative;width:100%;}
+  .dropdown-app-btn{width:100%;height:44px;padding:10px 38px 10px 12px;border-radius:var(--raio-s);border:1px solid var(--borda);background:var(--superficie-sutil);color:var(--texto);font-size:13.5px;text-align:left;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dropdown-app-btn::after{content:'⌄';position:absolute;right:13px;top:50%;transform:translateY(-52%);color:#DDE6F2;font-size:18px;pointer-events:none;}
+  .dropdown-app.aberto .dropdown-app-btn{border-color:#496785;box-shadow:0 0 0 3px rgba(37,99,235,.10);}
+  .dropdown-app-lista{display:none;position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:2600;max-height:280px;overflow-y:auto;overflow-x:hidden;background:#0B1B2F;border:1px solid #315171;border-radius:10px;box-shadow:0 16px 36px rgba(0,0,0,.48);padding:5px;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}
+  .dropdown-app-lista::-webkit-scrollbar{display:none;width:0;height:0;}
+  .dropdown-app.aberto .dropdown-app-lista{display:block;}
+  .dropdown-app-opcao{width:100%;border:0;background:transparent;color:#F5F8FC;text-align:left;padding:10px 11px;border-radius:7px;font-size:13px;line-height:1.2;}
+  .dropdown-app-opcao:hover,.dropdown-app-opcao.ativo{background:#17304C;color:#fff;}
+  @media(max-width:820px){.dropdown-app-lista{position:fixed;left:12px;right:12px;top:auto;bottom:14px;max-height:52dvh;border-radius:14px;padding:7px;z-index:3000}.dropdown-app-opcao{padding:12px 11px;font-size:14px;}}
 </style>
 </head>
 <body>
@@ -2559,6 +2572,32 @@ document.addEventListener('input', (ev) => {
   }
 });
 
+
+function fecharDropdownsApp(exceto){
+  document.querySelectorAll('.dropdown-app.aberto').forEach(el=>{ if(el!==exceto) el.classList.remove('aberto'); });
+}
+function alternarDropdownTipoAtendimento(ev){
+  ev?.stopPropagation?.();
+  const dd=document.getElementById('m_tipo_dropdown');
+  if(!dd) return;
+  const vaiAbrir=!dd.classList.contains('aberto');
+  fecharDropdownsApp(dd);
+  dd.classList.toggle('aberto',vaiAbrir);
+}
+function selecionarTipoAtendimento(el){
+  const valor=String(el?.dataset?.value||'');
+  const input=document.getElementById('m_tipo');
+  const rot=document.getElementById('m_tipo_rotulo');
+  if(input) input.value=valor;
+  if(rot) rot.textContent=valor;
+  document.querySelectorAll('#m_tipo_dropdown .dropdown-app-opcao').forEach(b=>b.classList.toggle('ativo',b===el));
+  document.getElementById('m_tipo_dropdown')?.classList.remove('aberto');
+}
+window.alternarDropdownTipoAtendimento=alternarDropdownTipoAtendimento;
+window.selecionarTipoAtendimento=selecionarTipoAtendimento;
+document.addEventListener('click',()=>fecharDropdownsApp());
+document.addEventListener('keydown',(ev)=>{if(ev.key==='Escape') fecharDropdownsApp();});
+
 function abrirModalAtendimento(registro) {
   registro = registro || {};
   const opcoesTipo = [...new Set([...TIPOS_ATENDIMENTO, ...tiposAtendimentoCache.map(t => String(t.nome || '').trim()).filter(Boolean)])].sort((a,b) => a.localeCompare(b, 'pt-BR'));
@@ -2575,7 +2614,16 @@ function abrirModalAtendimento(registro) {
         <div class="campo-modal span-2"><label>Endereço</label><input id="m_endereco" value="${(registro.endereco||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Bairro</label><input id="m_bairro" value="${(registro.bairro||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Data</label><input id="m_data" type="date" value="${dataBRparaISO(registro.data||'')}"></div>
-        <div class="campo-modal"><label>Tipo de Atendimento</label><select id="m_tipo">${opcoesTipo.map(t => `<option ${norm(t)===norm(registro.tipoAtendimento)?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div class="campo-modal"><label>Tipo de Atendimento</label>
+          ${(()=>{
+            const atual = opcoesTipo.find(t=>norm(t)===norm(registro.tipoAtendimento)) || opcoesTipo[0] || '';
+            return `<div class="dropdown-app" id="m_tipo_dropdown" onclick="event.stopPropagation()">
+              <input type="hidden" id="m_tipo" value="${escapar(atual)}">
+              <button type="button" class="dropdown-app-btn" id="m_tipo_rotulo" onclick="alternarDropdownTipoAtendimento(event)">${escapar(atual)}</button>
+              <div class="dropdown-app-lista">${opcoesTipo.map(t=>`<button type="button" class="dropdown-app-opcao ${norm(t)===norm(atual)?'ativo':''}" data-value="${escapar(t)}" onclick="selecionarTipoAtendimento(this)">${escapar(t)}</button>`).join('')}</div>
+            </div>`;
+          })()}
+        </div>
         <div class="campo-modal"><label>Status</label><select id="m_status">${STATUS_ATENDIMENTO.map(s => `<option ${norm(s)===norm(registro.status)?'selected':''}>${s}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Responsável</label><input id="m_responsavel" value="${(registro.responsavel||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Indicador</label><input id="m_indicador" value="${(registro.indicador||'').replace(/"/g,'&quot;')}"></div>
