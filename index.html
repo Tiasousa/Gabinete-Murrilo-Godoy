@@ -1073,6 +1073,9 @@
   }
 
 
+
+  .evento-descricao-mobile{display:none;}
+  @media(max-width:820px){.evento-descricao-mobile{display:block!important;}}
   /* ===== EVENTOS — MOBILE: cabeçalho do módulo permanece visível ===== */
   @media(max-width:820px){
     main.modo-eventos{
@@ -1109,6 +1112,19 @@
       width:0!important;
       height:0!important;
     }
+
+    /* Eventos no celular seguem o mesmo padrão visual dos Atendimentos. */
+    main.modo-eventos > .tabela-box{overflow-y:auto!important;overflow-x:hidden!important;width:100%!important;}
+    main.modo-eventos table{display:block!important;min-width:0!important;width:100%!important;background:transparent!important;table-layout:auto!important;}
+    main.modo-eventos thead{display:none!important;}
+    main.modo-eventos tbody{display:block!important;width:100%!important;}
+    main.modo-eventos tbody tr{display:block!important;height:auto!important;margin:0 0 12px!important;padding:12px 14px!important;background:var(--superficie)!important;border:1px solid var(--borda)!important;border-radius:15px!important;box-shadow:0 5px 16px rgba(0,0,0,.12);}
+    main.modo-eventos tbody td{display:block!important;width:100%!important;min-width:0!important;padding:9px 0!important;border-bottom:1px solid rgba(255,255,255,.055)!important;text-align:left!important;white-space:normal!important;overflow:visible!important;overflow-wrap:anywhere!important;}
+    main.modo-eventos tbody td::before{content:attr(data-label);display:block;margin-bottom:4px;font-size:8px;line-height:1.1;color:#7892B6;font-weight:900;text-transform:uppercase;letter-spacing:.55px;}
+    main.modo-eventos tbody td[data-label="Título"]{font-size:15px;padding-top:3px!important;}
+    main.modo-eventos tbody td[data-label="Descrição"]{line-height:1.45;}
+    main.modo-eventos tbody td[data-label="Ações"]{border-bottom:0!important;padding-bottom:2px!important;}
+    main.modo-eventos .acoes-linha{justify-content:flex-start!important;flex-wrap:wrap!important;gap:8px!important;}
   }
 
   @media(max-width:520px){
@@ -4028,11 +4044,12 @@ function desenharEventosMurillo(){
         <tbody>
           ${eventosMurilloCache.map(ev=>`
             <tr>
-              <td>${escapar(ev.data||'')}</td>
-              <td>${escapar(ev.titulo||'')}</td>
-              <td>${escapar(ev.local||'')}</td>
-              <td>${badgeStatus(ev.status)}</td>
-              ${podeEditar ? `<td><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="abrirModalEvtMurilloPorId('${ev._docId}')">Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEvtMurillo('${ev._docId}')">Excluir</button></div></td>` : ''}
+              <td data-label="Data">${escapar(ev.data||'-')}</td>
+              <td data-label="Título">${escapar(ev.titulo||'-')}</td>
+              <td data-label="Local">${escapar(ev.local||'-')}</td>
+              <td data-label="Status">${badgeStatus(ev.status)}</td>
+              <td data-label="Descrição" class="evento-descricao-mobile">${escapar(ev.descricao||'-')}</td>
+              ${podeEditar ? `<td data-label="Ações"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="abrirModalEvtMurilloPorId('${ev._docId}')">Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEvtMurillo('${ev._docId}')">Excluir</button></div></td>` : ''}
             </tr>
           `).join('') || `<tr><td colspan="${podeEditar?5:4}" style="text-align:center;color:var(--texto-fraco);padding:20px;">Nenhum evento cadastrado ainda.</td></tr>`}
         </tbody>
