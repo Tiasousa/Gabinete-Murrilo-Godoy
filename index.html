@@ -333,7 +333,14 @@
   .dash-card{background:var(--superficie);border:1px solid var(--borda);border-radius:14px;padding:16px;min-width:0;}
   .dash-card h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#DDE6F2;}
   .dash-sub{font-size:10px;color:var(--texto-fraco);margin-top:4px;}
-  .dash-status-wrap{display:flex;align-items:center;gap:24px;min-height:210px;}
+  .dash-status-wrap{display:flex;align-items:stretch;gap:10px;min-height:0;margin-top:16px;}
+  .dash-status-card{flex:1;min-width:0;background:#091827;border:1px solid var(--borda);border-radius:12px;padding:14px 13px;position:relative;overflow:hidden;}
+  .dash-status-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--status-cor,#8EA3BF);}
+  .dash-status-card .status-topo{display:flex;align-items:center;gap:7px;font-size:9px;color:#8EA3BF;text-transform:uppercase;font-weight:900;letter-spacing:.45px;white-space:nowrap;}
+  .dash-status-card .status-ponto{width:8px;height:8px;border-radius:50%;background:var(--status-cor,#8EA3BF);flex:0 0 8px;}
+  .dash-status-card .status-num{font-size:28px;line-height:1;font-weight:900;color:#fff;margin-top:10px;}
+  .dash-status-card .status-pct{font-size:10px;color:var(--texto-fraco);margin-top:6px;}
+  .dash-status-card .status-pct b{color:var(--status-cor,#fff);}
   .dash-donut{width:150px;height:150px;border-radius:50%;position:relative;flex:0 0 150px;}
   .dash-donut::after{content:"";position:absolute;inset:30px;border-radius:50%;background:var(--superficie);border:1px solid var(--borda);}
   .dash-donut-centro{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
@@ -945,7 +952,10 @@
 
   @media(max-width:520px){
     main.modo-dashboard .dash-kpis{grid-template-columns:1fr 1fr;}
-    main.modo-dashboard .dash-status-wrap{flex-direction:column;align-items:flex-start;}
+    main.modo-dashboard .dash-status-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
+    main.modo-dashboard .dash-status-card{width:100%;padding:11px 10px;}
+    main.modo-dashboard .dash-status-card:last-child{grid-column:1/-1;}
+    main.modo-dashboard .dash-status-card .status-num{font-size:24px;}
     main.modo-atendimentos tbody tr,main.modo-transportes tbody tr,main.modo-equipamentos tbody tr,main.modo-pessoas tbody tr{grid-template-columns:1fr!important;}
     main.modo-atendimentos tbody td,main.modo-transportes tbody td,main.modo-equipamentos tbody td,main.modo-pessoas tbody td{grid-column:1!important;}
     .cadastro-geral-resumo{grid-template-columns:1fr 1fr!important;}
@@ -1969,7 +1979,7 @@ window.RENDERIZADORES.dashboard = async function () {
         <div class="dash-kpi"><div class="icone">✓</div><div class="valor" style="color:#4ADE80">${totalDisp}</div><div class="label">Equipamentos Disponíveis</div></div>
       </div>
       <div class="dash-grid-2">
-        <div class="dash-card"><h3>Atendimentos por Status</h3><div class="dash-sub">Distribuição atual dos registros.</div><div class="dash-status-wrap"><div style="position:relative"><div class="dash-donut" style="background:${donut}"></div><div class="dash-donut-centro"><b>${atend.length}</b><span>Total</span></div></div><div class="dash-legenda"><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#22C55E"></span><span>Concluídos</span><b>${concluidos}</b></div><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#F2B23A"></span><span>Em análise</span><b>${emAnalise}</b></div><div class="dash-legenda-item"><span class="dash-legenda-cor" style="background:#E5272D"></span><span>Cancelados</span><b>${cancelados}</b></div></div></div></div>
+        <div class="dash-card"><h3>Atendimentos por Status</h3><div class="dash-sub">${atend.length} atendimentos no total.</div><div class="dash-status-wrap"><div class="dash-status-card" style="--status-cor:#22C55E"><div class="status-topo"><span class="status-ponto"></span>Concluídos</div><div class="status-num">${concluidos}</div><div class="status-pct"><b>${atend.length?(concluidos/atend.length*100).toFixed(1).replace('.',','):'0,0'}%</b> do total</div></div><div class="dash-status-card" style="--status-cor:#F2B23A"><div class="status-topo"><span class="status-ponto"></span>Em análise</div><div class="status-num">${emAnalise}</div><div class="status-pct"><b>${atend.length?(emAnalise/atend.length*100).toFixed(1).replace('.',','):'0,0'}%</b> do total</div></div><div class="dash-status-card" style="--status-cor:#E5272D"><div class="status-topo"><span class="status-ponto"></span>Cancelados</div><div class="status-num">${cancelados}</div><div class="status-pct"><b>${atend.length?(cancelados/atend.length*100).toFixed(1).replace('.',','):'0,0'}%</b> do total</div></div></div></div>
         <div class="dash-card"><h3>Atendimentos por Tipo</h3><div class="dash-sub">Tipos mais registrados no sistema.</div>${tipos.length?`<div class="dash-barras">${tipos.map(([n,q])=>`<div class="dash-barra-linha"><div class="dash-barra-rot" title="${escapar(n)}">${escapar(n)}</div><div class="dash-barra-trilho"><div class="dash-barra-preench" style="width:${Math.max(4,q/maxTipo*100)}%"></div></div><div class="dash-barra-num">${q}</div></div>`).join('')}</div>`:'<div class="dash-vazio">Sem dados.</div>'}</div>
       </div>
       <div class="dash-grid-3">
