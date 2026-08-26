@@ -383,7 +383,8 @@
 
 
   /* ===== DASHBOARD / CADASTRO GERAL — SEM BARRA DE ROLAGEM DA PÁGINA ===== */
-  main.modo-dashboard{overflow:hidden;padding:12px 12px 10px;display:block;}
+  main.modo-dashboard{overflow-y:auto;overflow-x:hidden;padding:12px 12px 10px;display:block;scrollbar-width:none;-ms-overflow-style:none;}
+  main.modo-dashboard::-webkit-scrollbar{display:none;width:0;height:0;}
   main.modo-dashboard .dash-topo{margin-bottom:8px;}
   main.modo-dashboard .dash-topo h2{font-size:22px;}
   main.modo-dashboard .dash-topo p{margin-top:3px;font-size:10.5px;}
