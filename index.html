@@ -3470,6 +3470,7 @@ async function sincronizacaoCompletaGoogle(){
     if(dados.nextSyncToken) nextSyncToken=dados.nextSyncToken;
   }while(paginaToken);
   if(nextSyncToken) await salvarMetaGoogleSync({nextSyncToken,ultimaSincronizacao:new Date().toISOString(),tipoUltimaSincronizacao:'COMPLETA',totalRecebidos});
+  return totalRecebidos;
 }
 
 async function sincronizacaoIncrementalGoogle(syncToken){
@@ -3479,11 +3480,13 @@ async function sincronizacaoIncrementalGoogle(syncToken){
     if(paginaToken) params.set('pageToken',paginaToken);
     const dados=await googleApi(`/calendars/${encodeURIComponent(googleCalendarIdAtual)}/events?${params.toString()}`);
     const itens=dados.items||[];totalRecebidos+=itens.length;
+    mostrarBannerSincronizandoGoogle(true,`${totalRecebidos} compromissos processados até agora (atualização)`);
     await aplicarRespostaGoogleNoFirestore(itens);
     paginaToken=dados.nextPageToken||null;
     if(dados.nextSyncToken) nextSyncToken=dados.nextSyncToken;
   }while(paginaToken);
   if(nextSyncToken) await salvarMetaGoogleSync({nextSyncToken,ultimaSincronizacao:new Date().toISOString(),tipoUltimaSincronizacao:'INCREMENTAL',totalRecebidos});
+  return totalRecebidos;
 }
 
 async function processarFilaAgendaLocalNoGoogle(){
@@ -3532,29 +3535,39 @@ async function carregarEventosGoogleMes(forcar=false){
   if(!googleTokenValido()) return;
   if(googleCarregando && !forcar) return;
   googleCarregando=true;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(true);
+  let totalProcessadoNestaRodada=0;
+  let tipoRodada='';
   try{
     await garantirCalendarioOficial();
     await processarFilaAgendaLocalNoGoogle();
     const meta=await carregarMetaGoogleSync();
     if(meta.nextSyncToken){
-      try{await sincronizacaoIncrementalGoogle(meta.nextSyncToken);}
+      tipoRodada='atualização (incremental)';
+      try{totalProcessadoNestaRodada=await sincronizacaoIncrementalGoogle(meta.nextSyncToken);}
       catch(e){
         if(e.status===410){
           await salvarMetaGoogleSync({nextSyncToken:'',syncTokenExpiradoEm:new Date().toISOString()});
-          await sincronizacaoCompletaGoogle();
+          tipoRodada='completa (o marcador anterior expirou)';
+          totalProcessadoNestaRodada=await sincronizacaoCompletaGoogle();
         }else throw e;
       }
-    }else await sincronizacaoCompletaGoogle();
+    }else{
+      tipoRodada='completa (do zero)';
+      totalProcessadoNestaRodada=await sincronizacaoCompletaGoogle();
+    }
     await recarregarCacheGoogleCompartilhado();
     const snapLocal=await getDocs(collection(db,'agendaEventos'));
     agendaEventosCache=snapLocal.docs.map(d=>({_docId:d.id,...d.data()}));
     desenharAgenda();
+    // Resumo sempre visível, mesmo quando dá tudo certo — assim sabemos
+    // com certeza quantos eventos essa rodada realmente processou.
+    alert(`Sincronização concluída (${tipoRodada}).\nCompromissos processados nesta rodada: ${totalProcessadoNestaRodada}.\nTotal agora salvo na agenda compartilhada: ${agendaGoogleCache.length}.`);
   }catch(erroSincronizacao){
     // Antes esse erro sumia em silêncio (a faixa azul só desaparecia,
     // dando a impressão de que tinha terminado normal). Agora aparece
     // de verdade, pra sabermos exatamente onde travou.
     console.error('Erro na sincronização do Google Agenda:',erroSincronizacao);
-    alert('A sincronização parou no meio do caminho: '+(erroSincronizacao.message||erroSincronizacao)+'\n\nOs compromissos que já tinham sido processados até aqui foram salvos — clique em sincronizar de novo pra continuar de onde parou.');
+    alert('A sincronização parou no meio do caminho ('+tipoRodada+'), depois de processar '+totalProcessadoNestaRodada+' compromissos: '+(erroSincronizacao.message||erroSincronizacao)+'\n\nOs compromissos que já tinham sido processados até aqui foram salvos — clique em sincronizar de novo pra continuar de onde parou.');
   }finally{googleCarregando=false;atualizarEstadoGoogleAgenda();mostrarBannerSincronizandoGoogle(false);}
 }
 window.carregarEventosGoogleMes=carregarEventosGoogleMes;
