@@ -2239,7 +2239,7 @@ function badgeStatus(status) {
   const s = norm(status);
   let classe = 'badge-cinza';
   if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO') classe = 'badge-verde';
-  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO') classe = 'badge-amarelo';
+  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO' || s === 'ESPERA') classe = 'badge-amarelo';
   else if (s === 'CANCELADO' || s === 'NAO') classe = 'badge-vermelho';
   return `<span class="badge ${classe}">${status || '-'}</span>`;
 }
@@ -2992,7 +2992,7 @@ function desenharTransportes() {
   const lista = transportesCache.filter(t => !filtroTranspTexto || norm(t.nome).includes(filtroTranspTexto) || norm(t.hospital).includes(filtroTranspTexto) || norm(t.contato).includes(filtroTranspTexto));
   const confirmados = transportesCache.filter(t => norm(t.confirmado)==='SIM').length;
   const naoConfirmados = transportesCache.filter(t => norm(t.confirmado)==='NAO').length;
-  const espera = transportesCache.filter(t => norm(t.espera)==='SIM').length;
+  const espera = transportesCache.filter(t => norm(t.confirmado)==='ESPERA').length;
   const podeEditar = !somenteLeitura();
   c.innerHTML = `
     <div class="topo-pagina-atend">
@@ -3010,11 +3010,11 @@ function desenharTransportes() {
       <button class="btn-secundario" onclick="window.RENDERIZADORES.transportes()">↻ Atualizar</button>
     </div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Espera</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
+      <thead><tr><th>Nome</th><th>Data</th><th>Horário</th><th>Hospital</th><th>Cidade</th><th>Contato</th><th>Acompanhante</th><th>Confirmado</th><th>Gabinete</th><th>Obs.</th><th>Agendado por</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody>
         ${lista.map(t => `<tr ${podeEditar ? `ondblclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
           <td class="td-esquerda">${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
-          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td>${badgeStatus(t.espera)}</td><td class="td-esquerda">${t.observacoes||'-'}</td><td>${t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
+          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td class="td-esquerda">${t.gabinete||'-'}</td><td class="td-esquerda">${t.observacoes||'-'}</td><td class="td-esquerda">${t.agendadoPor||t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirTransporte('${t._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?13:12}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
       </tbody>
@@ -3037,8 +3037,9 @@ function abrirModalTransporte(registro) {
         <div class="campo-modal span-2"><label>Hospital</label><input id="t_hospital" value="${(registro.hospital||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal span-2"><label>Cidade</label><input id="t_cidade" value="${(registro.cidade||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Acompanhante</label><select id="t_acompanhante"><option ${registro.acompanhante==='SIM'?'selected':''}>SIM</option><option ${registro.acompanhante==='NAO'?'selected':''}>NAO</option></select></div>
-        <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option></select></div>
-        <div class="campo-modal"><label>Lista de espera</label><select id="t_espera"><option ${registro.espera==='NAO'?'selected':''}>NAO</option><option ${registro.espera==='SIM'?'selected':''}>SIM</option></select></div>
+        <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option><option ${registro.confirmado==='ESPERA'?'selected':''}>ESPERA</option></select></div>
+        <div class="campo-modal"><label>Gabinete</label><input id="t_gabinete" placeholder="Nome de quem da assessoria" value="${(registro.gabinete||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal"><label>Agendado por</label><input id="t_agendadopor" placeholder="Nome de quem agendou" value="${(registro.agendadoPor||registro.criadoPor||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div>
         ${campoAnexosModal('t', 'transportes', registro)}
       </div>
@@ -3065,7 +3066,8 @@ async function salvarTransporte(docId) {
     hospital: maiusculo(document.getElementById('t_hospital').value),
     cidade: maiusculo(document.getElementById('t_cidade').value),
     acompanhante: document.getElementById('t_acompanhante').value,
-    espera: document.getElementById('t_espera').value,
+    gabinete: maiusculo(document.getElementById('t_gabinete').value),
+    agendadoPor: maiusculo(document.getElementById('t_agendadopor').value),
     observacoes: document.getElementById('t_observacoes').value.trim(),
     confirmado: document.getElementById('t_confirmado').value,
     ultimaEdicaoPor: USUARIO.nome,
