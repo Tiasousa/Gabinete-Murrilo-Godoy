@@ -3141,7 +3141,7 @@ function desenharEquip() {
 }
 function abrirModalEquip(registro) {
   registro = registro || {};
-  const opcoes = tiposEquipamentoCache.length ? tiposEquipamentoCache.map(t => t.nome) : TIPOS_EQUIPAMENTO_SEMENTE;
+  const opcoes = [...new Set([...TIPOS_EQUIPAMENTO_SEMENTE, ...tiposEquipamentoCache.map(t => String(t.nome || '').trim()).filter(Boolean)])].sort((a,b) => a.localeCompare(b, 'pt-BR'));
   const fundo = document.createElement('div');
   fundo.className = 'modal-fundo modal-operacao-fundo';
   fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
@@ -4523,7 +4523,31 @@ window.RENDERIZADORES.configuracoes = async function(){
   c.innerHTML = '<div class="topo-pagina"><h2>Configurações</h2></div><div class="carregando-tela">Carregando...</div>';
 
   await carregarConfiguraveis();
+  await garantirTiposEquipamentoPadrao();
   desenharConfiguracoesAdmin();
+};
+
+// Grava no banco os 5 tipos de equipamento "padrão" (MULETAS, CADEIRA
+// DE RODAS...) que antes só existiam como lista fixa no código. Sem
+// isso, eles não apareciam aqui pra editar estoque, e assim que um
+// tipo novo era cadastrado, a lista dos padrões sumia do formulário.
+async function garantirTiposEquipamentoPadrao(){
+  const jaExistentes = new Set(tiposEquipamentoCache.map(t => norm(t.nome)));
+  const faltando = TIPOS_EQUIPAMENTO_SEMENTE.filter(nome => !jaExistentes.has(norm(nome)));
+  if (!faltando.length) return;
+  try {
+    for (const nome of faltando) {
+      await addDoc(collection(db, 'tiposEquipamento'), {
+        nome,
+        estoque: 0,
+        criadoPor: USUARIO?.nome || '',
+        criadoEmTexto: new Date().toLocaleString('pt-BR')
+      });
+    }
+    await carregarConfiguraveis();
+  } catch (e) {
+    console.error('Não foi possível migrar os tipos padrão de equipamento:', e);
+  }
 };
 
 function desenharConfiguracoesAdmin(){
