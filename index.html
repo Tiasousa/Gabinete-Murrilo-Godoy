@@ -845,11 +845,14 @@
   .gcal-google-dot{width:8px;height:8px;border-radius:50%;background:#9aa0a6;display:inline-block;}
   .gcal-google-btn.conectado .gcal-google-dot{background:#2563EB;}
   .gcal-sync-btn{
-    width:40px;height:40px;border:1px solid #dadce0;border-radius:50%;
-    background:#fff;color:#5f6368;font-size:18px;
+    display:inline-flex;align-items:center;gap:7px;
+    height:40px;padding:0 16px;border:1.5px solid #2563EB;border-radius:20px;
+    background:#EFF4FF;color:#1D4ED8;font-size:12.5px;font-weight:800;
+    white-space:nowrap;
   }
-  .gcal-sync-btn:hover{background:#f1f3f4;}
-  .gcal-sync-btn:disabled{opacity:.45;cursor:default;}
+  .gcal-sync-btn .gcal-sync-icone{font-size:15px;}
+  .gcal-sync-btn:hover{background:#DCE8FF;}
+  .gcal-sync-btn:disabled{opacity:.45;cursor:default;background:#fff;border-color:#dadce0;color:#5f6368;}
   .gcal-google-event{box-shadow:inset 3px 0 0 rgba(255,255,255,.65);}
 
 
@@ -3344,7 +3347,7 @@ function atualizarEstadoGoogleAgenda(){
   }
   if(sync){
     sync.disabled=!googleTokenValido() || googleCarregando;
-    sync.innerHTML=googleCarregando ? '⏳' : '↻';
+    sync.innerHTML=googleCarregando ? '<span class="gcal-sync-icone">⏳</span> Sincronizando...' : '<span class="gcal-sync-icone">↻</span> Atualizar Agenda';
     sync.title=googleCarregando
       ? 'Sincronizando com o Google Agenda — aguarde terminar antes de conferir os compromissos.'
       : 'Atualizar Google Agenda';
@@ -3816,7 +3819,7 @@ function desenharAgenda(){
         <button id="btnGoogleAgenda" class="gcal-google-btn ${googleTokenValido()?'conectado':''}" onclick="conectarGoogleAgenda()">
           <span class="gcal-google-dot"></span>${googleTokenValido()?'Google conectado':'Conectar Google'}
         </button>
-        <button id="btnSyncGoogleAgenda" class="gcal-sync-btn" title="Atualizar Google Agenda" onclick="carregarEventosGoogleMes(true)" ${googleTokenValido()?'':'disabled'}>↻</button>
+        <button id="btnSyncGoogleAgenda" class="gcal-sync-btn" title="Buscar as atualizações mais recentes do Google Agenda" onclick="carregarEventosGoogleMes(true)" ${googleTokenValido()?'':'disabled'}><span class="gcal-sync-icone">↻</span> Atualizar Agenda</button>
         ${podeEditar?'<button class="gcal-novo" onclick="abrirModalAgenda()">＋ Compromisso</button>':''}
         <button class="gcal-view">Mês ▾</button>
       </div>
@@ -3906,7 +3909,7 @@ function abrirModalAgenda(registro={}){
 
       <div class="gcal-tabs">
         <button class="gcal-tab active" type="button">Evento</button>
-        ${origemGoogle?'<span style="align-self:center;font-size:11px;color:#137333;font-weight:700;">● Google Agenda</span>':''}
+        ${origemGoogle?'<span style="align-self:center;font-size:11px;color:#2563EB;font-weight:700;">● Google Agenda</span>':''}
       </div>
 
       <div class="gcal-row">
