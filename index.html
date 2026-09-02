@@ -224,14 +224,15 @@
   main.modo-transportes th:nth-child(12),main.modo-transportes td:nth-child(12){width:11%;}
   main.modo-transportes th:nth-child(13),main.modo-transportes td:nth-child(13){width:5%;}
 
-  main.modo-equipamentos th:nth-child(1),main.modo-equipamentos td:nth-child(1){width:18%;}
-  main.modo-equipamentos th:nth-child(2),main.modo-equipamentos td:nth-child(2){width:10%;}
-  main.modo-equipamentos th:nth-child(3),main.modo-equipamentos td:nth-child(3){width:16%;}
-  main.modo-equipamentos th:nth-child(4),main.modo-equipamentos td:nth-child(4){width:14%;}
-  main.modo-equipamentos th:nth-child(5),main.modo-equipamentos td:nth-child(5){width:14%;}
-  main.modo-equipamentos th:nth-child(6),main.modo-equipamentos td:nth-child(6){width:10%;}
-  main.modo-equipamentos th:nth-child(7),main.modo-equipamentos td:nth-child(7){width:13%;}
-  main.modo-equipamentos th:nth-child(8),main.modo-equipamentos td:nth-child(8){width:5%;}
+  main.modo-equipamentos th:nth-child(1),main.modo-equipamentos td:nth-child(1){width:15%;}
+  main.modo-equipamentos th:nth-child(2),main.modo-equipamentos td:nth-child(2){width:8%;}
+  main.modo-equipamentos th:nth-child(3),main.modo-equipamentos td:nth-child(3){width:13%;}
+  main.modo-equipamentos th:nth-child(4),main.modo-equipamentos td:nth-child(4){width:12%;}
+  main.modo-equipamentos th:nth-child(5),main.modo-equipamentos td:nth-child(5){width:12%;}
+  main.modo-equipamentos th:nth-child(6),main.modo-equipamentos td:nth-child(6){width:8%;}
+  main.modo-equipamentos th:nth-child(7),main.modo-equipamentos td:nth-child(7){width:15%;}
+  main.modo-equipamentos th:nth-child(8),main.modo-equipamentos td:nth-child(8){width:11%;}
+  main.modo-equipamentos th:nth-child(9),main.modo-equipamentos td:nth-child(9){width:6%;}
 
   .modal-fundo.modal-operacao-fundo{align-items:center;justify-content:center;padding:18px;}
   .modal.modal-operacao{width:min(1120px,calc(100vw - 36px));max-width:1120px;max-height:none;overflow:visible;padding:22px 24px 20px;}
@@ -3014,7 +3015,7 @@ function desenharTransportes() {
       <tbody>
         ${lista.map(t => `<tr ${podeEditar ? `ondblclick='abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
           <td class="td-esquerda">${t.nome||'-'}</td><td>${t.data||'-'}</td><td>${t.horario||'-'}</td><td>${t.hospital||'-'}</td><td>${t.cidade||'-'}</td>
-          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td class="td-esquerda">${t.gabinete||'-'}</td><td class="td-esquerda">${t.observacoes||'-'}</td><td class="td-esquerda">${t.agendadoPor||t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
+          <td>${linkWhatsapp(t.contato)}</td><td>${badgeStatus(t.acompanhante)}</td><td>${badgeStatus(t.confirmado)}</td><td class="td-esquerda">${t.gabinete||'-'}</td><td class="td-obs td-esquerda" title="${escapar(t.observacoes||'')}">${t.observacoes||'-'}</td><td class="td-esquerda">${t.agendadoPor||t.criadoPor||'-'}</td><td>${t.ultimaEdicaoPor ? t.ultimaEdicaoPor+' · '+(t.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalTransporte(${JSON.stringify(t).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirTransporte('${t._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?13:12}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhuma solicitação ainda.</td></tr>`}
       </tbody>
@@ -3135,7 +3136,7 @@ function desenharEquip() {
       <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Obs.</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody id="tbEquip">
         ${equipCacheLista.map(e => `<tr ${podeEditar ? `ondblclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td class="td-esquerda">${e.observacoes||'-'}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
+          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td class="td-obs td-esquerda" title="${escapar(e.observacoes||'')}">${e.observacoes||'-'}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirEquip('${e._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?9:8}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
