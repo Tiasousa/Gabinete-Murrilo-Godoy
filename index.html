@@ -3040,7 +3040,7 @@ function abrirModalTransporte(registro) {
         <div class="campo-modal"><label>Confirmado</label><select id="t_confirmado"><option ${registro.confirmado==='SIM'?'selected':''}>SIM</option><option ${registro.confirmado==='NAO'?'selected':''}>NAO</option><option ${registro.confirmado==='ESPERA'?'selected':''}>ESPERA</option></select></div>
         <div class="campo-modal"><label>Gabinete</label><input id="t_gabinete" placeholder="Nome de quem da assessoria" value="${(registro.gabinete||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Agendado por</label><input id="t_agendadopor" placeholder="Nome de quem agendou" value="${(registro.agendadoPor||registro.criadoPor||'').replace(/"/g,'&quot;')}"></div>
-        <div class="campo-modal"><label>Observações</label><input id="t_observacoes" value="${(registro.observacoes||'').replace(/"/g,'&quot;')}"></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="t_observacoes">${registro.observacoes||''}</textarea></div>
         ${campoAnexosModal('t', 'transportes', registro)}
       </div>
       <div class="modal-acoes">
@@ -3132,12 +3132,12 @@ function desenharEquip() {
       <button class="btn-secundario" onclick="window.RENDERIZADORES.equipamentos()">↻ Atualizar</button>
     </div>
     <div class="tabela-box"><table>
-      <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
+      <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Obs.</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody id="tbEquip">
         ${equipCacheLista.map(e => `<tr ${podeEditar ? `ondblclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
+          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td class="td-esquerda">${e.observacoes||'-'}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirEquip('${e._docId}')">Excluir</button></div></td>` : ''}
-        </tr>`).join('') || `<tr><td colspan="${podeEditar?8:7}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
+        </tr>`).join('') || `<tr><td colspan="${podeEditar?9:8}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
     </table></div>`;
 }
@@ -3158,6 +3158,7 @@ function abrirModalEquip(registro) {
         <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
         <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="e_observacoes">${registro.observacoes||''}</textarea></div>
         ${campoAnexosModal('e', 'equipamentos', registro)}
       </div>
       <div class="modal-acoes">
@@ -3182,6 +3183,7 @@ async function salvarEquip(docId) {
     entrega: dataISOparaBR(document.getElementById('e_entrega').value),
     responsavel: maiusculo(document.getElementById('e_responsavel').value),
     devolucao: document.getElementById('e_devolucao').value,
+    observacoes: document.getElementById('e_observacoes').value.trim(),
     ultimaEdicaoPor: USUARIO.nome,
     ultimaEdicaoData: new Date().toLocaleString('pt-BR')
   };
