@@ -2239,8 +2239,8 @@ function kpiMiniMurillo(corFundo, corTexto, icone, numero, rotulo){
 function badgeStatus(status) {
   const s = norm(status);
   let classe = 'badge-cinza';
-  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO') classe = 'badge-verde';
-  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO' || s === 'ESPERA') classe = 'badge-amarelo';
+  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO' || s === 'LIBERADO') classe = 'badge-verde';
+  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO' || s === 'ESPERA' || s === 'RECOLHER' || s === 'RESERVADO' || s === 'RETIRAR') classe = 'badge-amarelo';
   else if (s === 'CANCELADO' || s === 'NAO') classe = 'badge-vermelho';
   return `<span class="badge ${classe}">${status || '-'}</span>`;
 }
@@ -3136,7 +3136,7 @@ function desenharEquip() {
       <thead><tr><th>Nome</th><th>Entrega</th><th>Equipamento</th><th>Contato</th><th>Responsável</th><th>Status</th><th>Obs.</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
       <tbody id="tbEquip">
         ${equipCacheLista.map(e => `<tr ${podeEditar ? `ondblclick='abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
-          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td class="td-obs td-esquerda" title="${escapar(e.observacoes||'')}">${e.observacoes||'-'}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
+          <td class="td-esquerda">${e.nome||'-'}</td><td>${e.entrega||'-'}</td><td>${e.equipamento||'-'}${e.quantidade&&e.quantidade>1?' <b style="color:var(--acento)">×'+e.quantidade+'</b>':''}</td><td>${linkWhatsapp(e.contato)}</td><td>${e.responsavel||e.criadoPor||'-'}</td><td>${badgeStatus(e.devolucao)}</td><td class="td-obs td-esquerda" title="${escapar(e.observacoes||'')}">${e.observacoes||'-'}</td><td>${e.ultimaEdicaoPor ? e.ultimaEdicaoPor+' · '+(e.ultimaEdicaoData||'') : '-'}</td>
           ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalEquip(${JSON.stringify(e).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirEquip('${e._docId}')">Excluir</button></div></td>` : ''}
         </tr>`).join('') || `<tr><td colspan="${podeEditar?9:8}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum empréstimo ainda.</td></tr>`}
       </tbody>
@@ -3158,7 +3158,8 @@ function abrirModalEquip(registro) {
         <div class="campo-modal"><label>Entrega</label><input id="e_entrega" type="date" value="${dataBRparaISO(registro.entrega||'')}"></div>
         <div class="campo-modal"><label>Responsável</label><input id="e_responsavel" value="${(registro.responsavel||registro.criadoPor||USUARIO.nome||'').replace(/"/g,'&quot;')}"></div>
         <div class="campo-modal"><label>Equipamento</label><select id="e_equipamento">${opcoes.map(t => `<option ${norm(t)===norm(registro.equipamento)?'selected':''}>${t}</option>`).join('')}</select></div>
-        <div class="campo-modal"><label>Status</label><select id="e_devolucao"><option ${registro.devolucao==='USANDO'?'selected':''}>USANDO</option><option ${registro.devolucao==='ENTREGUE'?'selected':''}>ENTREGUE</option></select></div>
+        <div class="campo-modal"><label>Quantidade</label><input id="e_quantidade" type="number" min="1" step="1" value="${registro.quantidade||1}"></div>
+        <div class="campo-modal"><label>Status</label><select id="e_devolucao">${['USANDO','ENTREGUE','RECOLHER','RESERVADO','LIBERADO','RETIRAR'].map(s=>`<option ${registro.devolucao===s?'selected':''}>${s}</option>`).join('')}</select></div>
         <div class="campo-modal span-4"><label>Observações</label><textarea id="e_observacoes">${registro.observacoes||''}</textarea></div>
         ${campoAnexosModal('e', 'equipamentos', registro)}
       </div>
@@ -3181,6 +3182,7 @@ async function salvarEquip(docId) {
     nome: maiusculo(document.getElementById('e_nome').value),
     contato: formatarTelefoneBR(document.getElementById('e_contato').value),
     equipamento: document.getElementById('e_equipamento').value,
+    quantidade: Math.max(1, parseInt(document.getElementById('e_quantidade').value, 10) || 1),
     entrega: dataISOparaBR(document.getElementById('e_entrega').value),
     responsavel: maiusculo(document.getElementById('e_responsavel').value),
     devolucao: document.getElementById('e_devolucao').value,
