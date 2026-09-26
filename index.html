@@ -1247,6 +1247,14 @@
   .assinatura-upgrade strong{display:block;margin-top:10px;font-size:15px;color:#fff;}
   .assinatura-acao{margin-top:14px;display:flex;justify-content:flex-end;}
   .assinatura-acao button{background:#22A95A;color:white;border:0;border-radius:9px;padding:11px 17px;font-weight:900;}
+  .assinatura-chave-box{margin-top:14px;padding:14px;border-radius:12px;background:#071425;border:1px dashed #426B9B;}
+  .assinatura-chave-box small{display:block;color:#7892B6;text-transform:uppercase;font-weight:800;font-size:10px;letter-spacing:.5px;margin-bottom:6px;}
+  .assinatura-chave-valor{font-size:17px;font-weight:900;color:#fff;letter-spacing:.3px;overflow-wrap:anywhere;}
+  .assinatura-chave-titular{margin-top:4px;color:#8EA3BF;font-size:11.5px;}
+  .assinatura-copiar{margin-top:10px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#2563EB;color:#fff;font-weight:900;}
+  .assinatura-recursos{list-style:none;margin:0;padding:0;display:grid;gap:11px;}
+  .assinatura-recursos li{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:#DCE6F2;line-height:1.4;}
+  .assinatura-recursos li b{color:#4ADE80;font-size:14px;line-height:1.4;}
   @media(max-width:760px){.assinatura-grid{grid-template-columns:1fr}.assinatura-storage-card{grid-column:auto}.assinatura-upgrades{grid-template-columns:1fr}.perfil-dropdown{right:-50px;width:240px}}
   /* ===== PAGAMENTO PIX ===== */
   .pix-modal-bg{position:fixed;inset:0;z-index:5000;background:rgba(3,7,14,.76);display:flex;align-items:center;justify-content:center;padding:18px;}
@@ -2113,14 +2121,29 @@ window.RENDERIZADORES.assinatura = async function () {
             <div class="assinatura-linha"><span>Status</span><b><span class="assinatura-status ativo">● ${CONFIG_ASSINATURA.status}</span></b></div>
             <div class="assinatura-linha"><span>Manutenção mensal</span><b>${fmtBRL(CONFIG_ASSINATURA.mensalidade)}</b></div>
             <div class="assinatura-linha"><span>Próximo vencimento</span><b>${vencimento}</b></div>
+            <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${limiteArmazenamentoTexto()}</b></div>
+            <div class="assinatura-linha"><span>Forma de pagamento</span><b>PIX</b></div>
+            <div class="assinatura-chave-box">
+              <small>Chave PIX</small>
+              <div class="assinatura-chave-valor">${CONFIG_ASSINATURA.pixChaveExibicao || CONFIG_ASSINATURA.pixChave}</div>
+              <div class="assinatura-chave-titular">${CONFIG_ASSINATURA.pixTitular}</div>
+              <button type="button" class="assinatura-copiar" onclick="copiarChavePix()">📋 Copiar chave PIX</button>
+            </div>
             <button type="button" class="assinatura-pagar" onclick="abrirPagamentoPix(249.00,'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
           </div>
 
           <div class="assinatura-card">
-            <h3>Resumo da conta</h3>
-            <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${limiteArmazenamentoTexto()}</b></div>
-            <div class="assinatura-linha"><span>Documentos armazenados</span><b>${totalArquivos.toLocaleString('pt-BR')}</b></div>
-            <div class="assinatura-linha"><span>Espaço disponível</span><b>${formatarEspacoDisponivel(bytesLivre)}</b></div>
+            <h3>Resumo do plano — Recursos incluídos</h3>
+            <ul class="assinatura-recursos">
+              <li><b>✓</b><span>Sistema online para computador e celular</span></li>
+              <li><b>✓</b><span>Atendimentos, Transportes e Equipamentos em um só lugar</span></li>
+              <li><b>✓</b><span>Agenda sincronizada com o Google Agenda da equipe</span></li>
+              <li><b>✓</b><span>Documentos e anexos organizados por atendimento</span></li>
+              <li><b>✓</b><span>Controle de acesso por cargo (admin, assessor, vereador)</span></li>
+              <li><b>✓</b><span>Histórico de última edição em cada registro</span></li>
+              <li><b>✓</b><span>${limiteArmazenamentoTexto()} para documentos e anexos</span></li>
+              <li><b>✓</b><span>Atualizações, monitoramento e suporte técnico</span></li>
+            </ul>
           </div>
 
           <div class="assinatura-card assinatura-storage-card">
@@ -2131,6 +2154,7 @@ window.RENDERIZADORES.assinatura = async function () {
             </div>
             <div class="assinatura-barra ${classeBarra}"><div style="width:${pct}%"></div></div>
             <div class="assinatura-storage-rodape"><span>${usadoTexto} usados</span><span>${limiteArmazenamentoTexto()} total</span></div>
+            <div class="assinatura-storage-rodape" style="margin-top:6px;"><span>${totalArquivos.toLocaleString('pt-BR')} documentos armazenados</span><span>${formatarEspacoDisponivel(bytesLivre)} disponível</span></div>
             <div class="assinatura-aviso">ℹ️ ${aviso}</div>
           </div>
         </div>
