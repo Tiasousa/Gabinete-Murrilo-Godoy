@@ -1550,9 +1550,10 @@ const CONFIG_ASSINATURA = {
   limiteMB: 500,
   diaVencimento: 10,
   status: 'ATIVO',
-  pixChave: '65.974.787/0001-38',
-  pixTitular: 'TIAGO DE SOUSA COSTA',
-  pixBanco: 'Nubank PJ'
+  pixChave: '+5564993010548',
+  pixChaveExibicao: '(64) 99301-0548',
+  pixTipoChave: 'Celular',
+  pixTitular: 'GUILHERME HENRIQUE S. C. SILVA'
 };
 
 function limiteArmazenamentoBytes(){
@@ -1586,18 +1587,17 @@ function abrirPagamentoPix(valor, descricao){
       <div class="pix-valor"><span>Valor a pagar</span><strong>${fmt(valor)}</strong></div>
       <div class="pix-dados">
         <div class="pix-linha"><span>Recebedor</span><b>${CONFIG_ASSINATURA.pixTitular}</b></div>
-        <div class="pix-linha"><span>Banco</span><b>${CONFIG_ASSINATURA.pixBanco}</b></div>
-        <div class="pix-linha"><span>Tipo da chave</span><b>CNPJ</b></div>
+        <div class="pix-linha"><span>Tipo da chave</span><b>${CONFIG_ASSINATURA.pixTipoChave}</b></div>
       </div>
       <div class="pix-chave-box">
         <small>Chave PIX</small>
-        <div class="pix-chave" id="pixChaveTexto">${CONFIG_ASSINATURA.pixChave}</div>
+        <div class="pix-chave" id="pixChaveTexto">${CONFIG_ASSINATURA.pixChaveExibicao || CONFIG_ASSINATURA.pixChave}</div>
       </div>
       <div class="pix-acoes">
         <button class="pix-copiar" type="button" onclick="copiarChavePix()">📋 Copiar chave PIX</button>
         <button class="pix-paguei" type="button" onclick="registrarAvisoPagamento(${Number(valor)}, '${String(descricao||'Pagamento').replace(/'/g,"\'")}')">✓ Já paguei</button>
       </div>
-      <div class="pix-nota">O pagamento é feito diretamente para a conta PJ. A confirmação automática ainda não está integrada; o botão “Já paguei” envia um aviso ao administrador para conferência do PIX.</div>
+      <div class="pix-nota">O pagamento é feito diretamente para a chave PIX do recebedor. A confirmação automática ainda não está integrada; o botão "Já paguei" envia um aviso ao administrador para conferência do PIX.</div>
     </div>`;
   document.body.appendChild(bg);
 }
@@ -1605,11 +1605,11 @@ window.abrirPagamentoPix=abrirPagamentoPix;
 
 async function copiarChavePix(){
   try{
-    await navigator.clipboard.writeText(CONFIG_ASSINATURA.pixChave.replace(/\D/g,''));
+    await navigator.clipboard.writeText(CONFIG_ASSINATURA.pixChave);
     alert('Chave PIX copiada.');
   }catch(e){
     const ta=document.createElement('textarea');
-    ta.value=CONFIG_ASSINATURA.pixChave.replace(/\D/g,'');
+    ta.value=CONFIG_ASSINATURA.pixChave;
     document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
     alert('Chave PIX copiada.');
   }
@@ -2147,7 +2147,7 @@ window.RENDERIZADORES.assinatura = async function () {
         ${USUARIO && USUARIO.cargo === 'ADMIN' ? `
         <div class="assinatura-card">
           <h3>Pagamentos informados ${pagamentosPendentes.length ? `<span class="notificacao-badge" style="position:static;display:inline-flex;margin-left:6px;vertical-align:middle;">${pagamentosPendentes.length}</span>` : ''}</h3>
-          <p style="color:var(--texto-fraco);font-size:11px;margin:4px 0 14px;">Avisos enviados pelo botão “Já paguei”. Confirme somente depois de conferir o recebimento no Nubank PJ.</p>
+          <p style="color:var(--texto-fraco);font-size:11px;margin:4px 0 14px;">Avisos enviados pelo botão "Já paguei". Confirme somente depois de conferir o recebimento na conta vinculada à chave PIX.</p>
           ${pagamentosPendentes.length ? pagamentosPendentes.map(p=>`
             <div class="admin-item" style="margin-bottom:8px;gap:12px;">
               <div style="min-width:0;flex:1;">
