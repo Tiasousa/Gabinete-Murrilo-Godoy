@@ -1588,13 +1588,13 @@ const CONFIG_ASSINATURA = {
   planosDisponiveis: [
     {
       nome: 'Plano Mensal',
-      desenvolvimento: 1500.00,
+      desenvolvimento: 2500.00,
       mensalidade: 249.00,
       descricao: 'Implantação do sistema + manutenção mensal em nuvem.'
     },
     {
       nome: 'Sistema Completo',
-      desenvolvimento: 4000.00,
+      desenvolvimento: 4500.00,
       mensalidade: 49.90,
       descricao: 'Sistema adquirido por completo + manutenção reduzida do servidor em nuvem ativo.'
     }
@@ -1697,6 +1697,7 @@ function renderizarBloqueioTotal(info){
     <div class="bloqueio-caixa">
       <h2>🔒 Acesso suspenso</h2>
       <p>${escapar(motivo)}</p>
+      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">Escolha uma das opções de plano abaixo para regularizar:</p>
       <div class="bloqueio-planos">
         ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
           <div class="bloqueio-plano">
@@ -1762,18 +1763,38 @@ window.alternarBloqueioTotal = alternarBloqueioTotal;
 // mostra um popup com os planos e o PIX. Aparece só 1x por dia por
 // pessoa (guardado no localStorage do navegador dela).
 // ======================================================
+// Calcula a data do vencimento que realmente importa agora: se o mês
+// corrente já está pago, olha pro dia 10 do MÊS QUE VEM (pré-aviso);
+// se não está pago, olha pro dia 10 deste mês (podendo já estar vencido).
+function proximoVencimentoInfo(){
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const mesAtualPago = (CONFIG_ACESSO || {}).cicloPago === cicloAtual();
+  let dataRef;
+  if(!mesAtualPago){
+    dataRef = new Date(hoje.getFullYear(), hoje.getMonth(), CONFIG_ASSINATURA.diaVencimento);
+  } else {
+    dataRef = new Date(hoje.getFullYear(), hoje.getMonth()+1, CONFIG_ASSINATURA.diaVencimento);
+  }
+  const cicloRef = dataRef.getFullYear() + '-' + String(dataRef.getMonth()+1).padStart(2,'0');
+  const diasRestantes = Math.round((dataRef - hoje) / 86400000);
+  return {
+    diasRestantes,
+    jaVenceu: diasRestantes < 0,
+    pagoParaEsseCiclo: (CONFIG_ACESSO || {}).cicloPago === cicloRef
+  };
+}
+
 function mostrarAvisoVencimentoSeNecessario(){
   if(!USUARIO || !UID) return;
-  const pago = (CONFIG_ACESSO || {}).cicloPago === cicloAtual();
-  if(pago) return;
+  const info = proximoVencimentoInfo();
+  if(info.pagoParaEsseCiclo) return;
 
-  const hoje = new Date();
-  const diaHoje = hoje.getDate();
-  const jaVenceu = diaHoje >= CONFIG_ASSINATURA.diaVencimento;
-  const diasRestantes = CONFIG_ASSINATURA.diaVencimento - diaHoje;
-  const dentroDaJanela = jaVenceu || (diasRestantes >= 0 && diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia);
+  const jaVenceu = info.jaVenceu;
+  const diasRestantes = info.diasRestantes;
+  const dentroDaJanela = jaVenceu || diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia;
   if(!dentroDaJanela) return;
 
+  const hoje = new Date();
   const chaveHoje = 'avisoVencimento_' + hoje.toISOString().slice(0,10) + '_' + UID;
   try{
     if(localStorage.getItem(chaveHoje) === '1') return;
@@ -1799,6 +1820,7 @@ function mostrarAvisoVencimentoSeNecessario(){
         <div><h3>${titulo}</h3><p>${escapar(texto)}</p></div>
         <button class="pix-fechar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove()">×</button>
       </div>
+      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">O gabinete tem 2 opções de plano — escolha a que preferir:</p>
       <div class="bloqueio-planos">
         ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
           <div class="bloqueio-plano">
