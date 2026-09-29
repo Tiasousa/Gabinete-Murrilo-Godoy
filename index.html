@@ -1280,6 +1280,26 @@
   .assinatura-upgrade button{margin-top:12px;width:100%;border:0;border-radius:9px;padding:10px 12px;background:#22A95A;color:#fff;font-weight:900;}
   @media(max-width:560px){.pix-acoes{grid-template-columns:1fr}.pix-modal{padding:18px}.pix-valor strong{font-size:26px}}
 
+  /* ===== BLOQUEIO TOTAL DE ACESSO (inadimplência) ===== */
+  #telaBloqueioTotal{position:fixed;inset:0;z-index:7000;background:radial-gradient(circle at 30% 20%,#1A0E12,#070E19 60%);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
+  .bloqueio-caixa{width:min(620px,100%);background:#0A1728;border:1px solid #3A1D22;border-radius:20px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.55);}
+  .bloqueio-caixa h2{margin:0 0 6px;color:#FF8A8F;font-size:22px;}
+  .bloqueio-caixa>p{margin:0 0 18px;color:#B8C4D4;font-size:13px;line-height:1.5;}
+  .bloqueio-planos{display:grid;gap:12px;margin-bottom:18px;}
+  .bloqueio-plano{border:1px solid #28415D;border-radius:12px;background:#0D1D33;padding:14px;}
+  .bloqueio-plano b{display:block;color:#fff;font-size:14px;margin-bottom:3px;}
+  .bloqueio-plano span{display:block;color:#8EA3BF;font-size:11.5px;margin-bottom:6px;}
+  .bloqueio-plano strong{display:block;color:#4ADE80;font-size:13px;}
+  .bloqueio-acoes{display:grid;gap:10px;}
+  .bloqueio-acoes button{width:100%;padding:12px 14px;border-radius:10px;font-weight:900;border:0;}
+  .bloqueio-pagar{background:#22A95A;color:#fff;}
+  .bloqueio-sair{background:#1C2C41;color:#DCE6F2;}
+  .assinatura-controle-acesso{border:1px solid #3A1D22;background:#150C0E;}
+  .assinatura-controle-acesso.liberado{border-color:#1D3E60;background:#0A2037;}
+  .assinatura-controle-status{font-size:12.5px;color:#DCE6F2;margin-bottom:12px;}
+  .assinatura-controle-status b{color:#FF8A8F;}
+  .assinatura-controle-acesso.liberado .assinatura-controle-status b{color:#4ADE80;}
+
 
 /* UX calendário: qualquer clique no campo de data abre o seletor */
 input[type="date"] { cursor: pointer; }
@@ -1545,6 +1565,7 @@ let UID = null;
 let paginaAtual = 'dashboard';
 let pararDeOuvirPerfil = null;
 let pararDeOuvirConfigGeral = null;
+let pararDeOuvirAcesso = null;
 
 const CONFIG_GERAL = {};
 window.CONFIG_GERAL = CONFIG_GERAL;
@@ -1561,8 +1582,34 @@ const CONFIG_ASSINATURA = {
   pixChave: '+5564993010548',
   pixChaveExibicao: '(64) 99301-0548',
   pixTipoChave: 'Celular',
-  pixTitular: 'GUILHERME HENRIQUE S. C. SILVA'
+  pixTitular: 'GUILHERME HENRIQUE S. C. SILVA',
+  // Opções de plano oferecidas ao cliente na hora de renovar ou regularizar.
+  planosDisponiveis: [
+    {
+      nome: 'Plano Mensal',
+      desenvolvimento: 1500.00,
+      mensalidade: 249.00,
+      descricao: 'Implantação do sistema + manutenção mensal em nuvem.'
+    },
+    {
+      nome: 'Sistema Completo',
+      desenvolvimento: 4000.00,
+      mensalidade: 49.90,
+      descricao: 'Sistema adquirido por completo + manutenção reduzida do servidor em nuvem ativo.'
+    }
+  ]
 };
+
+// Formata valor em Real — usado em vários pontos do app (assinatura, PIX, bloqueio de acesso).
+function fmtBRL(v){
+  return Number(v || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+
+// Identifica o ciclo de cobrança atual no formato "AAAA-MM".
+function cicloAtual(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
 
 function limiteArmazenamentoBytes(){
   return Number(CONFIG_ASSINATURA.limiteMB || 500) * 1024 * 1024;
@@ -1624,6 +1671,88 @@ async function copiarChavePix(){
 }
 window.copiarChavePix=copiarChavePix;
 
+// ======================================================
+// BLOQUEIO TOTAL DE ACESSO
+//
+// Estado global lido de config/acesso, em tempo real. Quando
+// bloqueioTotalAtivo === true, todo mundo que não for ADMIN vê a
+// tela de bloqueio em vez do sistema — inclusive quem já está com
+// o app aberto, porque o listener é em tempo real.
+// ======================================================
+let CONFIG_ACESSO = {};
+
+function renderizarBloqueioTotal(info){
+  appEl.classList.add('hidden');
+  telaLogin.classList.add('hidden');
+  telaSplash.classList.add('hidden');
+  let el = document.getElementById('telaBloqueioTotal');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'telaBloqueioTotal';
+    document.body.appendChild(el);
+  }
+  const motivo = (info && info.bloqueioTotalMotivo) || 'O pagamento da mensalidade do Gabinete Digital está pendente. O acesso foi suspenso até a confirmação do pagamento pelo administrador.';
+  el.innerHTML = `
+    <div class="bloqueio-caixa">
+      <h2>🔒 Acesso suspenso</h2>
+      <p>${escapar(motivo)}</p>
+      <div class="bloqueio-planos">
+        ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
+          <div class="bloqueio-plano">
+            <b>${escapar(p.nome)}</b>
+            <span>${escapar(p.descricao)}</span>
+            <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+          </div>`).join('')}
+      </div>
+      <div class="bloqueio-acoes">
+        <button type="button" class="bloqueio-pagar" onclick="abrirPagamentoPix(${CONFIG_ASSINATURA.mensalidade},'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
+        <button type="button" class="bloqueio-sair" onclick="signOut(auth)">Sair</button>
+      </div>
+    </div>`;
+}
+
+function fecharBloqueioTotal(){
+  document.getElementById('telaBloqueioTotal')?.remove();
+}
+
+// Confere o estado de acesso (USUARIO + CONFIG_ACESSO) e decide se
+// mostra a tela de bloqueio. Retorna true se bloqueou.
+function aplicarEstadoAcesso(){
+  if(!USUARIO) return false;
+  const ehAdmin = norm(USUARIO.cargo) === 'ADMIN';
+  const bloqueado = !ehAdmin && CONFIG_ACESSO && CONFIG_ACESSO.bloqueioTotalAtivo === true;
+  if(bloqueado){
+    renderizarBloqueioTotal(CONFIG_ACESSO);
+    return true;
+  }
+  fecharBloqueioTotal();
+  return false;
+}
+
+async function alternarBloqueioTotal(ativar){
+  if(!USUARIO || norm(USUARIO.cargo) !== 'ADMIN') return;
+  let motivo = '';
+  if(ativar){
+    motivo = prompt('Mensagem que vai aparecer para todo mundo (deixe em branco para usar a padrão):', 'O pagamento da mensalidade do Gabinete Digital está em atraso. O acesso foi suspenso até a confirmação do pagamento.') || '';
+    if(!confirm('Confirma o BLOQUEIO TOTAL do sistema? Ninguém além do administrador vai conseguir entrar até você liberar de novo.')) return;
+  } else {
+    if(!confirm('Liberar o acesso de todo mundo agora?')) return;
+  }
+  try{
+    await setDoc(doc(db,'config','acesso'), {
+      bloqueioTotalAtivo: !!ativar,
+      bloqueioTotalMotivo: ativar ? motivo : '',
+      alteradoPorUid: UID,
+      alteradoPorNome: USUARIO.nome || '',
+      alteradoEm: new Date().toLocaleString('pt-BR')
+    }, { merge:true });
+    if(paginaAtual === 'assinatura') window.RENDERIZADORES.assinatura();
+  }catch(e){
+    alert('Não foi possível alterar o bloqueio de acesso. (' + (e.message || 'erro') + ')');
+  }
+}
+window.alternarBloqueioTotal = alternarBloqueioTotal;
+
 async function registrarAvisoPagamento(valor, descricao){
   if(!USUARIO || !UID){
     alert('Sua sessão não está disponível. Entre novamente no sistema.');
@@ -1666,7 +1795,14 @@ async function confirmarPagamentoInformado(id){
       confirmadoEm: new Date().toLocaleString('pt-BR'),
       confirmadoEmISO: new Date().toISOString()
     });
-    alert('Pagamento confirmado.');
+    // Confirmar um pagamento marca o ciclo atual como pago e, se o acesso
+    // estava bloqueado por falta de pagamento, já libera todo mundo de volta.
+    await setDoc(doc(db,'config','acesso'), {
+      cicloPago: cicloAtual(),
+      bloqueioTotalAtivo: false,
+      bloqueioTotalMotivo: ''
+    }, { merge:true });
+    alert('Pagamento confirmado. O ciclo foi marcado como pago e o acesso foi liberado.');
     atualizarBadgeNotificacoes();
     if(paginaAtual === 'assinatura') window.RENDERIZADORES.assinatura();
   }catch(e){
@@ -1690,6 +1826,9 @@ async function atualizarResumoAssinaturaTopo() {
   statusEl.textContent = '● PLANO ATIVO';
   usoEl.textContent = 'Calculando espaço...';
   badge.classList.remove('alerta','critico');
+  const hoje = new Date();
+  const pagamentoVencido = hoje.getDate() >= CONFIG_ASSINATURA.diaVencimento
+    && (CONFIG_ACESSO || {}).cicloPago !== cicloAtual();
   try {
     const uso = await calcularUsoAnexos();
     const bytesUsados = uso.bytesUsados;
@@ -1698,6 +1837,7 @@ async function atualizarResumoAssinaturaTopo() {
     if (pct >= 100) { badge.classList.add('critico'); statusEl.textContent = '● LIMITE ATINGIDO'; }
     else if (pct >= 90) { badge.classList.add('critico'); statusEl.textContent = '● ESPAÇO CRÍTICO'; }
     else if (pct >= 70) { badge.classList.add('alerta'); statusEl.textContent = '● ESPAÇO EM ALERTA'; }
+    if (pagamentoVencido) { badge.classList.add('critico'); statusEl.textContent = '● PAGAMENTO PENDENTE'; }
   } catch (e) {
     console.error('Não foi possível atualizar o resumo de assinatura no topo:', e);
     usoEl.textContent = `${limiteArmazenamentoTexto()} contratados`;
@@ -1995,10 +2135,13 @@ function fecharApp() {
   inputEmail.value = ''; inputSenha.value = ''; erroLogin.innerText = '';
   btnEntrar.disabled = false; btnEntrar.innerText = 'Entrar';
   USUARIO = null; UID = null;
+  CONFIG_ACESSO = {};
+  fecharBloqueioTotal();
 }
 
 onAuthStateChanged(auth, async (user) => {
   if (pararDeOuvirPerfil) { pararDeOuvirPerfil(); pararDeOuvirPerfil = null; }
+  if (pararDeOuvirAcesso) { pararDeOuvirAcesso(); pararDeOuvirAcesso = null; }
 
   if (!user) {
     fecharApp();
@@ -2007,6 +2150,16 @@ onAuthStateChanged(auth, async (user) => {
 
   UID = user.uid;
   const refPerfil = doc(db, 'usuarios', user.uid);
+
+  pararDeOuvirAcesso = onSnapshot(doc(db, 'config', 'acesso'), (snap) => {
+    CONFIG_ACESSO = snap.exists() ? snap.data() : {};
+    if (!USUARIO) return;
+    const estavaBloqueado = !!document.getElementById('telaBloqueioTotal');
+    if (aplicarEstadoAcesso()) return;
+    if (estavaBloqueado) abrirApp();
+  }, (erro) => {
+    console.error('Erro ao ouvir config/acesso:', erro);
+  });
 
   pararDeOuvirPerfil = onSnapshot(refPerfil, (snap) => {
     if (!snap.exists()) {
@@ -2023,6 +2176,7 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
     USUARIO = { ...dados, uid: user.uid };
+    if (aplicarEstadoAcesso()) return;
     if (appEl.classList.contains('hidden')) {
       abrirApp();
     } else {
@@ -2075,8 +2229,10 @@ window.RENDERIZADORES.assinatura = async function () {
     let venc = new Date(hoje.getFullYear(), hoje.getMonth(), CONFIG_ASSINATURA.diaVencimento);
     if (hoje.getDate() > CONFIG_ASSINATURA.diaVencimento) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, CONFIG_ASSINATURA.diaVencimento);
     const vencimento = venc.toLocaleDateString('pt-BR');
+    const pagamentoVencido = hoje.getDate() >= CONFIG_ASSINATURA.diaVencimento
+      && (CONFIG_ACESSO || {}).cicloPago !== cicloAtual();
+    const bloqueioAtivo = (CONFIG_ACESSO || {}).bloqueioTotalAtivo === true;
 
-    const fmtBRL = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
     const usadoTexto = gbUsados >= 0.01 ? gbUsados.toFixed(2).replace('.',',') + ' GB' : (bytesUsados/1024/1024).toFixed(1).replace('.',',') + ' MB';
 
     let pagamentosPendentes = [];
@@ -2113,6 +2269,20 @@ window.RENDERIZADORES.assinatura = async function () {
           </div>
           <button class="btn-secundario" onclick="irPara('dashboard')">← Voltar ao painel</button>
         </div>
+
+        ${pagamentoVencido ? `
+        <div class="bloqueio-caixa" style="margin-bottom:16px;border-color:#3A1D22;">
+          <h2 style="font-size:16px;">⚠️ Pagamento pendente</h2>
+          <p>O vencimento deste mês (dia ${CONFIG_ASSINATURA.diaVencimento}) já passou e o pagamento ainda não foi confirmado. Escolha um dos planos abaixo e regularize para evitar o bloqueio do acesso.</p>
+          <div class="bloqueio-planos">
+            ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
+              <div class="bloqueio-plano">
+                <b>${escapar(p.nome)}</b>
+                <span>${escapar(p.descricao)}</span>
+                <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
 
         <div class="assinatura-grid">
           <div class="assinatura-card">
@@ -2181,6 +2351,18 @@ window.RENDERIZADORES.assinatura = async function () {
               <b style="white-space:nowrap;color:#4ADE80;">${fmtBRL(Number(p.valor||0))}</b>
               <button class="btn-primario" style="padding:7px 11px;font-size:10.5px;" onclick="confirmarPagamentoInformado('${p._docId}')">Confirmar recebimento</button>
             </div>`).join('') : '<div style="color:var(--texto-fraco);font-size:12px;">Nenhum pagamento aguardando conferência.</div>'}
+        </div>` : ''}
+
+        ${USUARIO && USUARIO.cargo === 'ADMIN' ? `
+        <div class="assinatura-card assinatura-controle-acesso ${bloqueioAtivo ? '' : 'liberado'}">
+          <h3>Controle de acesso</h3>
+          <div class="assinatura-controle-status">
+            Status atual: <b>${bloqueioAtivo ? 'ACESSO BLOQUEADO PARA TODOS (exceto admin)' : 'Acesso liberado normalmente'}</b>
+            ${bloqueioAtivo && CONFIG_ACESSO.bloqueioTotalMotivo ? `<br><span style="color:var(--texto-fraco);">Motivo: ${escapar(CONFIG_ACESSO.bloqueioTotalMotivo)}</span>` : ''}
+          </div>
+          ${bloqueioAtivo
+            ? `<button type="button" class="btn-primario" style="width:100%;" onclick="alternarBloqueioTotal(false)">Liberar acesso de todos agora</button>`
+            : `<button type="button" class="btn-secundario" style="width:100%;border-color:#5C2229;color:#FF8A8F;" onclick="alternarBloqueioTotal(true)">🔒 Bloquear acesso de todos agora</button>`}
         </div>` : ''}
       </div>`;
   } catch(e) {
