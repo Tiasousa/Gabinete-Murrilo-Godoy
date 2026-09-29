@@ -1566,6 +1566,7 @@ let paginaAtual = 'dashboard';
 let pararDeOuvirPerfil = null;
 let pararDeOuvirConfigGeral = null;
 let pararDeOuvirAcesso = null;
+let intervaloAvisoVencimento = null;
 
 const CONFIG_GERAL = {};
 window.CONFIG_GERAL = CONFIG_GERAL;
@@ -1784,8 +1785,17 @@ function proximoVencimentoInfo(){
   };
 }
 
+// Horário comercial em que o aviso pode repetir: 8h às 18h, pulando o
+// horário de almoço (12h-13h). Fora disso, o aviso nem tenta aparecer.
+function dentroDoHorarioDeAviso(){
+  const h = new Date().getHours();
+  return h >= 8 && h <= 18 && h !== 12;
+}
+
 function mostrarAvisoVencimentoSeNecessario(){
   if(!USUARIO || !UID) return;
+  if(!dentroDoHorarioDeAviso()) return;
+
   const info = proximoVencimentoInfo();
   if(info.pagoParaEsseCiclo) return;
 
@@ -1794,8 +1804,10 @@ function mostrarAvisoVencimentoSeNecessario(){
   const dentroDaJanela = jaVenceu || diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia;
   if(!dentroDaJanela) return;
 
+  // Chave por dia+hora: repete a cada hora dentro do horário comercial,
+  // em vez de 1x por dia.
   const hoje = new Date();
-  const chaveHoje = 'avisoVencimento_' + hoje.toISOString().slice(0,10) + '_' + UID;
+  const chaveHoje = 'avisoVencimento_' + hoje.toISOString().slice(0,10) + '_' + hoje.getHours() + '_' + UID;
   try{
     if(localStorage.getItem(chaveHoje) === '1') return;
     localStorage.setItem(chaveHoje, '1');
@@ -2225,6 +2237,10 @@ function abrirApp() {
     atualizarBadgeNotificacoes();
     atualizarResumoAssinaturaTopo();
     setTimeout(mostrarAvisoVencimentoSeNecessario, 600);
+    // Confere de novo a cada 5 minutos, pra pegar a virada de cada hora
+    // mesmo em quem deixa o sistema aberto na aba sem recarregar.
+    if(intervaloAvisoVencimento) clearInterval(intervaloAvisoVencimento);
+    intervaloAvisoVencimento = setInterval(mostrarAvisoVencimentoSeNecessario, 5 * 60 * 1000);
   });
 }
 
@@ -2238,6 +2254,7 @@ function fecharApp() {
   USUARIO = null; UID = null;
   CONFIG_ACESSO = {};
   fecharBloqueioTotal();
+  if(intervaloAvisoVencimento){ clearInterval(intervaloAvisoVencimento); intervaloAvisoVencimento = null; }
 }
 
 onAuthStateChanged(auth, async (user) => {
