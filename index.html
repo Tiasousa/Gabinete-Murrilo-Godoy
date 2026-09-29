@@ -1578,6 +1578,7 @@ const CONFIG_ASSINATURA = {
   mensalidade: 249.00,
   limiteMB: 500,
   diaVencimento: 10,
+  diasAvisoAntecedencia: 10,
   status: 'ATIVO',
   pixChave: '+5564993010548',
   pixChaveExibicao: '(64) 99301-0548',
@@ -1752,6 +1753,68 @@ async function alternarBloqueioTotal(ativar){
   }
 }
 window.alternarBloqueioTotal = alternarBloqueioTotal;
+
+// ======================================================
+// AVISO DIÁRIO DE VENCIMENTO
+//
+// Toda vez que o sistema é aberto, se o mês ainda não foi marcado
+// como pago e estamos perto (ou já passamos) do dia de vencimento,
+// mostra um popup com os planos e o PIX. Aparece só 1x por dia por
+// pessoa (guardado no localStorage do navegador dela).
+// ======================================================
+function mostrarAvisoVencimentoSeNecessario(){
+  if(!USUARIO || !UID) return;
+  const pago = (CONFIG_ACESSO || {}).cicloPago === cicloAtual();
+  if(pago) return;
+
+  const hoje = new Date();
+  const diaHoje = hoje.getDate();
+  const jaVenceu = diaHoje >= CONFIG_ASSINATURA.diaVencimento;
+  const diasRestantes = CONFIG_ASSINATURA.diaVencimento - diaHoje;
+  const dentroDaJanela = jaVenceu || (diasRestantes >= 0 && diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia);
+  if(!dentroDaJanela) return;
+
+  const chaveHoje = 'avisoVencimento_' + hoje.toISOString().slice(0,10) + '_' + UID;
+  try{
+    if(localStorage.getItem(chaveHoje) === '1') return;
+    localStorage.setItem(chaveHoje, '1');
+  }catch(e){ /* sem localStorage, mostra mesmo assim */ }
+
+  document.getElementById('avisoVencimentoModal')?.remove();
+
+  const titulo = jaVenceu ? '⚠️ Vencimento em atraso' : '📅 Vencimento se aproximando';
+  const texto = jaVenceu
+    ? `O vencimento deste mês (dia ${CONFIG_ASSINATURA.diaVencimento}) já passou e o pagamento ainda não foi confirmado.`
+    : diasRestantes === 0
+      ? `O vencimento é hoje (dia ${CONFIG_ASSINATURA.diaVencimento}).`
+      : `Faltam ${diasRestantes} dia${diasRestantes > 1 ? 's' : ''} para o vencimento (dia ${CONFIG_ASSINATURA.diaVencimento}).`;
+
+  const fundo = document.createElement('div');
+  fundo.id = 'avisoVencimentoModal';
+  fundo.className = 'pix-modal-bg';
+  fundo.onclick = e => { if(e.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="pix-modal" role="dialog" aria-modal="true" aria-label="Aviso de vencimento">
+      <div class="pix-modal-head">
+        <div><h3>${titulo}</h3><p>${escapar(texto)}</p></div>
+        <button class="pix-fechar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove()">×</button>
+      </div>
+      <div class="bloqueio-planos">
+        ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
+          <div class="bloqueio-plano">
+            <b>${escapar(p.nome)}</b>
+            <span>${escapar(p.descricao)}</span>
+            <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+          </div>`).join('')}
+      </div>
+      <div class="pix-acoes">
+        <button class="pix-copiar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove(); abrirPagamentoPix(${CONFIG_ASSINATURA.mensalidade},'Manutenção mensal do Gabinete Digital')">Pagar via PIX</button>
+        <button class="pix-paguei" type="button" onclick="document.getElementById('avisoVencimentoModal').remove()">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+}
+window.mostrarAvisoVencimentoSeNecessario = mostrarAvisoVencimentoSeNecessario;
 
 async function registrarAvisoPagamento(valor, descricao){
   if(!USUARIO || !UID){
@@ -2124,6 +2187,7 @@ function abrirApp() {
     irPara('dashboard');
     atualizarBadgeNotificacoes();
     atualizarResumoAssinaturaTopo();
+    setTimeout(mostrarAvisoVencimentoSeNecessario, 600);
   });
 }
 
