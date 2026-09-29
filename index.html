@@ -1801,6 +1801,15 @@ function mostrarAvisoVencimentoSeNecessario(){
     localStorage.setItem(chaveHoje, '1');
   }catch(e){ /* sem localStorage, mostra mesmo assim */ }
 
+  renderizarAvisoVencimento(jaVenceu, diasRestantes);
+}
+window.mostrarAvisoVencimentoSeNecessario = mostrarAvisoVencimentoSeNecessario;
+
+// Só desenha o popup na tela — sem checar data, sem checar se já pagou,
+// sem mexer no localStorage. Usado pelo aviso real E pelo botão de teste
+// do admin ("ver como vai aparecer pros usuários"), pra não depender de
+// mexer na data do sistema pra conferir o visual.
+function renderizarAvisoVencimento(jaVenceu, diasRestantes){
   document.getElementById('avisoVencimentoModal')?.remove();
 
   const titulo = jaVenceu ? '⚠️ Vencimento em atraso' : '📅 Vencimento se aproximando';
@@ -1836,7 +1845,13 @@ function mostrarAvisoVencimentoSeNecessario(){
     </div>`;
   document.body.appendChild(fundo);
 }
-window.mostrarAvisoVencimentoSeNecessario = mostrarAvisoVencimentoSeNecessario;
+
+// Botão de teste do admin: mostra o popup exatamente como qualquer
+// usuário vai ver, sem alterar nada no Firestore nem no localStorage.
+function testarAvisoVencimento(){
+  renderizarAvisoVencimento(false, CONFIG_ASSINATURA.diasAvisoAntecedencia);
+}
+window.testarAvisoVencimento = testarAvisoVencimento;
 
 async function registrarAvisoPagamento(valor, descricao){
   if(!USUARIO || !UID){
@@ -2449,6 +2464,7 @@ window.RENDERIZADORES.assinatura = async function () {
           ${bloqueioAtivo
             ? `<button type="button" class="btn-primario" style="width:100%;" onclick="alternarBloqueioTotal(false)">Liberar acesso de todos agora</button>`
             : `<button type="button" class="btn-secundario" style="width:100%;border-color:#5C2229;color:#FF8A8F;" onclick="alternarBloqueioTotal(true)">🔒 Bloquear acesso de todos agora</button>`}
+          <button type="button" class="btn-secundario" style="width:100%;margin-top:8px;" onclick="testarAvisoVencimento()">👁️ Ver como o aviso de vencimento aparece</button>
         </div>` : ''}
       </div>`;
   } catch(e) {
