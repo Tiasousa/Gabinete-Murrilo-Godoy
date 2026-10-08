@@ -2033,6 +2033,8 @@ const MODULOS = [
   { id: 'atendimentos', label: '👥 Atendimentos', admin: false },
   { id: 'transportes', label: '🚐 Transportes', admin: false },
   { id: 'equipamentos', label: '🏆 Equipamentos', admin: false },
+  { id: 'oficios', label: '📨 Ofícios', admin: false },
+  { id: 'homenageados', label: '🎖️ Homenageados', admin: false },
   { id: 'agenda', label: '📅 Agenda', admin: false },
   { id: 'relatorios', label: '📊 Relatórios', admin: false },
   { id: 'usuarios', label: '🔑 Usuários', admin: true },
@@ -2565,9 +2567,9 @@ function kpiMiniMurillo(corFundo, corTexto, icone, numero, rotulo){
 function badgeStatus(status) {
   const s = norm(status);
   let classe = 'badge-cinza';
-  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO' || s === 'LIBERADO') classe = 'badge-verde';
-  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO' || s === 'ESPERA' || s === 'RECOLHER' || s === 'RESERVADO' || s === 'RETIRAR') classe = 'badge-amarelo';
-  else if (s === 'CANCELADO' || s === 'NAO') classe = 'badge-vermelho';
+  if (s === 'CONCLUIDO' || s === 'SIM' || s === 'ENTREGUE' || s === 'CONFIRMADO' || s === 'REALIZADO' || s === 'LIBERADO' || s === 'ATENDIDO') classe = 'badge-verde';
+  else if (s === 'EM ANALISE' || s === 'PLANEJAMENTO' || s === 'ESPERA' || s === 'RECOLHER' || s === 'RESERVADO' || s === 'RETIRAR' || s === 'AGUARDANDO RESPOSTA' || s === 'COBRADO') classe = 'badge-amarelo';
+  else if (s === 'CANCELADO' || s === 'NAO' || s === 'NAO ATENDIDO') classe = 'badge-vermelho';
   return `<span class="badge ${classe}">${status || '-'}</span>`;
 }
 window.badgeStatus = badgeStatus;
@@ -3543,6 +3545,234 @@ async function excluirEquip(docId) {
   catch (e) { alert('Não foi possível excluir: ' + e.message); }
 }
 window.excluirEquip = excluirEquip;
+
+// ======================================================
+// OFÍCIOS E REQUERIMENTOS
+// ======================================================
+let oficiosCacheLista = [];
+const STATUS_OFICIO = ['AGUARDANDO RESPOSTA','COBRADO','ATENDIDO','NÃO ATENDIDO'];
+
+window.RENDERIZADORES = window.RENDERIZADORES || {};
+window.RENDERIZADORES.oficios = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const snap = await getDocs(collection(db, 'oficios'));
+  oficiosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
+    .sort((a,b) => String(b.dataEnvioISO||'').localeCompare(String(a.dataEnvioISO||'')));
+  desenharOficios();
+};
+
+function desenharOficios() {
+  const c = document.getElementById('conteudo');
+  const podeEditar = !somenteLeitura();
+  const total = oficiosCacheLista.length;
+  const aguardando = oficiosCacheLista.filter(o => norm(o.status) === 'AGUARDANDO RESPOSTA').length;
+  const cobrados = oficiosCacheLista.filter(o => norm(o.status) === 'COBRADO').length;
+  const atendidos = oficiosCacheLista.filter(o => norm(o.status) === 'ATENDIDO').length;
+  c.innerHTML = `
+    <div class="topo-pagina-atend">
+      <h2>Acompanhamento de <span style="color:var(--acento);">Ofícios</span></h2>
+      <div class="kpis-faixa">
+        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${aguardando}</div><div class="rot">Aguardando resposta</div></div>
+        <div class="kpi-faixa-item"><div class="num">${cobrados}</div><div class="rot">Cobrados</div></div>
+        <div class="kpi-faixa-item"><div class="num">${atendidos}</div><div class="rot">Atendidos</div></div>
+      </div>
+      ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalOficio()">+ Novo Ofício</button>' : ''}
+    </div>
+    <div class="barra-acoes" style="grid-template-columns:minmax(240px,1fr) 110px;">
+      <input placeholder="Buscar por assunto, órgão, solicitante..." oninput="const q=norm(this.value);document.querySelectorAll('#tbOficios tr').forEach(r=>r.style.display=!q||norm(r.innerText).includes(q)?'':'none')">
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.oficios()">↻ Atualizar</button>
+    </div>
+    <div class="tabela-box"><table>
+      <thead><tr><th>Assunto</th><th>Nº</th><th>Órgão</th><th>Envio</th><th>Solicitado por</th><th>Enviado por</th><th>Recebido por</th><th>Status</th><th>Realizado por</th><th>Obs.</th><th>Última edição</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
+      <tbody id="tbOficios">
+        ${oficiosCacheLista.map(o => `<tr ${podeEditar ? `ondblclick='abrirModalOficio(${JSON.stringify(o).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
+          <td class="td-esquerda">${escapar(o.assunto||'-')}</td><td>${escapar(o.numero||'-')}</td><td>${escapar(o.orgao||'-')}</td><td>${escapar(o.dataEnvio||'-')}</td><td>${escapar(o.solicitadoPor||'-')}</td><td>${escapar(o.enviadoPor||'-')}</td><td>${escapar(o.recebidoPor||'-')}</td><td>${badgeStatus(o.status)}</td><td>${escapar(o.realizadoPor||'-')}</td><td class="td-obs td-esquerda" title="${escapar(o.observacoes||'')}">${escapar(o.observacoes||'-')}</td><td>${o.ultimaEdicaoPor ? escapar(o.ultimaEdicaoPor)+' · '+escapar(o.ultimaEdicaoData||'') : '-'}</td>
+          ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalOficio(${JSON.stringify(o).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirOficio('${o._docId}')">Excluir</button></div></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="${podeEditar?12:11}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum ofício registrado ainda.</td></tr>`}
+      </tbody>
+    </table></div>`;
+}
+
+function abrirModalOficio(registro) {
+  registro = registro || {};
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo modal-operacao-fundo';
+  fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal modal-operacao" onclick="event.stopPropagation()">
+      <h2>${registro._docId ? 'Editar' : 'Novo'} Ofício / Requerimento</h2>
+      <div class="modal-operacao-grid">
+        <div class="campo-modal span-2"><label>Assunto</label><input id="o_assunto" value="${escapar(registro.assunto||'')}"></div>
+        <div class="campo-modal"><label>Número</label><input id="o_numero" value="${escapar(registro.numero||'')}" placeholder="Ex: 012/2026"></div>
+        <div class="campo-modal"><label>Órgão / Destinatário</label><input id="o_orgao" value="${escapar(registro.orgao||'')}"></div>
+        <div class="campo-modal"><label>Data de envio</label><input id="o_dataEnvio" type="date" value="${dataBRparaISO(registro.dataEnvio||'')}"></div>
+        <div class="campo-modal"><label>Solicitado por</label><input id="o_solicitadoPor" value="${escapar(registro.solicitadoPor||'')}"></div>
+        <div class="campo-modal"><label>Enviado por</label><input id="o_enviadoPor" value="${escapar(registro.enviadoPor||USUARIO.nome||'')}"></div>
+        <div class="campo-modal"><label>Recebido por</label><input id="o_recebidoPor" value="${escapar(registro.recebidoPor||'')}"></div>
+        <div class="campo-modal"><label>Status</label><select id="o_status">${STATUS_OFICIO.map(s=>`<option ${registro.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div class="campo-modal"><label>Realizado por</label><input id="o_realizadoPor" value="${escapar(registro.realizadoPor||'')}"></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="o_observacoes">${escapar(registro.observacoes||'')}</textarea></div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarOficio" onclick="salvarOficio('${registro._docId||''}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+}
+window.abrirModalOficio = abrirModalOficio;
+
+async function salvarOficio(docId) {
+  const botao = document.getElementById('btnSalvarOficio');
+  if (botao.disabled) return;
+  botao.disabled = true; botao.innerText = 'Salvando...';
+  const dataEnvio = document.getElementById('o_dataEnvio').value;
+  const dados = {
+    assunto: maiusculo(document.getElementById('o_assunto').value),
+    numero: document.getElementById('o_numero').value.trim(),
+    orgao: maiusculo(document.getElementById('o_orgao').value),
+    dataEnvio: dataISOparaBR(dataEnvio),
+    dataEnvioISO: dataEnvio || '',
+    solicitadoPor: maiusculo(document.getElementById('o_solicitadoPor').value),
+    enviadoPor: maiusculo(document.getElementById('o_enviadoPor').value),
+    recebidoPor: maiusculo(document.getElementById('o_recebidoPor').value),
+    status: document.getElementById('o_status').value,
+    realizadoPor: maiusculo(document.getElementById('o_realizadoPor').value),
+    observacoes: document.getElementById('o_observacoes').value.trim(),
+    ultimaEdicaoPor: USUARIO.nome,
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+  if(!dados.assunto){ alert('Preencha o assunto.'); botao.disabled=false; botao.innerText='Salvar'; return; }
+  try {
+    if (docId) { await updateDoc(doc(db, 'oficios', docId), dados); }
+    else { dados.criadoPor = USUARIO.nome; dados.criadoEm = new Date().toISOString(); await addDoc(collection(db, 'oficios'), dados); }
+    document.querySelector('.modal-fundo')?.remove();
+    window.RENDERIZADORES.oficios();
+  } catch (e) {
+    alert('Não foi possível salvar: ' + e.message);
+    botao.disabled = false; botao.innerText = 'Salvar';
+  }
+}
+window.salvarOficio = salvarOficio;
+
+async function excluirOficio(docId) {
+  if (!confirm('Excluir este ofício/requerimento?')) return;
+  try { await deleteDoc(doc(db, 'oficios', docId)); window.RENDERIZADORES.oficios(); }
+  catch (e) { alert('Não foi possível excluir: ' + e.message); }
+}
+window.excluirOficio = excluirOficio;
+
+// ======================================================
+// HOMENAGEADOS
+// ======================================================
+let homenageadosCacheLista = [];
+
+window.RENDERIZADORES.homenageados = async function () {
+  const c = document.getElementById('conteudo');
+  c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
+  const snap = await getDocs(collection(db, 'homenageados'));
+  homenageadosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
+    .sort((a,b) => String(b.dataHomenagemISO||'').localeCompare(String(a.dataHomenagemISO||'')));
+  desenharHomenageados();
+};
+
+function desenharHomenageados() {
+  const c = document.getElementById('conteudo');
+  const podeEditar = !somenteLeitura();
+  const total = homenageadosCacheLista.length;
+  const hoje = new Date();
+  const esteMes = homenageadosCacheLista.filter(h => {
+    const iso = h.dataHomenagemISO || dataBRparaISO(h.dataHomenagem||'');
+    if(!iso) return false;
+    const d = new Date(iso+'T00:00:00');
+    return d.getMonth()===hoje.getMonth() && d.getFullYear()===hoje.getFullYear();
+  }).length;
+  const tiposQtd = new Set(homenageadosCacheLista.map(h=>norm(h.tipoHomenagem)).filter(Boolean)).size;
+  c.innerHTML = `
+    <div class="topo-pagina-atend">
+      <h2>Registro de <span style="color:var(--acento);">Homenageados</span></h2>
+      <div class="kpis-faixa">
+        <div class="kpi-faixa-item"><div class="num">${total}</div><div class="rot">Total</div></div>
+        <div class="kpi-faixa-item"><div class="num">${esteMes}</div><div class="rot">Neste mês</div></div>
+        <div class="kpi-faixa-item"><div class="num">${tiposQtd}</div><div class="rot">Tipos de homenagem</div></div>
+      </div>
+      ${podeEditar ? '<button class="btn-primario" style="height:52px;" onclick="abrirModalHomenageado()">+ Novo Homenageado</button>' : ''}
+    </div>
+    <div class="barra-acoes" style="grid-template-columns:minmax(240px,1fr) 110px;">
+      <input placeholder="Buscar por nome ou tipo de homenagem..." oninput="const q=norm(this.value);document.querySelectorAll('#tbHomenageados tr').forEach(r=>r.style.display=!q||norm(r.innerText).includes(q)?'':'none')">
+      <button class="btn-secundario" onclick="window.RENDERIZADORES.homenageados()">↻ Atualizar</button>
+    </div>
+    <div class="tabela-box"><table>
+      <thead><tr><th>Nome do homenageado</th><th>Telefone</th><th>Tipo de homenagem</th><th>Data da homenagem</th>${podeEditar?'<th>Ações</th>':''}</tr></thead>
+      <tbody id="tbHomenageados">
+        ${homenageadosCacheLista.map(h => `<tr ${podeEditar ? `ondblclick='abrirModalHomenageado(${JSON.stringify(h).replace(/'/g,"&#39;")})' title="Clique duas vezes para editar" style="cursor:pointer;"` : ''}>
+          <td class="td-esquerda">${escapar(h.nome||'-')}</td><td>${linkWhatsapp(h.telefone)}</td><td>${escapar(h.tipoHomenagem||'-')}</td><td>${escapar(h.dataHomenagem||'-')}</td>
+          ${podeEditar ? `<td ondblclick="event.stopPropagation()"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick='event.stopPropagation();abrirModalHomenageado(${JSON.stringify(h).replace(/'/g,"&#39;")})'>Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="event.stopPropagation();excluirHomenageado('${h._docId}')">Excluir</button></div></td>` : ''}
+        </tr>`).join('') || `<tr><td colspan="${podeEditar?5:4}" style="text-align:center;color:var(--texto-fraco);padding:24px;">Nenhum homenageado registrado ainda.</td></tr>`}
+      </tbody>
+    </table></div>`;
+}
+
+function abrirModalHomenageado(registro) {
+  registro = registro || {};
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo modal-operacao-fundo';
+  fundo.onclick = (ev) => { if (ev.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal modal-operacao" onclick="event.stopPropagation()">
+      <h2>${registro._docId ? 'Editar' : 'Novo'} Homenageado</h2>
+      <div class="modal-operacao-grid">
+        <div class="campo-modal span-2"><label>Nome do homenageado</label><input id="h_nome" value="${escapar(registro.nome||'')}"></div>
+        <div class="campo-modal span-2"><label>Telefone</label><input id="h_telefone" value="${formatarTelefoneBR(registro.telefone||'')}" placeholder="(64) 99298-2607" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
+        <div class="campo-modal span-2"><label>Tipo de homenagem</label><input id="h_tipoHomenagem" value="${escapar(registro.tipoHomenagem||'')}" placeholder="Ex: Moção de aplausos, Título de cidadão..."></div>
+        <div class="campo-modal span-2"><label>Data da homenagem</label><input id="h_dataHomenagem" type="date" value="${dataBRparaISO(registro.dataHomenagem||'')}"></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="h_observacoes">${escapar(registro.observacoes||'')}</textarea></div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarHomenageado" onclick="salvarHomenageado('${registro._docId||''}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+}
+window.abrirModalHomenageado = abrirModalHomenageado;
+
+async function salvarHomenageado(docId) {
+  const botao = document.getElementById('btnSalvarHomenageado');
+  if (botao.disabled) return;
+  botao.disabled = true; botao.innerText = 'Salvando...';
+  const dataHomenagem = document.getElementById('h_dataHomenagem').value;
+  const dados = {
+    nome: maiusculo(document.getElementById('h_nome').value),
+    telefone: formatarTelefoneBR(document.getElementById('h_telefone').value),
+    tipoHomenagem: maiusculo(document.getElementById('h_tipoHomenagem').value),
+    dataHomenagem: dataISOparaBR(dataHomenagem),
+    dataHomenagemISO: dataHomenagem || '',
+    observacoes: document.getElementById('h_observacoes').value.trim(),
+    ultimaEdicaoPor: USUARIO.nome,
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+  if(!dados.nome){ alert('Preencha o nome do homenageado.'); botao.disabled=false; botao.innerText='Salvar'; return; }
+  try {
+    if (docId) { await updateDoc(doc(db, 'homenageados', docId), dados); }
+    else { dados.criadoPor = USUARIO.nome; dados.criadoEm = new Date().toISOString(); await addDoc(collection(db, 'homenageados'), dados); }
+    document.querySelector('.modal-fundo')?.remove();
+    window.RENDERIZADORES.homenageados();
+  } catch (e) {
+    alert('Não foi possível salvar: ' + e.message);
+    botao.disabled = false; botao.innerText = 'Salvar';
+  }
+}
+window.salvarHomenageado = salvarHomenageado;
+
+async function excluirHomenageado(docId) {
+  if (!confirm('Excluir este homenageado?')) return;
+  try { await deleteDoc(doc(db, 'homenageados', docId)); window.RENDERIZADORES.homenageados(); }
+  catch (e) { alert('Não foi possível excluir: ' + e.message); }
+}
+window.excluirHomenageado = excluirHomenageado;
 
 let agendaEventosCache = [];
 let agendaMes = new Date().getMonth();
