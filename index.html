@@ -1576,28 +1576,29 @@ window.CONFIG_GERAL = CONFIG_GERAL;
 // para visualizar a tela. Depois pode ser movida para Firestore/portal do proprietário.
 const CONFIG_ASSINATURA = {
   plano: 'Gabinete Digital — Profissional',
-  mensalidade: 249.00,
+  // ACORDO ATUAL: desenvolvimento em 10 parcelas de R$ 250,00 (vencimento todo
+  // dia 20, a partir de 20/10/2026) + mensalidade de nuvem de R$ 49,00 por mês,
+  // cobrada junto com cada parcela. Depois da 10ª parcela, só a mensalidade.
+  mensalidade: 49.00,
+  valorParcela: 250.00,
+  parcelas: 10,
+  primeiroCiclo: '2026-10',
+  // Versão do acordo: pagamentos marcados como pagos sob o acordo antigo
+  // (vencimento dia 10) deixam de valer e não pulam a parcela 1.
+  acordoVersao: 2,
   limiteMB: 500,
-  diaVencimento: 10,
+  diaVencimento: 20,
   diasAvisoAntecedencia: 10,
   status: 'ATIVO',
   pixChave: '+5564993010548',
   pixChaveExibicao: '(64) 99301-0548',
   pixTipoChave: 'Celular',
   pixTitular: 'GUILHERME HENRIQUE S. C. SILVA',
-  // Opções de plano oferecidas ao cliente na hora de renovar ou regularizar.
+  // Plano contratado, exibido na tela de bloqueio, no aviso de vencimento e na assinatura.
   planosDisponiveis: [
     {
-      nome: 'Plano Mensal',
-      desenvolvimento: 2500.00,
-      mensalidade: 249.00,
-      descricao: 'Implantação do sistema + manutenção mensal em nuvem.'
-    },
-    {
-      nome: 'Sistema Completo',
-      desenvolvimento: 4500.00,
-      mensalidade: 49.90,
-      descricao: 'Sistema adquirido por completo + manutenção reduzida do servidor em nuvem ativo.'
+      nome: 'Gabinete Digital — Plano contratado',
+      descricao: 'Desenvolvimento do sistema parcelado + manutenção mensal em nuvem.'
     }
   ]
 };
@@ -1611,6 +1612,83 @@ function fmtBRL(v){
 function cicloAtual(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// ------------------------------------------------------------------
+// COBRANÇA POR CICLO (AAAA-MM): parcelas do desenvolvimento + mensalidade.
+//
+// O sistema guarda em config/acesso o ÚLTIMO ciclo pago (cicloPago) e a
+// versão do acordo (acordoVersao). A próxima cobrança é sempre o ciclo
+// seguinte ao último pago — assim um pagamento atrasado quita a parcela
+// certa, e não a do mês em que o admin clicou em "Confirmar".
+// ------------------------------------------------------------------
+function cicloDeData(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function somarCiclo(ciclo, n){
+  const [a, m] = ciclo.split('-').map(Number);
+  return cicloDeData(new Date(a, m - 1 + n, 1));
+}
+function diferencaCiclos(de, ate){
+  const [a1, m1] = de.split('-').map(Number);
+  const [a2, m2] = ate.split('-').map(Number);
+  return (a2 - a1) * 12 + (m2 - m1);
+}
+function cicloPagoValido(){
+  const a = CONFIG_ACESSO || {};
+  if(a.acordoVersao !== CONFIG_ASSINATURA.acordoVersao) return null;
+  return a.cicloPago || null;
+}
+function proximoCicloAPagar(){
+  const pago = cicloPagoValido();
+  if(pago && pago >= CONFIG_ASSINATURA.primeiroCiclo) return somarCiclo(pago, 1);
+  return CONFIG_ASSINATURA.primeiroCiclo;
+}
+function dataVencimentoDoCiclo(ciclo){
+  const [a, m] = ciclo.split('-').map(Number);
+  return new Date(a, m - 1, CONFIG_ASSINATURA.diaVencimento);
+}
+function parcelaDoCiclo(ciclo){
+  const n = diferencaCiclos(CONFIG_ASSINATURA.primeiroCiclo, ciclo) + 1;
+  return (n >= 1 && n <= CONFIG_ASSINATURA.parcelas) ? n : 0;
+}
+function valorDoCiclo(ciclo){
+  const parcela = parcelaDoCiclo(ciclo) ? CONFIG_ASSINATURA.valorParcela : 0;
+  return Math.round((parcela + CONFIG_ASSINATURA.mensalidade) * 100) / 100;
+}
+function descricaoDoCiclo(ciclo){
+  const p = parcelaDoCiclo(ciclo);
+  const venc = dataVencimentoDoCiclo(ciclo).toLocaleDateString('pt-BR');
+  return p
+    ? 'Parcela ' + p + '/' + CONFIG_ASSINATURA.parcelas + ' + mensalidade (venc. ' + venc + ')'
+    : 'Mensalidade do Gabinete Digital (venc. ' + venc + ')';
+}
+// Situação da próxima cobrança: valor, vencimento, quantos dias faltam.
+function situacaoPagamento(){
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const ciclo = proximoCicloAPagar();
+  const venc = dataVencimentoDoCiclo(ciclo);
+  const diasRestantes = Math.round((venc - hoje) / 86400000);
+  return {
+    ciclo, venc, diasRestantes,
+    jaVenceu: diasRestantes < 0,
+    valor: valorDoCiclo(ciclo),
+    parcela: parcelaDoCiclo(ciclo),
+    descricao: descricaoDoCiclo(ciclo)
+  };
+}
+// Texto curto do acordo, usado nas telas de bloqueio, aviso e assinatura.
+function textoAcordo(){
+  const c = CONFIG_ASSINATURA;
+  const primeiro = dataVencimentoDoCiclo(c.primeiroCiclo).toLocaleDateString('pt-BR');
+  return c.parcelas + 'x de ' + fmtBRL(c.valorParcela) + ' (todo dia ' + c.diaVencimento + ', a partir de ' + primeiro + ') + ' + fmtBRL(c.mensalidade) + '/mês';
+}
+function textoSituacaoPagamento(sit){
+  const data = sit.venc.toLocaleDateString('pt-BR');
+  const rotulo = sit.parcela ? 'A parcela ' + sit.parcela + '/' + CONFIG_ASSINATURA.parcelas : 'A mensalidade';
+  if(sit.jaVenceu) return rotulo + ' com vencimento em ' + data + ' já passou e o pagamento ainda não foi confirmado.';
+  if(sit.diasRestantes === 0) return rotulo + ' vence hoje (' + data + ').';
+  return 'Faltam ' + sit.diasRestantes + ' dia' + (sit.diasRestantes > 1 ? 's' : '') + ' para o vencimento (' + data + '). Valor desta cobrança' + (sit.parcela ? ' (parcela ' + sit.parcela + '/' + CONFIG_ASSINATURA.parcelas + ' + mensalidade)' : '') + ': ' + fmtBRL(sit.valor) + '.';
 }
 
 function limiteArmazenamentoBytes(){
@@ -1698,17 +1776,17 @@ function renderizarBloqueioTotal(info){
     <div class="bloqueio-caixa">
       <h2>🔒 Acesso suspenso</h2>
       <p>${escapar(motivo)}</p>
-      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">Escolha uma das opções de plano abaixo para regularizar:</p>
+      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">Condições do plano contratado:</p>
       <div class="bloqueio-planos">
         ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
           <div class="bloqueio-plano">
             <b>${escapar(p.nome)}</b>
             <span>${escapar(p.descricao)}</span>
-            <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+            <strong>${escapar(textoAcordo())}</strong>
           </div>`).join('')}
       </div>
       <div class="bloqueio-acoes">
-        <button type="button" class="bloqueio-pagar" onclick="abrirPagamentoPix(${CONFIG_ASSINATURA.mensalidade},'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
+        <button type="button" class="bloqueio-pagar" onclick="abrirPagamentoPix(${situacaoPagamento().valor},'${situacaoPagamento().descricao}')">Pagar ${fmtBRL(situacaoPagamento().valor)} via PIX</button>
         <button type="button" class="bloqueio-sair" onclick="signOut(auth)">Sair</button>
       </div>
     </div>`;
@@ -1764,26 +1842,8 @@ window.alternarBloqueioTotal = alternarBloqueioTotal;
 // mostra um popup com os planos e o PIX. Aparece só 1x por dia por
 // pessoa (guardado no localStorage do navegador dela).
 // ======================================================
-// Calcula a data do vencimento que realmente importa agora: se o mês
-// corrente já está pago, olha pro dia 10 do MÊS QUE VEM (pré-aviso);
-// se não está pago, olha pro dia 10 deste mês (podendo já estar vencido).
-function proximoVencimentoInfo(){
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const mesAtualPago = (CONFIG_ACESSO || {}).cicloPago === cicloAtual();
-  let dataRef;
-  if(!mesAtualPago){
-    dataRef = new Date(hoje.getFullYear(), hoje.getMonth(), CONFIG_ASSINATURA.diaVencimento);
-  } else {
-    dataRef = new Date(hoje.getFullYear(), hoje.getMonth()+1, CONFIG_ASSINATURA.diaVencimento);
-  }
-  const cicloRef = dataRef.getFullYear() + '-' + String(dataRef.getMonth()+1).padStart(2,'0');
-  const diasRestantes = Math.round((dataRef - hoje) / 86400000);
-  return {
-    diasRestantes,
-    jaVenceu: diasRestantes < 0,
-    pagoParaEsseCiclo: (CONFIG_ACESSO || {}).cicloPago === cicloRef
-  };
-}
+// O vencimento que importa agora vem de situacaoPagamento(): é sempre o
+// ciclo seguinte ao último pago (dia 20), podendo já estar vencido.
 
 // Horário comercial em que o aviso pode repetir: 8h às 18h, pulando o
 // horário de almoço (12h-13h). Fora disso, o aviso nem tenta aparecer.
@@ -1796,12 +1856,8 @@ function mostrarAvisoVencimentoSeNecessario(){
   if(!USUARIO || !UID) return;
   if(!dentroDoHorarioDeAviso()) return;
 
-  const info = proximoVencimentoInfo();
-  if(info.pagoParaEsseCiclo) return;
-
-  const jaVenceu = info.jaVenceu;
-  const diasRestantes = info.diasRestantes;
-  const dentroDaJanela = jaVenceu || diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia;
+  const sit = situacaoPagamento();
+  const dentroDaJanela = sit.jaVenceu || sit.diasRestantes <= CONFIG_ASSINATURA.diasAvisoAntecedencia;
   if(!dentroDaJanela) return;
 
   // Chave por dia+hora: repete a cada hora dentro do horário comercial,
@@ -1813,7 +1869,7 @@ function mostrarAvisoVencimentoSeNecessario(){
     localStorage.setItem(chaveHoje, '1');
   }catch(e){ /* sem localStorage, mostra mesmo assim */ }
 
-  renderizarAvisoVencimento(jaVenceu, diasRestantes);
+  renderizarAvisoVencimento(sit);
 }
 window.mostrarAvisoVencimentoSeNecessario = mostrarAvisoVencimentoSeNecessario;
 
@@ -1821,15 +1877,11 @@ window.mostrarAvisoVencimentoSeNecessario = mostrarAvisoVencimentoSeNecessario;
 // sem mexer no localStorage. Usado pelo aviso real E pelo botão de teste
 // do admin ("ver como vai aparecer pros usuários"), pra não depender de
 // mexer na data do sistema pra conferir o visual.
-function renderizarAvisoVencimento(jaVenceu, diasRestantes){
+function renderizarAvisoVencimento(sit){
   document.getElementById('avisoVencimentoModal')?.remove();
 
-  const titulo = jaVenceu ? '⚠️ Vencimento em atraso' : '📅 Vencimento se aproximando';
-  const texto = jaVenceu
-    ? `O vencimento deste mês (dia ${CONFIG_ASSINATURA.diaVencimento}) já passou e o pagamento ainda não foi confirmado.`
-    : diasRestantes === 0
-      ? `O vencimento é hoje (dia ${CONFIG_ASSINATURA.diaVencimento}).`
-      : `Faltam ${diasRestantes} dia${diasRestantes > 1 ? 's' : ''} para o vencimento (dia ${CONFIG_ASSINATURA.diaVencimento}).`;
+  const titulo = sit.jaVenceu ? '⚠️ Vencimento em atraso' : '📅 Vencimento se aproximando';
+  const texto = textoSituacaoPagamento(sit);
 
   const fundo = document.createElement('div');
   fundo.id = 'avisoVencimentoModal';
@@ -1841,17 +1893,17 @@ function renderizarAvisoVencimento(jaVenceu, diasRestantes){
         <div><h3>${titulo}</h3><p>${escapar(texto)}</p></div>
         <button class="pix-fechar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove()">×</button>
       </div>
-      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">O gabinete tem 2 opções de plano — escolha a que preferir:</p>
+      <p style="color:#8EA3BF;font-size:12px;font-weight:700;margin:0 0 10px;">Condições do plano contratado:</p>
       <div class="bloqueio-planos">
         ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
           <div class="bloqueio-plano">
             <b>${escapar(p.nome)}</b>
             <span>${escapar(p.descricao)}</span>
-            <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+            <strong>${escapar(textoAcordo())}</strong>
           </div>`).join('')}
       </div>
       <div class="pix-acoes">
-        <button class="pix-copiar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove(); abrirPagamentoPix(${CONFIG_ASSINATURA.mensalidade},'Manutenção mensal do Gabinete Digital')">Pagar via PIX</button>
+        <button class="pix-copiar" type="button" onclick="document.getElementById('avisoVencimentoModal').remove(); abrirPagamentoPix(${sit.valor},'${sit.descricao}')">Pagar ${fmtBRL(sit.valor)} via PIX</button>
         <button class="pix-paguei" type="button" onclick="document.getElementById('avisoVencimentoModal').remove()">Fechar</button>
       </div>
     </div>`;
@@ -1861,7 +1913,7 @@ function renderizarAvisoVencimento(jaVenceu, diasRestantes){
 // Botão de teste do admin: mostra o popup exatamente como qualquer
 // usuário vai ver, sem alterar nada no Firestore nem no localStorage.
 function testarAvisoVencimento(){
-  renderizarAvisoVencimento(false, CONFIG_ASSINATURA.diasAvisoAntecedencia);
+  renderizarAvisoVencimento(situacaoPagamento());
 }
 window.testarAvisoVencimento = testarAvisoVencimento;
 
@@ -1909,12 +1961,16 @@ async function confirmarPagamentoInformado(id){
     });
     // Confirmar um pagamento marca o ciclo atual como pago e, se o acesso
     // estava bloqueado por falta de pagamento, já libera todo mundo de volta.
+    // Quita sempre a PRÓXIMA cobrança em aberto (ex.: parcela 1/10), e não
+    // o mês corrente — assim um pagamento atrasado não pula parcela.
+    const cicloQuitado = proximoCicloAPagar();
     await setDoc(doc(db,'config','acesso'), {
-      cicloPago: cicloAtual(),
+      cicloPago: cicloQuitado,
+      acordoVersao: CONFIG_ASSINATURA.acordoVersao,
       bloqueioTotalAtivo: false,
       bloqueioTotalMotivo: ''
     }, { merge:true });
-    alert('Pagamento confirmado. O ciclo foi marcado como pago e o acesso foi liberado.');
+    alert('Pagamento confirmado: ' + descricaoDoCiclo(cicloQuitado) + '. O acesso foi liberado.');
     atualizarBadgeNotificacoes();
     if(paginaAtual === 'assinatura') window.RENDERIZADORES.assinatura();
   }catch(e){
@@ -1938,9 +1994,7 @@ async function atualizarResumoAssinaturaTopo() {
   statusEl.textContent = '● PLANO ATIVO';
   usoEl.textContent = 'Calculando espaço...';
   badge.classList.remove('alerta','critico');
-  const hoje = new Date();
-  const pagamentoVencido = hoje.getDate() >= CONFIG_ASSINATURA.diaVencimento
-    && (CONFIG_ACESSO || {}).cicloPago !== cicloAtual();
+  const pagamentoVencido = situacaoPagamento().diasRestantes <= 0;
   try {
     const uso = await calcularUsoAnexos();
     const bytesUsados = uso.bytesUsados;
@@ -2345,12 +2399,9 @@ window.RENDERIZADORES.assinatura = async function () {
       ? 'Seu armazenamento passou de 70%. Você será avisado novamente ao atingir 90%.'
       : 'Seu armazenamento está dentro do limite do plano.';
 
-    const hoje = new Date();
-    let venc = new Date(hoje.getFullYear(), hoje.getMonth(), CONFIG_ASSINATURA.diaVencimento);
-    if (hoje.getDate() > CONFIG_ASSINATURA.diaVencimento) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, CONFIG_ASSINATURA.diaVencimento);
-    const vencimento = venc.toLocaleDateString('pt-BR');
-    const pagamentoVencido = hoje.getDate() >= CONFIG_ASSINATURA.diaVencimento
-      && (CONFIG_ACESSO || {}).cicloPago !== cicloAtual();
+    const sitPag = situacaoPagamento();
+    const vencimento = sitPag.venc.toLocaleDateString('pt-BR');
+    const pagamentoVencido = sitPag.diasRestantes <= 0;
     const bloqueioAtivo = (CONFIG_ACESSO || {}).bloqueioTotalAtivo === true;
 
     const usadoTexto = gbUsados >= 0.01 ? gbUsados.toFixed(2).replace('.',',') + ' GB' : (bytesUsados/1024/1024).toFixed(1).replace('.',',') + ' MB';
@@ -2393,13 +2444,13 @@ window.RENDERIZADORES.assinatura = async function () {
         ${pagamentoVencido ? `
         <div class="bloqueio-caixa" style="margin-bottom:16px;border-color:#3A1D22;">
           <h2 style="font-size:16px;">⚠️ Pagamento pendente</h2>
-          <p>O vencimento deste mês (dia ${CONFIG_ASSINATURA.diaVencimento}) já passou e o pagamento ainda não foi confirmado. Escolha um dos planos abaixo e regularize para evitar o bloqueio do acesso.</p>
+          <p>${escapar(textoSituacaoPagamento(sitPag))} Regularize para evitar o bloqueio do acesso.</p>
           <div class="bloqueio-planos">
             ${CONFIG_ASSINATURA.planosDisponiveis.map(p => `
               <div class="bloqueio-plano">
                 <b>${escapar(p.nome)}</b>
                 <span>${escapar(p.descricao)}</span>
-                <strong>${fmtBRL(p.desenvolvimento)} implantação + ${fmtBRL(p.mensalidade)}/mês</strong>
+                <strong>${escapar(textoAcordo())}</strong>
               </div>`).join('')}
           </div>
         </div>` : ''}
@@ -2409,8 +2460,10 @@ window.RENDERIZADORES.assinatura = async function () {
             <h3>Plano atual</h3>
             <div class="assinatura-plano">${CONFIG_ASSINATURA.plano}</div>
             <div class="assinatura-linha"><span>Status</span><b><span class="assinatura-status ativo">● ${CONFIG_ASSINATURA.status}</span></b></div>
+            <div class="assinatura-linha"><span>Desenvolvimento</span><b>${CONFIG_ASSINATURA.parcelas}x de ${fmtBRL(CONFIG_ASSINATURA.valorParcela)}</b></div>
             <div class="assinatura-linha"><span>Manutenção mensal</span><b>${fmtBRL(CONFIG_ASSINATURA.mensalidade)}</b></div>
             <div class="assinatura-linha"><span>Próximo vencimento</span><b>${vencimento}</b></div>
+            <div class="assinatura-linha"><span>Valor da próxima cobrança</span><b>${fmtBRL(sitPag.valor)}</b></div>
             <div class="assinatura-linha"><span>Armazenamento contratado</span><b>${limiteArmazenamentoTexto()}</b></div>
             <div class="assinatura-linha"><span>Forma de pagamento</span><b>PIX</b></div>
             <div class="assinatura-chave-box">
@@ -2419,7 +2472,7 @@ window.RENDERIZADORES.assinatura = async function () {
               <div class="assinatura-chave-titular">${CONFIG_ASSINATURA.pixTitular}</div>
               <button type="button" class="assinatura-copiar" onclick="copiarChavePix()">📋 Copiar chave PIX</button>
             </div>
-            <button type="button" class="assinatura-pagar" onclick="abrirPagamentoPix(249.00,'Manutenção mensal do Gabinete Digital')">Pagar mensalidade via PIX</button>
+            <button type="button" class="assinatura-pagar" onclick="abrirPagamentoPix(${sitPag.valor},'${sitPag.descricao}')">Pagar ${fmtBRL(sitPag.valor)} via PIX</button>
           </div>
 
           <div class="assinatura-card">
@@ -3556,9 +3609,14 @@ window.RENDERIZADORES = window.RENDERIZADORES || {};
 window.RENDERIZADORES.oficios = async function () {
   const c = document.getElementById('conteudo');
   c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
-  const snap = await getDocs(collection(db, 'oficios'));
-  oficiosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
-    .sort((a,b) => String(b.dataEnvioISO||'').localeCompare(String(a.dataEnvioISO||'')));
+  try {
+    const snap = await getDocs(collection(db, 'oficios'));
+    oficiosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
+      .sort((a,b) => String(b.dataEnvioISO||'').localeCompare(String(a.dataEnvioISO||'')));
+  } catch (e) {
+    c.innerHTML = `<div class="carregando-tela" style="color:#F26D6D;">Erro ao carregar Ofícios: ${escapar(e.message)}</div>`;
+    return;
+  }
   desenharOficios();
 };
 
@@ -3672,9 +3730,14 @@ let homenageadosCacheLista = [];
 window.RENDERIZADORES.homenageados = async function () {
   const c = document.getElementById('conteudo');
   c.innerHTML = '<div class="carregando-tela">Carregando...</div>';
-  const snap = await getDocs(collection(db, 'homenageados'));
-  homenageadosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
-    .sort((a,b) => String(b.dataHomenagemISO||'').localeCompare(String(a.dataHomenagemISO||'')));
+  try {
+    const snap = await getDocs(collection(db, 'homenageados'));
+    homenageadosCacheLista = snap.docs.map(d => ({ _docId: d.id, ...d.data() }))
+      .sort((a,b) => String(b.dataHomenagemISO||'').localeCompare(String(a.dataHomenagemISO||'')));
+  } catch (e) {
+    c.innerHTML = `<div class="carregando-tela" style="color:#F26D6D;">Erro ao carregar Homenageados: ${escapar(e.message)}</div>`;
+    return;
+  }
   desenharHomenageados();
 };
 
