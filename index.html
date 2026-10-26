@@ -1531,7 +1531,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
-  onSnapshot, collection, query, orderBy, limit, writeBatch
+  onSnapshot, collection, query, where, orderBy, limit, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 // Firebase Storage (usado só pelo recurso pago de anexos) é carregado sob demanda,
 // não no boot do app — assim quem não usa anexos não espera esse download extra
@@ -4662,6 +4662,8 @@ window.salvarAgenda=salvarAgenda;window.excluirAgenda=excluirAgenda;
 
 const STATUS_EVENTO_MURILLO = ['PLANEJAMENTO','CONFIRMADO','REALIZADO','CANCELADO'];
 let eventosMurilloCache = [];
+let participantesContagemEvt = {};
+let participantesContagemIndisponivel = false;
 
 window.RENDERIZADORES.eventos = async function(){
   const c = document.getElementById('conteudo');
@@ -4670,6 +4672,21 @@ window.RENDERIZADORES.eventos = async function(){
   try{
     const snap = await getDocs(collection(db,'eventos'));
     eventosMurilloCache = snap.docs.map(d=>({ _docId:d.id, ...d.data() }));
+    // Contagem de participantes por evento. Se a leitura falhar (ex.: regras ainda
+    // não publicadas), a lista de eventos continua abrindo e mostra "–".
+    participantesContagemEvt = {};
+    participantesContagemIndisponivel = false;
+    try{
+      const snapPart = await getDocs(collection(db,'participantesEvento'));
+      snapPart.docs.forEach(d=>{
+        const p = d.data();
+        if(p.ativo === false) return;
+        participantesContagemEvt[p.eventoId] = (participantesContagemEvt[p.eventoId]||0) + 1;
+      });
+    }catch(e){
+      console.warn('Não foi possível contar participantes dos eventos:', e);
+      participantesContagemIndisponivel = true;
+    }
     desenharEventosMurillo();
   }catch(e){
     c.innerHTML = '<div class="painel-box">Não foi possível carregar Eventos. '+escapar(e.message||e)+'</div>';
@@ -4717,6 +4734,7 @@ function desenharEventosMurillo(){
             <th>Título</th>
             <th>Local</th>
             <th>Status</th>
+            <th>Participantes</th>
             ${podeEditar ? '<th>Ações</th>' : ''}
           </tr>
         </thead>
@@ -4727,10 +4745,11 @@ function desenharEventosMurillo(){
               <td data-label="Título">${escapar(ev.titulo||'-')}</td>
               <td data-label="Local">${escapar(ev.local||'-')}</td>
               <td data-label="Status">${badgeStatus(ev.status)}</td>
+              <td data-label="Participantes"><button class="btn-secundario btn-tabela" onclick="abrirParticipantesEvento('${ev._docId}')">👥 ${participantesContagemIndisponivel ? '–' : (participantesContagemEvt[ev._docId]||0)}</button></td>
               <td data-label="Descrição" class="evento-descricao-mobile">${escapar(ev.descricao||'-')}</td>
               ${podeEditar ? `<td data-label="Ações"><div class="acoes-linha"><button class="btn-secundario btn-tabela" onclick="abrirModalEvtMurilloPorId('${ev._docId}')">Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="excluirEvtMurillo('${ev._docId}')">Excluir</button></div></td>` : ''}
             </tr>
-          `).join('') || `<tr><td colspan="${podeEditar?5:4}" style="text-align:center;color:var(--texto-fraco);padding:20px;">Nenhum evento cadastrado ainda.</td></tr>`}
+          `).join('') || `<tr><td colspan="${podeEditar?6:5}" style="text-align:center;color:var(--texto-fraco);padding:20px;">Nenhum evento cadastrado ainda.</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -4846,6 +4865,11 @@ window.salvarEvtMurillo = salvarEvtMurillo;
 
 async function excluirEvtMurillo(id){
   if(somenteLeitura()) return;
+  const qtdPart = participantesContagemEvt[id] || 0;
+  if(qtdPart > 0){
+    alert('Este evento tem ' + qtdPart + ' participante(s) cadastrado(s) e não pode ser excluído. Se ele não vai mais acontecer, mude o status para CANCELADO.');
+    return;
+  }
   if(!confirm('Excluir este evento? Não tem como desfazer.')) return;
   try{
     await deleteDoc(doc(db,'eventos',id));
@@ -4855,6 +4879,305 @@ async function excluirEvtMurillo(id){
   }
 }
 window.excluirEvtMurillo = excluirEvtMurillo;
+
+// ======================================================
+// PARTICIPANTES DE EVENTO
+//
+// Cadastro SEPARADO do Cadastro Geral e dos Atendimentos: guarda só quem
+// participou de cada evento (ex.: cartão do Dia das Crianças — responsável,
+// criança, telefone e bairro). Coleção própria: participantesEvento.
+// "Remover" não apaga: marca ativo:false e dá para restaurar.
+// ======================================================
+let participantesEvtLista = [];
+let participantesEvtAtual = null;
+let mostrarRemovidosParticipantes = false;
+
+async function abrirParticipantesEvento(eventoId){
+  const c = document.getElementById('conteudo');
+  const evento = eventosMurilloCache.find(e => e._docId === eventoId);
+  if(!evento){ window.RENDERIZADORES.eventos(); return; }
+  participantesEvtAtual = evento;
+  mostrarRemovidosParticipantes = false;
+  c.innerHTML = '<div class="carregando-tela">Carregando participantes...</div>';
+  try{
+    const snap = await getDocs(query(collection(db,'participantesEvento'), where('eventoId','==',eventoId)));
+    participantesEvtLista = snap.docs.map(d => ({ _docId:d.id, ...d.data() }))
+      .sort((a,b) => String(b.criadoEmISO||'').localeCompare(String(a.criadoEmISO||'')));
+  }catch(e){
+    c.innerHTML = '<div class="painel-box">Não foi possível carregar os participantes. ' + escapar(e.message||e)
+      + '<br><br><button class="btn-secundario" onclick="window.RENDERIZADORES.eventos()">← Voltar aos eventos</button></div>';
+    return;
+  }
+  desenharParticipantesEvento();
+}
+window.abrirParticipantesEvento = abrirParticipantesEvento;
+
+function desenharParticipantesEvento(){
+  const c = document.getElementById('conteudo');
+  const ev = participantesEvtAtual;
+  const podeEditar = !somenteLeitura();
+  const bairrosLista = [...new Set(participantesEvtLista.map(p => p.bairro).filter(Boolean))].sort();
+
+  c.innerHTML = `
+    <div class="topo-pagina">
+      <div class="cabecalho-titulo">
+        <h2>Participantes — <span style="color:var(--acento);">${escapar(ev.titulo||'Evento')}</span></h2>
+        <p>${escapar([ev.data, ev.local].filter(Boolean).join(' · ') || 'Cadastro de quem participou deste evento.')}</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-secundario" onclick="exportarParticipantesCSV()">⬇ Exportar CSV</button>
+        <button class="btn-secundario" onclick="window.RENDERIZADORES.eventos()">← Voltar aos eventos</button>
+      </div>
+    </div>
+
+    <div class="kpis-mini-row" id="kpisParticipantes" style="margin-bottom:12px;"></div>
+
+    ${podeEditar ? `
+    <div class="painel-box" style="margin-bottom:12px;">
+      <h3 style="margin:0 0 10px;font-size:13px;">Cadastro rápido</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;align-items:end;">
+        <div class="campo-modal" style="margin:0;"><label>Nome do responsável</label><input id="pe_responsavel" autocomplete="off" onkeydown="participanteEnter(event,'pe_crianca')"></div>
+        <div class="campo-modal" style="margin:0;"><label>Nome da criança</label><input id="pe_crianca" autocomplete="off" onkeydown="participanteEnter(event,'pe_telefone')"></div>
+        <div class="campo-modal" style="margin:0;"><label>Telefone</label><input id="pe_telefone" inputmode="numeric" maxlength="15" placeholder="(64) 99999-9999" autocomplete="off" oninput="aplicarMascaraTelefone(this)" onkeydown="participanteEnter(event,'pe_bairro')"></div>
+        <div class="campo-modal" style="margin:0;"><label>Bairro</label><input id="pe_bairro" list="pe_bairros" autocomplete="off" onkeydown="participanteEnter(event,null)"></div>
+        <button class="btn-primario" id="btnAddParticipante" style="height:42px;" onclick="adicionarParticipanteEvento()">+ Cadastrar</button>
+      </div>
+      <datalist id="pe_bairros">${bairrosLista.map(b => '<option value="' + escapar(b) + '"></option>').join('')}</datalist>
+      <p style="margin:8px 0 0;font-size:11px;color:var(--texto-fraco);">Enter passa para o próximo campo; no Bairro, Enter cadastra e volta para o nome do responsável.</p>
+    </div>` : '<div class="aviso-perfil">Seu perfil (VEREADOR) tem acesso somente para visualização.</div>'}
+
+    <div class="barra-acoes" style="grid-template-columns:minmax(220px,1fr) auto;">
+      <input id="buscaParticipantes" placeholder="Buscar por responsável, criança, telefone ou bairro..." oninput="atualizarListaParticipantes()">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--texto-suave);white-space:nowrap;">
+        <input type="checkbox" id="chkRemovidosPart" style="width:auto;" onchange="alternarRemovidosParticipantes(this.checked)"> Mostrar removidos
+      </label>
+    </div>
+
+    <div class="tabela-box"><table style="min-width:760px;">
+      <thead><tr><th>#</th><th>Responsável</th><th>Criança</th><th>Telefone</th><th>Bairro</th><th>Obs.</th><th>Cadastrado por</th>${podeEditar ? '<th>Ações</th>' : ''}</tr></thead>
+      <tbody id="tbParticipantes"></tbody>
+    </table></div>`;
+
+  atualizarListaParticipantes();
+  document.getElementById('pe_responsavel')?.focus();
+}
+
+function atualizarListaParticipantes(){
+  const tb = document.getElementById('tbParticipantes');
+  const kpis = document.getElementById('kpisParticipantes');
+  if(!tb || !kpis) return;
+  const podeEditar = !somenteLeitura();
+  const ativos = participantesEvtLista.filter(p => p.ativo !== false);
+  const comCrianca = ativos.filter(p => String(p.crianca||'').trim()).length;
+  const bairros = new Set(ativos.map(p => norm(p.bairro)).filter(Boolean)).size;
+  const removidos = participantesEvtLista.length - ativos.length;
+
+  kpis.innerHTML =
+    kpiMiniMurillo('rgba(34,197,94,.18)','#4ADE80','👥',ativos.length,'Cadastrados') +
+    kpiMiniMurillo('rgba(59,130,246,.18)','#60A5FA','🧒',comCrianca,'Com criança') +
+    kpiMiniMurillo('rgba(242,178,58,.18)','#F2B23A','📍',bairros,'Bairros') +
+    (removidos ? kpiMiniMurillo('rgba(242,109,109,.18)','#F26D6D','🗑️',removidos,'Removidos') : '');
+
+  const q = norm(document.getElementById('buscaParticipantes')?.value || '');
+  const base = mostrarRemovidosParticipantes ? participantesEvtLista : ativos;
+  const linhas = base.filter(p => !q || norm([p.responsavel,p.crianca,p.telefone,p.bairro].join(' ')).includes(q));
+  // numeração pela ordem de cadastro (o mais antigo é o nº 1)
+  const ordemCadastro = {};
+  [...participantesEvtLista].reverse().forEach((p,i) => { ordemCadastro[p._docId] = i + 1; });
+
+  tb.innerHTML = linhas.map(p => {
+    const removido = p.ativo === false;
+    return `<tr style="${removido ? 'opacity:.5;' : ''}">
+      <td>${ordemCadastro[p._docId] || ''}</td>
+      <td class="td-esquerda">${escapar(p.responsavel||'-')}${removido ? ' <span class="badge badge-vermelho">REMOVIDO</span>' : ''}</td>
+      <td class="td-esquerda">${escapar(p.crianca||'-')}</td>
+      <td>${linkWhatsapp(p.telefone)}</td>
+      <td>${escapar(p.bairro||'-')}</td>
+      <td class="td-obs td-esquerda" title="${escapar(p.observacoes||'')}">${escapar(p.observacoes||'-')}</td>
+      <td>${escapar(p.criadoPor||'-')}${p.criadoEmTexto ? ' · ' + escapar(p.criadoEmTexto) : ''}</td>
+      ${podeEditar ? `<td><div class="acoes-linha">
+        ${removido
+          ? `<button class="btn-secundario btn-tabela" onclick="restaurarParticipanteEvento('${p._docId}')">Restaurar</button>`
+          : `<button class="btn-secundario btn-tabela" onclick="abrirModalParticipanteEvento('${p._docId}')">Editar</button><button class="btn-secundario btn-tabela" style="color:#F26D6D;border-color:#4A2430;" onclick="removerParticipanteEvento('${p._docId}')">Remover</button>`}
+      </div></td>` : ''}
+    </tr>`;
+  }).join('') || `<tr><td colspan="${podeEditar ? 8 : 7}" style="text-align:center;color:var(--texto-fraco);padding:24px;">${q ? 'Nenhum participante encontrado para essa busca.' : 'Nenhum participante cadastrado neste evento ainda.'}</td></tr>`;
+}
+window.atualizarListaParticipantes = atualizarListaParticipantes;
+
+function alternarRemovidosParticipantes(marcado){
+  mostrarRemovidosParticipantes = !!marcado;
+  atualizarListaParticipantes();
+}
+window.alternarRemovidosParticipantes = alternarRemovidosParticipantes;
+
+function participanteEnter(ev, proximoId){
+  if(ev.key !== 'Enter') return;
+  ev.preventDefault();
+  if(proximoId){ document.getElementById(proximoId)?.focus(); }
+  else { adicionarParticipanteEvento(); }
+}
+window.participanteEnter = participanteEnter;
+
+function contarParticipantesDoEvento(){
+  if(!participantesEvtAtual) return;
+  participantesContagemEvt[participantesEvtAtual._docId] =
+    participantesEvtLista.filter(p => p.ativo !== false).length;
+}
+
+async function adicionarParticipanteEvento(){
+  if(somenteLeitura() || !participantesEvtAtual) return;
+  const btn = document.getElementById('btnAddParticipante');
+  if(btn.disabled) return;
+  const responsavel = maiusculo(document.getElementById('pe_responsavel').value);
+  const crianca = maiusculo(document.getElementById('pe_crianca').value);
+  const telefone = formatarTelefoneBR(document.getElementById('pe_telefone').value);
+  const bairro = maiusculo(document.getElementById('pe_bairro').value);
+
+  if(!responsavel){
+    alert('Preencha o nome do responsável.');
+    document.getElementById('pe_responsavel').focus();
+    return;
+  }
+  const chave = norm(responsavel) + '|' + norm(crianca);
+  const duplicado = participantesEvtLista.some(p => p.ativo !== false && (norm(p.responsavel) + '|' + norm(p.crianca)) === chave);
+  if(duplicado && !confirm('Já existe um cadastro com este responsável e esta criança neste evento. Cadastrar mesmo assim?')) return;
+
+  btn.disabled = true; btn.innerText = 'Salvando...';
+  const agora = new Date();
+  const dados = {
+    eventoId: participantesEvtAtual._docId,
+    eventoTitulo: participantesEvtAtual.titulo || '',
+    responsavel, crianca, telefone, bairro,
+    observacoes: '',
+    ativo: true,
+    criadoPor: USUARIO?.nome || '',
+    criadoEmTexto: agora.toLocaleString('pt-BR'),
+    criadoEmISO: agora.toISOString(),
+    ultimaEdicaoPor: USUARIO?.nome || '',
+    ultimaEdicaoData: agora.toLocaleString('pt-BR')
+  };
+  try{
+    const ref = await addDoc(collection(db,'participantesEvento'), dados);
+    participantesEvtLista.unshift({ _docId: ref.id, ...dados });
+    contarParticipantesDoEvento();
+    ['pe_responsavel','pe_crianca','pe_telefone'].forEach(id => { document.getElementById(id).value = ''; });
+    const campoBairro = document.getElementById('pe_bairro');
+    campoBairro.value = '';
+    const lista = document.getElementById('pe_bairros');
+    if(bairro && lista && ![...lista.options].some(o => o.value === bairro)){
+      const op = document.createElement('option'); op.value = bairro; lista.appendChild(op);
+    }
+    atualizarListaParticipantes();
+    document.getElementById('pe_responsavel').focus();
+  }catch(e){
+    alert('Não foi possível cadastrar. (' + (e.message||e) + ')');
+  }finally{
+    btn.disabled = false; btn.innerText = '+ Cadastrar';
+  }
+}
+window.adicionarParticipanteEvento = adicionarParticipanteEvento;
+
+function abrirModalParticipanteEvento(id){
+  if(somenteLeitura()) return;
+  const r = participantesEvtLista.find(p => p._docId === id);
+  if(!r) return;
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo modal-operacao-fundo';
+  fundo.onclick = (e) => { if(e.target === fundo) fundo.remove(); };
+  fundo.innerHTML = `
+    <div class="modal modal-operacao" onclick="event.stopPropagation()">
+      <h2>Editar participante</h2>
+      <div class="modal-operacao-grid">
+        <div class="campo-modal span-2"><label>Nome do responsável</label><input id="pm_responsavel" value="${escapar(r.responsavel||'')}"></div>
+        <div class="campo-modal span-2"><label>Nome da criança</label><input id="pm_crianca" value="${escapar(r.crianca||'')}"></div>
+        <div class="campo-modal span-2"><label>Telefone</label><input id="pm_telefone" value="${escapar(formatarTelefoneBR(r.telefone||''))}" inputmode="numeric" maxlength="15" oninput="aplicarMascaraTelefone(this)"></div>
+        <div class="campo-modal span-2"><label>Bairro</label><input id="pm_bairro" list="pe_bairros" value="${escapar(r.bairro||'')}"></div>
+        <div class="campo-modal span-4"><label>Observações</label><textarea id="pm_observacoes">${escapar(r.observacoes||'')}</textarea></div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secundario" onclick="this.closest('.modal-fundo').remove()">Cancelar</button>
+        <button class="btn-primario" id="btnSalvarPartModal" onclick="salvarParticipanteEvento('${id}')">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(fundo);
+}
+window.abrirModalParticipanteEvento = abrirModalParticipanteEvento;
+
+async function salvarParticipanteEvento(id){
+  if(somenteLeitura()) return;
+  const btn = document.getElementById('btnSalvarPartModal');
+  if(btn.disabled) return;
+  const dados = {
+    responsavel: maiusculo(document.getElementById('pm_responsavel').value),
+    crianca: maiusculo(document.getElementById('pm_crianca').value),
+    telefone: formatarTelefoneBR(document.getElementById('pm_telefone').value),
+    bairro: maiusculo(document.getElementById('pm_bairro').value),
+    observacoes: document.getElementById('pm_observacoes').value.trim(),
+    ultimaEdicaoPor: USUARIO?.nome || '',
+    ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+  };
+  if(!dados.responsavel){ alert('Preencha o nome do responsável.'); return; }
+  btn.disabled = true; btn.innerText = 'Salvando...';
+  try{
+    await updateDoc(doc(db,'participantesEvento',id), dados);
+    const i = participantesEvtLista.findIndex(p => p._docId === id);
+    if(i >= 0) participantesEvtLista[i] = { ...participantesEvtLista[i], ...dados };
+    document.querySelector('.modal-fundo')?.remove();
+    atualizarListaParticipantes();
+  }catch(e){
+    alert('Não foi possível salvar. (' + (e.message||e) + ')');
+    btn.disabled = false; btn.innerText = 'Salvar';
+  }
+}
+window.salvarParticipanteEvento = salvarParticipanteEvento;
+
+async function definirAtivoParticipante(id, ativo){
+  if(somenteLeitura()) return;
+  try{
+    await updateDoc(doc(db,'participantesEvento',id), {
+      ativo,
+      ultimaEdicaoPor: USUARIO?.nome || '',
+      ultimaEdicaoData: new Date().toLocaleString('pt-BR')
+    });
+    const i = participantesEvtLista.findIndex(p => p._docId === id);
+    if(i >= 0) participantesEvtLista[i].ativo = ativo;
+    contarParticipantesDoEvento();
+    atualizarListaParticipantes();
+  }catch(e){
+    alert('Não foi possível atualizar. (' + (e.message||e) + ')');
+  }
+}
+
+async function removerParticipanteEvento(id){
+  const p = participantesEvtLista.find(x => x._docId === id);
+  if(!p) return;
+  if(!confirm('Remover "' + (p.responsavel||'este participante') + '" da lista do evento?\n\nO cadastro não é apagado: marque "Mostrar removidos" para ver e restaurar.')) return;
+  await definirAtivoParticipante(id, false);
+}
+window.removerParticipanteEvento = removerParticipanteEvento;
+
+async function restaurarParticipanteEvento(id){
+  await definirAtivoParticipante(id, true);
+}
+window.restaurarParticipanteEvento = restaurarParticipanteEvento;
+
+// Exporta só os participantes ativos, em CSV com ponto e vírgula e BOM (abre direto no Excel em português).
+function exportarParticipantesCSV(){
+  const ativos = participantesEvtLista.filter(p => p.ativo !== false).slice().reverse();
+  if(!ativos.length){ alert('Nenhum participante para exportar.'); return; }
+  const cel = v => '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"';
+  const linhas = [['Responsável','Criança','Telefone','Bairro','Observações','Cadastrado por','Cadastrado em']]
+    .concat(ativos.map(p => [p.responsavel,p.crianca,p.telefone,p.bairro,p.observacoes,p.criadoPor,p.criadoEmTexto]));
+  const csv = '﻿' + linhas.map(l => l.map(cel).join(';')).join('\r\n');
+  const nome = norm(participantesEvtAtual?.titulo || 'evento').replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,'').toLowerCase() || 'evento';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'participantes_' + nome + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+window.exportarParticipantesCSV = exportarParticipantesCSV;
 
 let filtroCadastroGeralAtual = '';
 let mostrarInativosPessoas = false;
